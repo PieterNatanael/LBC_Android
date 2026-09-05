@@ -158,15 +158,16 @@ fun CameraScreen(
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
 
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    val previewView    = remember { PreviewView(context) }
-    var videoCapture   by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
-    var cameraControl  by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
-    var cameraInfo     by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
-    var focusPoint     by remember { mutableStateOf<Offset?>(null) }
-    var zoomRatio      by remember { mutableStateOf(1f) }
+    val cameraExecutor  = remember { Executors.newSingleThreadExecutor() }
+    val previewView     = remember { PreviewView(context) }
+    val providerRef     = remember { arrayOfNulls<ProcessCameraProvider>(1) }
+    var videoCapture    by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
+    var cameraControl   by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
+    var cameraInfo      by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
+    var focusPoint      by remember { mutableStateOf<Offset?>(null) }
+    var zoomRatio       by remember { mutableStateOf(1f) }
     val initialRotation = remember { (context as? Activity)?.display?.rotation ?: android.view.Surface.ROTATION_0 }
-    var targetRotation by remember { mutableStateOf(initialRotation) }
+    var targetRotation  by remember { mutableStateOf(initialRotation) }
 
     DisposableEffect(context) {
         val listener = object : android.view.OrientationEventListener(context) {
@@ -191,10 +192,12 @@ fun CameraScreen(
     // Rebind camera on quality, facing or permission change
     LaunchedEffect(qualityTier, isFrontCamera, permsGranted) {
         if (!permsGranted) return@LaunchedEffect
-        val cameraProvider = suspendCoroutine<ProcessCameraProvider> { cont ->
+        val provider = suspendCoroutine<ProcessCameraProvider> { cont ->
             val future = ProcessCameraProvider.getInstance(context)
             future.addListener({ cont.resume(future.get()) }, ContextCompat.getMainExecutor(context))
         }
+        if (!isActive) return@LaunchedEffect  // screen left while waiting for provider
+        providerRef[0] = provider
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
@@ -206,8 +209,8 @@ fun CameraScreen(
         val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA
                        else CameraSelector.DEFAULT_BACK_CAMERA
         try {
-            cameraProvider.unbindAll()
-            val camera = cameraProvider.bindToLifecycle(lifecycleOwner, selector, preview, vCapture)
+            provider.unbindAll()
+            val camera = provider.bindToLifecycle(lifecycleOwner, selector, preview, vCapture)
             videoCapture = vCapture
             cameraControl = camera.cameraControl
             cameraInfo = camera.cameraInfo
@@ -217,7 +220,13 @@ fun CameraScreen(
         }
     }
 
-    DisposableEffect(Unit) { onDispose { cameraExecutor.shutdown() } }
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.activeRecording?.stop()
+            providerRef[0]?.unbindAll()
+            cameraExecutor.shutdown()
+        }
+    }
 
     // Observe real zoom from hardware — keeps display in sync with hardware max
     DisposableEffect(cameraInfo) {
