@@ -62,7 +62,8 @@ fun GalleryScreen(
 ) {
     val settingsViewModel: SettingsViewModel = viewModel()
     val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
-    val isSimple = appearanceMode == AppearanceMode.SIMPLE
+    val isAlt = appearanceMode != AppearanceMode.NORMAL
+    val altBg = if (appearanceMode == AppearanceMode.TACTICAL) Color(0xFF0A0A0A) else Color.Black
 
     val videos by galleryViewModel.videos.collectAsState()
     val thumbnails by galleryViewModel.thumbnails.collectAsState()
@@ -76,7 +77,7 @@ fun GalleryScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isSimple) Color.Black else BackgroundDark)
+            .background(if (isAlt) altBg else BackgroundDark)
     ) {
         if (videos.isEmpty()) {
             EmptyGallery()

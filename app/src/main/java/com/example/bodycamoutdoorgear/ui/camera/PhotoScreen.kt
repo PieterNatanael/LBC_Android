@@ -111,7 +111,15 @@ fun PhotoScreen(
     val videoQualityTier by settingsViewModel.videoQualityTier.collectAsState()
     val gridEnabled      by settingsViewModel.gridEnabled.collectAsState()
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
-    val isSimple = appearanceMode == AppearanceMode.SIMPLE
+    val isSimple   = appearanceMode == AppearanceMode.SIMPLE
+    val isTactical = appearanceMode == AppearanceMode.TACTICAL
+    val isAlt = isSimple || isTactical
+    val accentColor = when (appearanceMode) {
+        AppearanceMode.SIMPLE   -> Color(0xFFCC0000)
+        AppearanceMode.TACTICAL -> Color(0xFF00CC44)
+        else                    -> Color.White
+    }
+    val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
     val isCapturing      by viewModel.isCapturing.collectAsState()
     val captureStatus    by viewModel.captureStatus.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -237,7 +245,7 @@ fun PhotoScreen(
     }
 
     // ── UI ───────────────────────────────────────────────────────────────────
-    Box(modifier = Modifier.fillMaxSize().background(if (isSimple) Color.Black else BackgroundDark)) {
+    Box(modifier = Modifier.fillMaxSize().background(if (isAlt) altBackground else BackgroundDark)) {
         if (!permsGranted) {
             PhotoPermissionRequest(onRequest = onRequestPermissions)
         } else {
@@ -264,11 +272,11 @@ fun PhotoScreen(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .weight(1f)
-                        .clip(RoundedCornerShape(if (isSimple) 0.dp else 10.dp))
+                        .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
                         .border(
-                            if (isSimple) 2.dp else 1.dp,
-                            if (isSimple) Color(0xFFCC0000) else Color.White.copy(0.3f),
-                            RoundedCornerShape(if (isSimple) 0.dp else 10.dp)
+                            if (isAlt) 2.dp else 1.dp,
+                            if (isAlt) accentColor else Color.White.copy(0.3f),
+                            RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
                         )
                         .pointerInput(Unit) {
                             detectTapGestures { tap ->
@@ -323,9 +331,10 @@ fun PhotoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isSimple) {
+                    if (isAlt) {
                         BauhausShutterButton(
                             isCapturing = isCapturing,
+                            accentColor = accentColor,
                             onClick = { if (!isCapturing) takePhoto() }
                         )
                     } else {
@@ -345,21 +354,21 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isSimple) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
                                 .clickable(enabled = !isCapturing) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Cameraswitch,
                                 contentDescription = "Flip camera",
-                                tint = if (isCapturing) Color.White.copy(0.3f) else Color.White,
-                                modifier = Modifier.size(if (isSimple) 26.dp else 22.dp)
+                                tint = if (isCapturing) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
+                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                             )
                         }
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isSimple) Modifier else Modifier.background(
+                                .then(if (isAlt) Modifier else Modifier.background(
                                     if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
                                     CircleShape
                                 ))
@@ -369,8 +378,8 @@ fun PhotoScreen(
                             Icon(
                                 Icons.Default.WbSunny,
                                 contentDescription = "Dim screen",
-                                tint = if (isScreenDimmed) Color.White.copy(0.3f) else Color.White,
-                                modifier = Modifier.size(if (isSimple) 26.dp else 22.dp)
+                                tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
+                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                             )
                         }
                     }
@@ -385,7 +394,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isSimple) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
                                 .clickable {
                                     zoomRatio = 1f
                                     cameraControl?.setZoomRatio(1f)
@@ -394,8 +403,8 @@ fun PhotoScreen(
                         ) {
                             Text(
                                 text = if (zoomRatio == 1f) "1×" else "%.1f×".format(zoomRatio),
-                                color = if (isSimple) Color(0xFFCC0000) else Color.White.copy(0.85f),
-                                fontSize = if (isSimple) 14.sp else 12.sp,
+                                color = if (isAlt) accentColor else Color.White.copy(0.85f),
+                                fontSize = if (isAlt) 14.sp else 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold
                             )
@@ -403,15 +412,15 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isSimple) Modifier else Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape))
+                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape))
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Settings,
                                 contentDescription = "Settings",
-                                tint = Color.White,
-                                modifier = Modifier.size(if (isSimple) 26.dp else 22.dp)
+                                tint = if (isAlt) accentColor else Color.White,
+                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                             )
                         }
                     }
@@ -635,12 +644,12 @@ fun KnurledShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 1
 }
 
 @Composable
-fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 70.dp) {
+fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor: Color = Color.White, size: Dp = 70.dp) {
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(3.dp, Color.White, CircleShape)
+            .border(3.dp, accentColor, CircleShape)
             .background(Color.Black)
             .clickable(enabled = !isCapturing, onClick = onClick),
         contentAlignment = Alignment.Center
@@ -649,7 +658,7 @@ fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 7
             Modifier
                 .size(size * 0.6f)
                 .clip(CircleShape)
-                .background(if (isCapturing) Color.White.copy(0.4f) else Color.White)
+                .background(if (isCapturing) accentColor.copy(0.4f) else accentColor)
         )
     }
 }
