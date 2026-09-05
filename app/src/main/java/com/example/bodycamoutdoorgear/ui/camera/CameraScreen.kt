@@ -120,21 +120,28 @@ fun CameraScreen(
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
     val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
-    val isAlt = isSimple || isTactical || isMatcha || isIceCream
-    val matchaGreen = Color(0xFF7BAF52)
-    val icePink  = Color(0xFFFF8FAB)
-    val icePeach = Color(0xFFFFB347)
-    val iceBrush = Brush.linearGradient(listOf(icePink, icePeach))
+    val isTropical = appearanceMode == AppearanceMode.TROPICAL
+    val isGradientBtn = isIceCream || isTropical
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical
+    val matchaGreen   = Color(0xFF7BAF52)
+    val icePink       = Color(0xFFFF8FAB)
+    val icePeach      = Color(0xFFFFB347)
+    val woodBrown     = Color(0xFF8B5E3C)
+    val coconutCream  = Color(0xFFF0D5A0)
+    val iceBrush      = Brush.linearGradient(listOf(icePink, icePeach))
+    val tropicalBrush = Brush.linearGradient(listOf(woodBrown, coconutCream))
     val accentColor = when (appearanceMode) {
         AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
         AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
         AppearanceMode.MATCHA    -> matchaGreen
         AppearanceMode.ICE_CREAM -> icePink
+        AppearanceMode.TROPICAL  -> coconutCream
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
-    val matchaBg   = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
-    val iceCreamBg = Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black))
+    val matchaBg      = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
+    val iceCreamBg    = Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black))
+    val tropicalBg    = Brush.verticalGradient(listOf(Color(0xFF1E0E06), Color(0xFF0F0702), Color.Black))
     val isScreenDimmed   by viewModel.isScreenDimmed.collectAsState()
     val recordingError   by viewModel.recordingError.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -286,6 +293,7 @@ fun CameraScreen(
     Box(modifier = when {
         isMatcha   -> Modifier.fillMaxSize().background(matchaBg)
         isIceCream -> Modifier.fillMaxSize().background(iceCreamBg)
+        isTropical -> Modifier.fillMaxSize().background(tropicalBg)
         isAlt      -> Modifier.fillMaxSize().background(altBackground)
         else       -> Modifier.fillMaxSize().background(BackgroundDark)
     }) {
@@ -364,10 +372,10 @@ fun CameraScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isIceCream) {
-                        IceCreamRecordButton(
+                    if (isGradientBtn) {
+                        GradientRecordButton(
                             isRecording = isRecording,
-                            iceBrush = iceBrush,
+                            gradientBrush = if (isTropical) tropicalBrush else iceBrush,
                             onClick = { if (isRecording) stopRecording() else startRecording() }
                         )
                     } else if (isAlt) {
@@ -396,6 +404,7 @@ fun CameraScreen(
                                 .size(48.dp)
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -418,6 +427,7 @@ fun CameraScreen(
                                         Brush.linearGradient(listOf(icePink.copy(if (isScreenDimmed) 0.08f else 0.3f), icePeach.copy(if (isScreenDimmed) 0.08f else 0.3f))),
                                         CircleShape
                                     )
+                                    isTropical -> Modifier.background(woodBrown.copy(if (isScreenDimmed) 0.1f else 0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
@@ -446,6 +456,7 @@ fun CameraScreen(
                                 .size(48.dp)
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -469,6 +480,7 @@ fun CameraScreen(
                                 .size(48.dp)
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -758,20 +770,20 @@ fun KnurledRecordButton(isRecording: Boolean, onClick: () -> Unit, size: Dp = 10
 }
 
 @Composable
-fun IceCreamRecordButton(isRecording: Boolean, onClick: () -> Unit, iceBrush: Brush, size: Dp = 70.dp) {
+fun GradientRecordButton(isRecording: Boolean, onClick: () -> Unit, gradientBrush: Brush, size: Dp = 70.dp) {
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(width = 3.dp, brush = iceBrush, shape = CircleShape)
-            .background(if (isRecording) iceBrush else Brush.radialGradient(listOf(Color(0xFF2D0F1F), Color.Black)))
+            .border(width = 3.dp, brush = gradientBrush, shape = CircleShape)
+            .background(if (isRecording) gradientBrush else Brush.radialGradient(listOf(Color(0xFF1A0810), Color.Black)))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (isRecording) {
             Box(Modifier.size(size * 0.32f).background(Color.White))
         } else {
-            Box(Modifier.size(size * 0.65f).clip(CircleShape).background(iceBrush))
+            Box(Modifier.size(size * 0.65f).clip(CircleShape).background(gradientBrush))
         }
     }
 }

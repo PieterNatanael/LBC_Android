@@ -115,21 +115,28 @@ fun PhotoScreen(
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
     val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
-    val isAlt = isSimple || isTactical || isMatcha || isIceCream
-    val matchaGreen = Color(0xFF7BAF52)
-    val icePink  = Color(0xFFFF8FAB)
-    val icePeach = Color(0xFFFFB347)
-    val iceBrush = Brush.linearGradient(listOf(icePink, icePeach))
+    val isTropical = appearanceMode == AppearanceMode.TROPICAL
+    val isGradientBtn = isIceCream || isTropical
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical
+    val matchaGreen  = Color(0xFF7BAF52)
+    val icePink      = Color(0xFFFF8FAB)
+    val icePeach     = Color(0xFFFFB347)
+    val woodBrown    = Color(0xFF8B5E3C)
+    val coconutCream = Color(0xFFF0D5A0)
+    val iceBrush      = Brush.linearGradient(listOf(icePink, icePeach))
+    val tropicalBrush = Brush.linearGradient(listOf(woodBrown, coconutCream))
     val accentColor = when (appearanceMode) {
         AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
         AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
         AppearanceMode.MATCHA    -> matchaGreen
         AppearanceMode.ICE_CREAM -> icePink
+        AppearanceMode.TROPICAL  -> coconutCream
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
     val matchaBg   = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
     val iceCreamBg = Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black))
+    val tropicalBg = Brush.verticalGradient(listOf(Color(0xFF1E0E06), Color(0xFF0F0702), Color.Black))
     val isCapturing      by viewModel.isCapturing.collectAsState()
     val captureStatus    by viewModel.captureStatus.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -258,6 +265,7 @@ fun PhotoScreen(
     Box(modifier = when {
         isMatcha   -> Modifier.fillMaxSize().background(matchaBg)
         isIceCream -> Modifier.fillMaxSize().background(iceCreamBg)
+        isTropical -> Modifier.fillMaxSize().background(tropicalBg)
         isAlt      -> Modifier.fillMaxSize().background(altBackground)
         else       -> Modifier.fillMaxSize().background(BackgroundDark)
     }) {
@@ -346,10 +354,10 @@ fun PhotoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isIceCream) {
-                        IceCreamShutterButton(
+                    if (isGradientBtn) {
+                        GradientShutterButton(
                             isCapturing = isCapturing,
-                            iceBrush = iceBrush,
+                            gradientBrush = if (isTropical) tropicalBrush else iceBrush,
                             onClick = { if (!isCapturing) takePhoto() }
                         )
                     } else if (isAlt) {
@@ -378,6 +386,7 @@ fun PhotoScreen(
                                 .size(48.dp)
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -400,6 +409,7 @@ fun PhotoScreen(
                                         Brush.linearGradient(listOf(icePink.copy(if (isScreenDimmed) 0.08f else 0.3f), icePeach.copy(if (isScreenDimmed) 0.08f else 0.3f))),
                                         CircleShape
                                     )
+                                    isTropical -> Modifier.background(woodBrown.copy(if (isScreenDimmed) 0.1f else 0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
@@ -428,6 +438,7 @@ fun PhotoScreen(
                                 .size(48.dp)
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -451,6 +462,7 @@ fun PhotoScreen(
                                 .size(48.dp)
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape)
@@ -691,13 +703,13 @@ fun KnurledShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 1
 }
 
 @Composable
-fun IceCreamShutterButton(isCapturing: Boolean, onClick: () -> Unit, iceBrush: Brush, size: Dp = 70.dp) {
+fun GradientShutterButton(isCapturing: Boolean, onClick: () -> Unit, gradientBrush: Brush, size: Dp = 70.dp) {
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(width = 3.dp, brush = iceBrush, shape = CircleShape)
-            .background(Color(0xFF1A0810))
+            .border(width = 3.dp, brush = gradientBrush, shape = CircleShape)
+            .background(Color(0xFF100608))
             .clickable(enabled = !isCapturing, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -705,7 +717,7 @@ fun IceCreamShutterButton(isCapturing: Boolean, onClick: () -> Unit, iceBrush: B
             Modifier
                 .size(size * 0.75f)
                 .clip(CircleShape)
-                .background(if (isCapturing) Brush.linearGradient(listOf(Color(0xFFFF8FAB).copy(0.4f), Color(0xFFFFB347).copy(0.4f))) else iceBrush)
+                .background(gradientBrush.let { if (isCapturing) Brush.linearGradient(listOf(Color.White.copy(0.2f), Color.White.copy(0.1f))) else it })
         )
     }
 }
