@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
+enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE") }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -29,6 +30,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean("grid_enabled", true)
     )
     val gridEnabled: StateFlow<Boolean> = _gridEnabled.asStateFlow()
+
+    private val _appearanceMode = MutableStateFlow(
+        AppearanceMode.entries[prefs.getInt("appearance_mode", AppearanceMode.NORMAL.ordinal)]
+    )
+    val appearanceMode: StateFlow<AppearanceMode> = _appearanceMode.asStateFlow()
 
     init {
         // Remove legacy low_light pref so any user who had it on is reset
@@ -62,6 +68,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setPhotoQualityTier(tier: QualityTier) {
         _photoQualityTier.value = tier
         prefs.edit().putInt("photo_quality_tier", tier.ordinal).apply()
+    }
+
+    fun setAppearanceMode(mode: AppearanceMode) {
+        _appearanceMode.value = mode
+        prefs.edit().putInt("appearance_mode", mode.ordinal).apply()
     }
 
     fun resetIntro() {

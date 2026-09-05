@@ -86,6 +86,7 @@ import com.example.bodycamoutdoorgear.ui.theme.SuccessGreen
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
+import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.CaptureStatus
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
 import com.example.bodycamoutdoorgear.viewmodel.QualityTier
@@ -109,6 +110,8 @@ fun PhotoScreen(
     val qualityTier      by settingsViewModel.photoQualityTier.collectAsState()
     val videoQualityTier by settingsViewModel.videoQualityTier.collectAsState()
     val gridEnabled      by settingsViewModel.gridEnabled.collectAsState()
+    val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
+    val isSimple = appearanceMode == AppearanceMode.SIMPLE
     val isCapturing      by viewModel.isCapturing.collectAsState()
     val captureStatus    by viewModel.captureStatus.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -212,7 +215,7 @@ fun PhotoScreen(
     }
 
     // ── UI ───────────────────────────────────────────────────────────────────
-    Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
+    Box(modifier = Modifier.fillMaxSize().background(if (isSimple) Color.Black else BackgroundDark)) {
         if (!permsGranted) {
             PhotoPermissionRequest(onRequest = onRequestPermissions)
         } else {
@@ -239,8 +242,12 @@ fun PhotoScreen(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(1.dp, Color.White.copy(0.3f), RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(if (isSimple) 0.dp else 10.dp))
+                        .border(
+                            if (isSimple) 2.dp else 1.dp,
+                            if (isSimple) Color(0xFFCC0000) else Color.White.copy(0.3f),
+                            RoundedCornerShape(if (isSimple) 0.dp else 10.dp)
+                        )
                         .pointerInput(Unit) {
                             detectTapGestures { tap ->
                                 focusPoint = tap
@@ -294,10 +301,17 @@ fun PhotoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    KnurledShutterButton(
-                        isCapturing = isCapturing,
-                        onClick = { if (!isCapturing) takePhoto() }
-                    )
+                    if (isSimple) {
+                        BauhausShutterButton(
+                            isCapturing = isCapturing,
+                            onClick = { if (!isCapturing) takePhoto() }
+                        )
+                    } else {
+                        KnurledShutterButton(
+                            isCapturing = isCapturing,
+                            onClick = { if (!isCapturing) takePhoto() }
+                        )
+                    }
                     // Left: flip + dim buttons
                     Row(
                         modifier = Modifier
@@ -309,32 +323,32 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(Color.White.copy(0.15f), CircleShape)
+                                .then(if (isSimple) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
                                 .clickable(enabled = !isCapturing) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Cameraswitch,
                                 contentDescription = "Flip camera",
-                                tint = if (isCapturing) Color.White.copy(0.3f) else Color.White.copy(0.85f),
-                                modifier = Modifier.size(22.dp)
+                                tint = if (isCapturing) Color.White.copy(0.3f) else Color.White,
+                                modifier = Modifier.size(if (isSimple) 26.dp else 22.dp)
                             )
                         }
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(
+                                .then(if (isSimple) Modifier else Modifier.background(
                                     if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
                                     CircleShape
-                                )
+                                ))
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.WbSunny,
                                 contentDescription = "Dim screen",
-                                tint = if (isScreenDimmed) Color.White.copy(0.3f) else Color.White.copy(0.85f),
-                                modifier = Modifier.size(22.dp)
+                                tint = if (isScreenDimmed) Color.White.copy(0.3f) else Color.White,
+                                modifier = Modifier.size(if (isSimple) 26.dp else 22.dp)
                             )
                         }
                     }
@@ -349,7 +363,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(Color.White.copy(0.15f), CircleShape)
+                                .then(if (isSimple) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
                                 .clickable {
                                     zoomRatio = 1f
                                     cameraControl?.setZoomRatio(1f)
@@ -358,8 +372,8 @@ fun PhotoScreen(
                         ) {
                             Text(
                                 text = if (zoomRatio == 1f) "1×" else "%.1f×".format(zoomRatio),
-                                color = Color.White.copy(0.85f),
-                                fontSize = 12.sp,
+                                color = if (isSimple) Color(0xFFCC0000) else Color.White.copy(0.85f),
+                                fontSize = if (isSimple) 14.sp else 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold
                             )
@@ -367,11 +381,16 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(Color.White.copy(alpha = 0.15f), CircleShape)
+                                .then(if (isSimple) Modifier else Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape))
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = Color.White,
+                                modifier = Modifier.size(if (isSimple) 26.dp else 22.dp)
+                            )
                         }
                     }
                 }
@@ -414,6 +433,26 @@ fun PhotoScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp
                 )
+
+                // Appearance
+                Text("APPEARANCE", color = Color.White.copy(0.4f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppearanceMode.entries.forEach { mode ->
+                        val selected = mode == appearanceMode
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clickable { settingsViewModel.setAppearanceMode(mode) }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        }
+                    }
+                }
 
                 // Video Quality
                 Text("VIDEO QUALITY", color = Color.White.copy(0.4f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -570,6 +609,26 @@ fun KnurledShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 1
                 )
             }
         }
+    }
+}
+
+@Composable
+fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 100.dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .border(3.dp, Color.White, CircleShape)
+            .background(Color.Black)
+            .clickable(enabled = !isCapturing, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier
+                .size(size * 0.6f)
+                .clip(CircleShape)
+                .background(if (isCapturing) Color.White.copy(0.4f) else Color.White)
+        )
     }
 }
 
