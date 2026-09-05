@@ -94,6 +94,7 @@ import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

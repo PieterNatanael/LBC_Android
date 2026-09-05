@@ -94,6 +94,7 @@ import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import com.example.bodycamoutdoorgear.viewmodel.CameraViewModel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.Executors
