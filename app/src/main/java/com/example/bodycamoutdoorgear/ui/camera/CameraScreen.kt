@@ -119,16 +119,22 @@ fun CameraScreen(
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
-    val isAlt = isSimple || isTactical || isMatcha
+    val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream
     val matchaGreen = Color(0xFF7BAF52)
+    val icePink  = Color(0xFFFF8FAB)
+    val icePeach = Color(0xFFFFB347)
+    val iceBrush = Brush.linearGradient(listOf(icePink, icePeach))
     val accentColor = when (appearanceMode) {
-        AppearanceMode.SIMPLE   -> Color(0xFFCC0000)
-        AppearanceMode.TACTICAL -> Color(0xFF00CC44)
-        AppearanceMode.MATCHA   -> matchaGreen
-        else                    -> Color.White
+        AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
+        AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
+        AppearanceMode.MATCHA    -> matchaGreen
+        AppearanceMode.ICE_CREAM -> icePink
+        else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
-    val matchaBg = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
+    val matchaBg   = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
+    val iceCreamBg = Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black))
     val isScreenDimmed   by viewModel.isScreenDimmed.collectAsState()
     val recordingError   by viewModel.recordingError.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -278,9 +284,10 @@ fun CameraScreen(
 
     // ── UI ───────────────────────────────────────────────────────────────────
     Box(modifier = when {
-        isMatcha -> Modifier.fillMaxSize().background(matchaBg)
-        isAlt    -> Modifier.fillMaxSize().background(altBackground)
-        else     -> Modifier.fillMaxSize().background(BackgroundDark)
+        isMatcha   -> Modifier.fillMaxSize().background(matchaBg)
+        isIceCream -> Modifier.fillMaxSize().background(iceCreamBg)
+        isAlt      -> Modifier.fillMaxSize().background(altBackground)
+        else       -> Modifier.fillMaxSize().background(BackgroundDark)
     }) {
 
         if (!permsGranted) {
@@ -357,7 +364,13 @@ fun CameraScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isAlt) {
+                    if (isIceCream) {
+                        IceCreamRecordButton(
+                            isRecording = isRecording,
+                            iceBrush = iceBrush,
+                            onClick = { if (isRecording) stopRecording() else startRecording() }
+                        )
+                    } else if (isAlt) {
                         BauhausRecordButton(
                             isRecording = isRecording,
                             accentColor = accentColor,
@@ -382,9 +395,10 @@ fun CameraScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .then(when {
-                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt    -> Modifier
-                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt      -> Modifier
+                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
                                 })
                                 .clickable(enabled = !isRecording) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
@@ -400,15 +414,13 @@ fun CameraScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .then(when {
-                                    isMatcha -> Modifier.background(
-                                        if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f),
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    isAlt    -> Modifier
-                                    else     -> Modifier.background(
-                                        if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
+                                    isIceCream -> Modifier.background(
+                                        Brush.linearGradient(listOf(icePink.copy(if (isScreenDimmed) 0.08f else 0.3f), icePeach.copy(if (isScreenDimmed) 0.08f else 0.3f))),
                                         CircleShape
                                     )
+                                    isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt      -> Modifier
+                                    else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
                                 })
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
@@ -433,9 +445,10 @@ fun CameraScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .then(when {
-                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt    -> Modifier
-                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt      -> Modifier
+                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
                                 })
                                 .clickable {
                                     zoomRatio = 1f
@@ -455,9 +468,10 @@ fun CameraScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .then(when {
-                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt    -> Modifier
-                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
+                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt      -> Modifier
+                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
                                 })
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
@@ -531,23 +545,25 @@ fun CameraScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AppearanceMode.entries.forEach { mode ->
-                        val selected = mode == appearanceMode
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
-                                .clickable { settingsViewModel.setAppearanceMode(mode) }
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                val allModes = AppearanceMode.entries
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(allModes.take(3), allModes.drop(3)).forEach { rowModes ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            rowModes.forEach { mode ->
+                                val selected = mode == appearanceMode
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
+                                        .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                        .clickable { settingsViewModel.setAppearanceMode(mode) }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                }
+                            }
                         }
                     }
                 }
@@ -737,6 +753,25 @@ fun KnurledRecordButton(isRecording: Boolean, onClick: () -> Unit, size: Dp = 10
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun IceCreamRecordButton(isRecording: Boolean, onClick: () -> Unit, iceBrush: Brush, size: Dp = 70.dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .border(width = 3.dp, brush = iceBrush, shape = CircleShape)
+            .background(if (isRecording) iceBrush else Brush.radialGradient(listOf(Color(0xFF2D0F1F), Color.Black)))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isRecording) {
+            Box(Modifier.size(size * 0.32f).background(Color.White))
+        } else {
+            Box(Modifier.size(size * 0.65f).clip(CircleShape).background(iceBrush))
         }
     }
 }

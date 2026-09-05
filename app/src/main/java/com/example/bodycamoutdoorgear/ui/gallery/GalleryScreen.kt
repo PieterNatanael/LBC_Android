@@ -78,10 +78,11 @@ fun GalleryScreen(
         modifier = Modifier
             .fillMaxSize()
             .then(when (appearanceMode) {
-                AppearanceMode.MATCHA   -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black)))
-                AppearanceMode.TACTICAL -> Modifier.background(Color(0xFF0A0A0A))
-                AppearanceMode.SIMPLE   -> Modifier.background(Color.Black)
-                else                    -> Modifier.background(BackgroundDark)
+                AppearanceMode.MATCHA    -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black)))
+                AppearanceMode.ICE_CREAM -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black)))
+                AppearanceMode.TACTICAL  -> Modifier.background(Color(0xFF0A0A0A))
+                AppearanceMode.SIMPLE    -> Modifier.background(Color.Black)
+                else                     -> Modifier.background(BackgroundDark)
             })
     ) {
         if (videos.isEmpty()) {

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
-enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA") }
+enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR.") }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
