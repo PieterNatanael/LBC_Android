@@ -113,13 +113,17 @@ fun PhotoScreen(
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
-    val isAlt = isSimple || isTactical
+    val isMatcha   = appearanceMode == AppearanceMode.MATCHA
+    val isAlt = isSimple || isTactical || isMatcha
+    val matchaGreen = Color(0xFF7BAF52)
     val accentColor = when (appearanceMode) {
         AppearanceMode.SIMPLE   -> Color(0xFFCC0000)
         AppearanceMode.TACTICAL -> Color(0xFF00CC44)
+        AppearanceMode.MATCHA   -> matchaGreen
         else                    -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
+    val matchaBg = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
     val isCapturing      by viewModel.isCapturing.collectAsState()
     val captureStatus    by viewModel.captureStatus.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -245,7 +249,11 @@ fun PhotoScreen(
     }
 
     // ── UI ───────────────────────────────────────────────────────────────────
-    Box(modifier = Modifier.fillMaxSize().background(if (isAlt) altBackground else BackgroundDark)) {
+    Box(modifier = when {
+        isMatcha -> Modifier.fillMaxSize().background(matchaBg)
+        isAlt    -> Modifier.fillMaxSize().background(altBackground)
+        else     -> Modifier.fillMaxSize().background(BackgroundDark)
+    }) {
         if (!permsGranted) {
             PhotoPermissionRequest(onRequest = onRequestPermissions)
         } else {
@@ -335,6 +343,7 @@ fun PhotoScreen(
                         BauhausShutterButton(
                             isCapturing = isCapturing,
                             accentColor = accentColor,
+                            innerRatio = if (isMatcha) 0.75f else 0.6f,
                             onClick = { if (!isCapturing) takePhoto() }
                         )
                     } else {
@@ -354,7 +363,11 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(when {
+                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                })
                                 .clickable(enabled = !isCapturing) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -368,10 +381,17 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(
-                                    if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
-                                    CircleShape
-                                ))
+                                .then(when {
+                                    isMatcha -> Modifier.background(
+                                        if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(
+                                        if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
+                                        CircleShape
+                                    )
+                                })
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -394,7 +414,11 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(when {
+                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                })
                                 .clickable {
                                     zoomRatio = 1f
                                     cameraControl?.setZoomRatio(1f)
@@ -412,7 +436,11 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape))
+                                .then(when {
+                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape)
+                                })
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -644,7 +672,7 @@ fun KnurledShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 1
 }
 
 @Composable
-fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor: Color = Color.White, size: Dp = 70.dp) {
+fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor: Color = Color.White, innerRatio: Float = 0.6f, size: Dp = 70.dp) {
     Box(
         modifier = Modifier
             .size(size)
@@ -656,7 +684,7 @@ fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor:
     ) {
         Box(
             Modifier
-                .size(size * 0.6f)
+                .size(size * innerRatio)
                 .clip(CircleShape)
                 .background(if (isCapturing) accentColor.copy(0.4f) else accentColor)
         )

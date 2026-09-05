@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
@@ -63,7 +64,6 @@ fun GalleryScreen(
     val settingsViewModel: SettingsViewModel = viewModel()
     val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
     val isAlt = appearanceMode != AppearanceMode.NORMAL
-    val altBg = if (appearanceMode == AppearanceMode.TACTICAL) Color(0xFF0A0A0A) else Color.Black
 
     val videos by galleryViewModel.videos.collectAsState()
     val thumbnails by galleryViewModel.thumbnails.collectAsState()
@@ -77,7 +77,12 @@ fun GalleryScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isAlt) altBg else BackgroundDark)
+            .then(when (appearanceMode) {
+                AppearanceMode.MATCHA   -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black)))
+                AppearanceMode.TACTICAL -> Modifier.background(Color(0xFF0A0A0A))
+                AppearanceMode.SIMPLE   -> Modifier.background(Color.Black)
+                else                    -> Modifier.background(BackgroundDark)
+            })
     ) {
         if (videos.isEmpty()) {
             EmptyGallery()

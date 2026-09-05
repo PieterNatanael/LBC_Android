@@ -118,13 +118,17 @@ fun CameraScreen(
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
-    val isAlt = isSimple || isTactical
+    val isMatcha   = appearanceMode == AppearanceMode.MATCHA
+    val isAlt = isSimple || isTactical || isMatcha
+    val matchaGreen = Color(0xFF7BAF52)
     val accentColor = when (appearanceMode) {
         AppearanceMode.SIMPLE   -> Color(0xFFCC0000)
         AppearanceMode.TACTICAL -> Color(0xFF00CC44)
+        AppearanceMode.MATCHA   -> matchaGreen
         else                    -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
+    val matchaBg = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
     val isScreenDimmed   by viewModel.isScreenDimmed.collectAsState()
     val recordingError   by viewModel.recordingError.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -273,7 +277,11 @@ fun CameraScreen(
     }
 
     // ── UI ───────────────────────────────────────────────────────────────────
-    Box(modifier = Modifier.fillMaxSize().background(if (isAlt) altBackground else BackgroundDark)) {
+    Box(modifier = when {
+        isMatcha -> Modifier.fillMaxSize().background(matchaBg)
+        isAlt    -> Modifier.fillMaxSize().background(altBackground)
+        else     -> Modifier.fillMaxSize().background(BackgroundDark)
+    }) {
 
         if (!permsGranted) {
             PermissionRequest(onRequest = onRequestPermissions)
@@ -353,6 +361,7 @@ fun CameraScreen(
                         BauhausRecordButton(
                             isRecording = isRecording,
                             accentColor = accentColor,
+                            innerRatio = if (isMatcha) 0.65f else 0.38f,
                             onClick = { if (isRecording) stopRecording() else startRecording() }
                         )
                     } else {
@@ -372,7 +381,11 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(when {
+                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                })
                                 .clickable(enabled = !isRecording) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -386,10 +399,17 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(
-                                    if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
-                                    CircleShape
-                                ))
+                                .then(when {
+                                    isMatcha -> Modifier.background(
+                                        if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(
+                                        if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f),
+                                        CircleShape
+                                    )
+                                })
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -412,7 +432,11 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(when {
+                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                })
                                 .clickable {
                                     zoomRatio = 1f
                                     cameraControl?.setZoomRatio(1f)
@@ -430,7 +454,11 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(if (isAlt) Modifier else Modifier.background(Color.White.copy(0.15f), CircleShape))
+                                .then(when {
+                                    isMatcha -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
+                                    isAlt    -> Modifier
+                                    else     -> Modifier.background(Color.White.copy(0.15f), CircleShape)
+                                })
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -714,7 +742,7 @@ fun KnurledRecordButton(isRecording: Boolean, onClick: () -> Unit, size: Dp = 10
 }
 
 @Composable
-fun BauhausRecordButton(isRecording: Boolean, onClick: () -> Unit, accentColor: Color = Color(0xFFCC0000), size: Dp = 70.dp) {
+fun BauhausRecordButton(isRecording: Boolean, onClick: () -> Unit, accentColor: Color = Color(0xFFCC0000), innerRatio: Float = 0.38f, size: Dp = 70.dp) {
     Box(
         modifier = Modifier
             .size(size)
@@ -725,9 +753,9 @@ fun BauhausRecordButton(isRecording: Boolean, onClick: () -> Unit, accentColor: 
         contentAlignment = Alignment.Center
     ) {
         if (isRecording) {
-            Box(Modifier.size(size * 0.35f).background(Color.White))
+            Box(Modifier.size(size * 0.32f).background(Color.White))
         } else {
-            Box(Modifier.size(size * 0.38f).clip(CircleShape).background(accentColor))
+            Box(Modifier.size(size * innerRatio).clip(CircleShape).background(accentColor))
         }
     }
 }
