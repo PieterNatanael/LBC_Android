@@ -76,7 +76,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetIntro() {
-        application.getSharedPreferences("bodycam_prefs", Context.MODE_PRIVATE)
+        getApplication<Application>().getSharedPreferences("bodycam_prefs", Context.MODE_PRIVATE)
             .edit().remove("hasSeenDisclaimer").apply()
     }
 }

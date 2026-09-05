@@ -135,6 +135,28 @@ fun PhotoScreen(
     var cameraInfo     by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
     var focusPoint     by remember { mutableStateOf<Offset?>(null) }
     var zoomRatio      by remember { mutableStateOf(1f) }
+    val initialRotation = remember { (context as? Activity)?.display?.rotation ?: android.view.Surface.ROTATION_0 }
+    var targetRotation by remember { mutableStateOf(initialRotation) }
+
+    DisposableEffect(context) {
+        val listener = object : android.view.OrientationEventListener(context) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) return
+                targetRotation = when {
+                    orientation <= 45 || orientation > 315 -> android.view.Surface.ROTATION_0
+                    orientation <= 135 -> android.view.Surface.ROTATION_270
+                    orientation <= 225 -> android.view.Surface.ROTATION_180
+                    else -> android.view.Surface.ROTATION_90
+                }
+            }
+        }
+        listener.enable()
+        onDispose { listener.disable() }
+    }
+
+    LaunchedEffect(targetRotation, imageCapture) {
+        imageCapture?.targetRotation = targetRotation
+    }
 
     // Rebind camera when facing or quality changes
     LaunchedEffect(isFrontCamera, qualityTier, permsGranted) {
@@ -613,7 +635,7 @@ fun KnurledShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 1
 }
 
 @Composable
-fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 100.dp) {
+fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 70.dp) {
     Box(
         modifier = Modifier
             .size(size)
