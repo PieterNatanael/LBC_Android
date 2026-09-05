@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,8 +28,9 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     private val _videos = MutableStateFlow<List<VideoItem>>(emptyList())
     val videos: StateFlow<List<VideoItem>> = _videos.asStateFlow()
 
-    private val _thumbnails = MutableStateFlow<Map<String, Bitmap>>(emptyMap())
-    val thumbnails: StateFlow<Map<String, Bitmap>> = _thumbnails.asStateFlow()
+    // SnapshotStateMap: Compose tracks per-key reads, so only the card whose
+    // thumbnail just loaded recomposes — not the entire screen.
+    val thumbnails: SnapshotStateMap<String, Bitmap> = mutableStateMapOf()
 
     init {
         loadVideos()
@@ -47,12 +50,11 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadThumbnail(videoPath: String) {
-        if (_thumbnails.value.containsKey(videoPath)) return
+        if (thumbnails.containsKey(videoPath)) return
         viewModelScope.launch {
             val bmp = withContext(Dispatchers.IO) {
                 try {
                     if (File(videoPath).extension == "jpg") {
-                        // First pass: read dimensions only (no pixel decode)
                         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                         BitmapFactory.decodeFile(videoPath, opts)
                         opts.inSampleSize = thumbnailSampleSize(opts.outWidth, opts.outHeight)
@@ -85,9 +87,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                     null
                 }
             }
-            if (bmp != null) {
-                _thumbnails.value = _thumbnails.value + (videoPath to bmp)
-            }
+            if (bmp != null) thumbnails[videoPath] = bmp
         }
     }
 
@@ -100,7 +100,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     fun deleteVideo(video: VideoItem) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { video.file.delete() }
-            _thumbnails.value = _thumbnails.value - video.file.absolutePath
+            thumbnails.remove(video.file.absolutePath)
             loadVideos()
         }
     }

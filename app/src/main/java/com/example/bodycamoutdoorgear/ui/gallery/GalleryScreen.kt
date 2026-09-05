@@ -66,7 +66,7 @@ fun GalleryScreen(
     val isAlt = appearanceMode != AppearanceMode.NORMAL
 
     val videos by galleryViewModel.videos.collectAsState()
-    val thumbnails by galleryViewModel.thumbnails.collectAsState()
+    val thumbnails = galleryViewModel.thumbnails  // SnapshotStateMap — no collectAsState needed
     val scope = rememberCoroutineScope()
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
