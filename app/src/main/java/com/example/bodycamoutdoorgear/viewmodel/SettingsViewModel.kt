@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
-enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL") }
+enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER") }
+enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL") }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -35,6 +36,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         AppearanceMode.entries[prefs.getInt("appearance_mode", AppearanceMode.NORMAL.ordinal)]
     )
     val appearanceMode: StateFlow<AppearanceMode> = _appearanceMode.asStateFlow()
+
+    private val _displayMode = MutableStateFlow(
+        DisplayMode.entries[prefs.getInt("display_mode", DisplayMode.SAVE_BATTERY.ordinal)]
+    )
+    val displayMode: StateFlow<DisplayMode> = _displayMode.asStateFlow()
 
     init {
         // Remove legacy low_light pref so any user who had it on is reset
@@ -73,6 +79,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAppearanceMode(mode: AppearanceMode) {
         _appearanceMode.value = mode
         prefs.edit().putInt("appearance_mode", mode.ordinal).apply()
+    }
+
+    fun setDisplayMode(mode: DisplayMode) {
+        _displayMode.value = mode
+        prefs.edit().putInt("display_mode", mode.ordinal).apply()
     }
 
     fun resetIntro() {

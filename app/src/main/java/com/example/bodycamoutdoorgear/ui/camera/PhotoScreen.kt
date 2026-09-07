@@ -90,6 +90,7 @@ import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.CaptureStatus
+import com.example.bodycamoutdoorgear.viewmodel.DisplayMode
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
 import com.example.bodycamoutdoorgear.viewmodel.QualityTier
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
@@ -118,6 +119,8 @@ fun PhotoScreen(
     val videoQualityTier by settingsViewModel.videoQualityTier.collectAsState()
     val gridEnabled      by settingsViewModel.gridEnabled.collectAsState()
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
+    val displayMode      by settingsViewModel.displayMode.collectAsState()
+    val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
@@ -352,8 +355,7 @@ fun PhotoScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.72f)
-                            .fillMaxHeight(0.80f)
+                            .then(if (isSaveBattery) Modifier.fillMaxWidth(0.72f).fillMaxHeight(0.80f) else Modifier.fillMaxSize())
                             .onGloballyPositioned { coords ->
                                 val root = rootCoordsRef[0] ?: return@onGloballyPositioned
                                 val bounds = root.localBoundingBoxOf(coords, clipBounds = false)
@@ -620,6 +622,36 @@ fun PhotoScreen(
                                     Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                 }
                             }
+                        }
+                    }
+                }
+
+                // Display Mode
+                Text(
+                    "DISPLAY MODE",
+                    color = Color.White.copy(0.4f),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DisplayMode.entries.forEach { mode ->
+                        val selected = mode == displayMode
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clickable { settingsViewModel.setDisplayMode(mode) }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
