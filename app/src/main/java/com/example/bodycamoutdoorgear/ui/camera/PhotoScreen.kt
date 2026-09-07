@@ -17,6 +17,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -278,6 +280,22 @@ fun PhotoScreen(
         isAlt      -> Modifier.fillMaxSize().background(altBackground)
         else       -> Modifier.fillMaxSize().background(BackgroundDark)
     }) {
+
+        // Radial glow — radiates from preview center, fades to black at edges
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accentColor.copy(alpha = 0.28f),
+                        accentColor.copy(alpha = 0.10f),
+                        Color.Transparent
+                    ),
+                    center = Offset(size.width / 2f, size.height * 0.36f),
+                    radius = size.width * 0.72f
+                )
+            )
+        }
+
         if (!permsGranted) {
             PhotoPermissionRequest(onRequest = onRequestPermissions)
         } else {
@@ -299,48 +317,55 @@ fun PhotoScreen(
                     }
                 }
 
-                // ── Preview area — flexible height, shrinks if needed ─────────
+                // ── Preview area — 20% smaller, centered in flexible space ──────
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .weight(1f)
-                        .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
-                        .border(
-                            if (isAlt) 2.dp else 1.dp,
-                            if (isAlt) accentColor else Color.White.copy(0.3f),
-                            RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
-                        )
-                        .pointerInput(Unit) {
-                            detectTapGestures { tap ->
-                                focusPoint = tap
-                                val factory = previewView.meteringPointFactory
-                                val point = factory.createPoint(tap.x, tap.y)
-                                val action = androidx.camera.core.FocusMeteringAction.Builder(point).build()
-                                cameraControl?.startFocusAndMetering(action)
-                            }
-                        }
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, _, zoom, _ ->
-                                val newZoom = (zoomRatio * zoom).coerceAtLeast(1f)
-                                try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
-                            }
-                        },
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-                    if (gridEnabled) { GridOverlay() }
-                    // Focus ring
-                    focusPoint?.let { fp ->
-                        FocusRing(offset = fp, onFinished = { focusPoint = null })
-                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.72f)
+                            .fillMaxHeight(0.80f)
+                            .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
+                            .border(
+                                if (isAlt) 2.dp else 1.dp,
+                                if (isAlt) accentColor else Color.White.copy(0.3f),
+                                RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
+                            )
+                            .pointerInput(Unit) {
+                                detectTapGestures { tap ->
+                                    focusPoint = tap
+                                    val factory = previewView.meteringPointFactory
+                                    val point = factory.createPoint(tap.x, tap.y)
+                                    val action = androidx.camera.core.FocusMeteringAction.Builder(point).build()
+                                    cameraControl?.startFocusAndMetering(action)
+                                }
+                            }
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, _, zoom, _ ->
+                                    val newZoom = (zoomRatio * zoom).coerceAtLeast(1f)
+                                    try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                        if (gridEnabled) { GridOverlay() }
+                        // Focus ring
+                        focusPoint?.let { fp ->
+                            FocusRing(offset = fp, onFinished = { focusPoint = null })
+                        }
 
-                    // White flash overlay on capture
-                    if (isCapturing) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.White.copy(alpha = 0.55f))
-                        )
+                        // White flash overlay on capture
+                        if (isCapturing) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.White.copy(alpha = 0.55f))
+                            )
+                        }
                     }
                 }
 
