@@ -365,7 +365,7 @@ fun PhotoScreen(
                             .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
                             .border(
                                 if (isAlt) 2.dp else 1.dp,
-                                if (isAlt) accentColor else Color.White.copy(0.3f),
+                                if (isAlt) Color.White else Color.White.copy(0.3f),
                                 RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
                             )
                             .pointerInput(Unit) {
