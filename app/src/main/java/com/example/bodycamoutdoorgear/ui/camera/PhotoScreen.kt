@@ -96,6 +96,10 @@ import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.pow
+import kotlin.math.sqrt
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,9 +141,9 @@ fun PhotoScreen(
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
-    val matchaBg   = Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black))
-    val iceCreamBg = Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black))
-    val tropicalBg = Brush.verticalGradient(listOf(Color(0xFF1E0E06), Color(0xFF0F0702), Color.Black))
+    val matchaBg      = Color(0xFF0D1208)   // dark base — glow provides the color
+    val iceCreamBg    = Color(0xFF110609)
+    val tropicalBg    = Color(0xFF0E0803)
     val isCapturing      by viewModel.isCapturing.collectAsState()
     val captureStatus    by viewModel.captureStatus.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -155,6 +159,11 @@ fun PhotoScreen(
 
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+
+    // Glow positioning — updated by onGloballyPositioned on the preview box
+    val rootCoordsRef    = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    var glowCenter       by remember { mutableStateOf(Offset.Zero) }
+    var glowHalfDiag     by remember { mutableStateOf(0f) }
 
     val cameraExecutor  = remember { Executors.newSingleThreadExecutor() }
     val previewView     = remember { PreviewView(context) }
@@ -273,27 +282,37 @@ fun PhotoScreen(
     }
 
     // ── UI ───────────────────────────────────────────────────────────────────
-    Box(modifier = when {
-        isMatcha   -> Modifier.fillMaxSize().background(matchaBg)
-        isIceCream -> Modifier.fillMaxSize().background(iceCreamBg)
-        isTropical -> Modifier.fillMaxSize().background(tropicalBg)
-        isAlt      -> Modifier.fillMaxSize().background(altBackground)
-        else       -> Modifier.fillMaxSize().background(BackgroundDark)
-    }) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(when {
+            isMatcha   -> matchaBg
+            isIceCream -> iceCreamBg
+            isTropical -> tropicalBg
+            isAlt      -> altBackground
+            else       -> BackgroundDark
+        })
+        .onGloballyPositioned { rootCoordsRef[0] = it }
+    ) {
 
-        // Radial glow — radiates from preview center, fades to black at edges
+        // Radial glow — peaks at preview border, fades to black outside
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        accentColor.copy(alpha = 0.28f),
-                        accentColor.copy(alpha = 0.10f),
-                        Color.Transparent
-                    ),
-                    center = Offset(size.width / 2f, size.height * 0.36f),
-                    radius = size.width * 0.72f
+            if (glowHalfDiag > 0f) {
+                val spread = size.width * 0.40f
+                val total  = glowHalfDiag + spread
+                val peak   = (glowHalfDiag / total).coerceAtMost(0.92f)
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colorStops = arrayOf(
+                            0f              to Color.Transparent,
+                            peak * 0.88f    to Color.Transparent,
+                            peak            to accentColor.copy(alpha = 0.45f),
+                            1f              to Color.Transparent
+                        ),
+                        center = glowCenter,
+                        radius = total
+                    )
                 )
-            )
+            }
         }
 
         if (!permsGranted) {
@@ -328,6 +347,14 @@ fun PhotoScreen(
                         modifier = Modifier
                             .fillMaxWidth(0.72f)
                             .fillMaxHeight(0.80f)
+                            .onGloballyPositioned { coords ->
+                                val root = rootCoordsRef[0] ?: return@onGloballyPositioned
+                                val bounds = root.localBoundingBoxOf(coords, clipBounds = false)
+                                glowCenter   = bounds.center
+                                glowHalfDiag = sqrt(
+                                    (bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f)
+                                )
+                            }
                             .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
                             .border(
                                 if (isAlt) 2.dp else 1.dp,
