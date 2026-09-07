@@ -65,6 +65,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -180,6 +182,7 @@ fun CameraScreen(
     val rootCoordsRef    = remember { arrayOfNulls<LayoutCoordinates>(1) }
     var glowCenter       by remember { mutableStateOf(Offset.Zero) }
     var glowHalfDiag     by remember { mutableStateOf(0f) }
+    var previewBounds    by remember { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
 
     val cameraExecutor  = remember { Executors.newSingleThreadExecutor() }
     val previewView     = remember { PreviewView(context) }
@@ -335,37 +338,65 @@ fun CameraScreen(
         .onGloballyPositioned { rootCoordsRef[0] = it }
     ) {
 
-        // Glow: accent ring at preview border fading outward, plus a dark vignette toward edges
+        // Glow: 4 directional gradients from each preview edge outward, plus vignette
         Canvas(modifier = Modifier.fillMaxSize()) {
-            if (glowHalfDiag > 0f) {
-                val screenDiag = sqrt(size.width.pow(2f) + size.height.pow(2f)) / 2f
-                val total = screenDiag * 1.1f
-                val peak  = (glowHalfDiag / total).coerceIn(0.05f, 0.85f)
-                val peakOuter = (peak + (1f - peak) * 0.55f).coerceAtMost(0.97f)
-                // Pass 1: accent color peaks at preview border, fades inward and outward
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colorStops = arrayOf(
-                            0f         to Color.Transparent,
-                            peak * 0.8f to Color.Transparent,
-                            peak       to accentColor.copy(alpha = 0.70f),
-                            peakOuter  to accentColor.copy(alpha = 0.12f),
-                            1f         to Color.Transparent
+            val pB = previewBounds
+            if (pB.width > 0f) {
+                val ga = accentColor.copy(alpha = 0.65f)
+                // Top strip — accent at preview top, fading to dark at screen top
+                if (pB.top > 0f) {
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colorStops = arrayOf(0f to Color.Transparent, 1f to ga),
+                            startY = 0f, endY = pB.top
                         ),
-                        center = glowCenter,
-                        radius = total
+                        topLeft = Offset(0f, 0f),
+                        size = Size(size.width, pB.top)
                     )
-                )
-                // Pass 2: dark vignette — transparent at preview center, dark at screen edges
+                }
+                // Bottom strip — accent at preview bottom, fading to dark at screen bottom
+                if (pB.bottom < size.height) {
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colorStops = arrayOf(0f to ga, 1f to Color.Transparent),
+                            startY = pB.bottom, endY = size.height
+                        ),
+                        topLeft = Offset(0f, pB.bottom),
+                        size = Size(size.width, size.height - pB.bottom)
+                    )
+                }
+                // Left strip — accent at preview left, fading to dark at screen left
+                if (pB.left > 0f) {
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            colorStops = arrayOf(0f to Color.Transparent, 1f to ga),
+                            startX = 0f, endX = pB.left
+                        ),
+                        topLeft = Offset(0f, pB.top),
+                        size = Size(pB.left, pB.height)
+                    )
+                }
+                // Right strip — accent at preview right, fading to dark at screen right
+                if (pB.right < size.width) {
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            colorStops = arrayOf(0f to ga, 1f to Color.Transparent),
+                            startX = pB.right, endX = size.width
+                        ),
+                        topLeft = Offset(pB.right, pB.top),
+                        size = Size(size.width - pB.right, pB.height)
+                    )
+                }
+                // Vignette — screen-centred, darkens toward corners
                 drawRect(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
-                            0f     to Color.Transparent,
-                            peak   to Color.Transparent,
-                            1f     to Color.Black.copy(alpha = 0.80f)
+                            0f to Color.Transparent,
+                            0.45f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.75f)
                         ),
-                        center = glowCenter,
-                        radius = total
+                        center = Offset(size.width / 2f, size.height / 2f),
+                        radius = sqrt(size.width.pow(2f) + size.height.pow(2f)) / 2f
                     )
                 )
             }
@@ -406,10 +437,9 @@ fun CameraScreen(
                             .onGloballyPositioned { coords ->
                                 val root = rootCoordsRef[0] ?: return@onGloballyPositioned
                                 val bounds = root.localBoundingBoxOf(coords, clipBounds = false)
-                                glowCenter  = bounds.center
-                                glowHalfDiag = sqrt(
-                                    (bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f)
-                                )
+                                glowCenter   = bounds.center
+                                glowHalfDiag = sqrt((bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f))
+                                previewBounds = bounds
                             }
                             .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
                             .border(
