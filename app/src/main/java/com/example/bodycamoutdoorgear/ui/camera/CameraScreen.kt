@@ -102,7 +102,9 @@ import java.io.File
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.math.sqrt
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -128,27 +130,33 @@ fun CameraScreen(
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
     val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
     val isTropical = appearanceMode == AppearanceMode.TROPICAL
-    val isGradientBtn = isIceCream || isTropical
-    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical
+    val isSpider   = appearanceMode == AppearanceMode.SPIDER
+    val isGradientBtn = isIceCream || isTropical || isSpider
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical || isSpider
     val matchaGreen   = Color(0xFF7BAF52)
     val icePink       = Color(0xFFFF8FAB)
     val icePeach      = Color(0xFFFFB347)
     val woodBrown     = Color(0xFF8B5E3C)
     val coconutCream  = Color(0xFFF0D5A0)
+    val spiderRed     = Color(0xFFBB0000)
+    val spiderBlue    = Color(0xFF0033BB)
     val iceBrush      = Brush.linearGradient(listOf(icePink, icePeach))
     val tropicalBrush = Brush.linearGradient(listOf(woodBrown, coconutCream))
+    val spiderBrush   = Brush.linearGradient(listOf(spiderRed, spiderBlue))
     val accentColor = when (appearanceMode) {
         AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
         AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
         AppearanceMode.MATCHA    -> matchaGreen
         AppearanceMode.ICE_CREAM -> icePink
         AppearanceMode.TROPICAL  -> coconutCream
+        AppearanceMode.SPIDER    -> spiderRed
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
     val matchaBg      = Color(0xFF0D1208)   // dark base — glow provides the color
     val iceCreamBg    = Color(0xFF110609)
     val tropicalBg    = Color(0xFF0E0803)
+    val spiderBg      = Color(0xFF05050A)
     val isScreenDimmed   by viewModel.isScreenDimmed.collectAsState()
     val recordingError   by viewModel.recordingError.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -317,6 +325,7 @@ fun CameraScreen(
             isMatcha   -> matchaBg
             isIceCream -> iceCreamBg
             isTropical -> tropicalBg
+            isSpider   -> spiderBg
             isAlt      -> altBackground
             else       -> BackgroundDark
         })
@@ -413,6 +422,7 @@ fun CameraScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                         if (gridEnabled) { GridOverlay() }
+                        if (isSpider) { SpiderWebCorners() }
                         // Focus ring
                         focusPoint?.let { fp ->
                             FocusRing(offset = fp, onFinished = { focusPoint = null })
@@ -436,7 +446,11 @@ fun CameraScreen(
                     if (isGradientBtn) {
                         GradientRecordButton(
                             isRecording = isRecording,
-                            gradientBrush = if (isTropical) tropicalBrush else iceBrush,
+                            gradientBrush = when {
+                                isTropical -> tropicalBrush
+                                isSpider   -> spiderBrush
+                                else       -> iceBrush
+                            },
                             onClick = { if (isRecording) stopRecording() else startRecording() }
                         )
                     } else if (isAlt) {
@@ -466,6 +480,7 @@ fun CameraScreen(
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
                                     isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -489,6 +504,10 @@ fun CameraScreen(
                                         CircleShape
                                     )
                                     isTropical -> Modifier.background(woodBrown.copy(if (isScreenDimmed) 0.1f else 0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(
+                                        Brush.linearGradient(listOf(spiderRed.copy(if (isScreenDimmed) 0.08f else 0.3f), spiderBlue.copy(if (isScreenDimmed) 0.08f else 0.3f))),
+                                        CircleShape
+                                    )
                                     isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
@@ -518,6 +537,7 @@ fun CameraScreen(
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
                                     isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -542,6 +562,7 @@ fun CameraScreen(
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
                                     isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -1068,6 +1089,62 @@ fun FocusRing(offset: Offset, onFinished: () -> Unit) {
                 center = offset,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
             )
+        }
+    }
+}
+
+@Composable
+fun SpiderWebCorners() {
+    androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+        val webSize = 90.dp.toPx()
+        val lineCount = 6
+        val arcCount = 4
+        val strokePx = 1.2.dp.toPx()
+        val webColor = Color.White.copy(alpha = 0.65f)
+        val style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokePx)
+
+        // corners: (cx, cy, startAngle in deg, angleRange in deg)
+        val corners = listOf(
+            Offset(0f, 0f) to Pair(0f, 90f),
+            Offset(size.width, 0f) to Pair(90f, 90f),
+            Offset(size.width, size.height) to Pair(180f, 90f),
+            Offset(0f, size.height) to Pair(270f, 90f)
+        )
+
+        for ((corner, angles) in corners) {
+            val (startDeg, rangeDeg) = angles
+            val startRad = Math.toRadians(startDeg.toDouble())
+            val endRad   = Math.toRadians((startDeg + rangeDeg).toDouble())
+
+            // Radial lines from corner
+            for (i in 0..lineCount) {
+                val t = i.toFloat() / lineCount.toFloat()
+                val angle = startRad + t * (endRad - startRad)
+                val endX = corner.x + cos(angle).toFloat() * webSize
+                val endY = corner.y + sin(angle).toFloat() * webSize
+                drawLine(
+                    color = webColor,
+                    start = corner,
+                    end = Offset(endX, endY),
+                    strokeWidth = strokePx,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+            }
+
+            // Concentric arcs
+            for (a in 1..arcCount) {
+                val radius = webSize * a.toFloat() / arcCount.toFloat()
+                val topLeft = Offset(corner.x - radius, corner.y - radius)
+                drawArc(
+                    color = webColor,
+                    startAngle = startDeg,
+                    sweepAngle = rangeDeg,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = androidx.compose.ui.geometry.Size(radius * 2f, radius * 2f),
+                    style = style
+                )
+            }
         }
     }
 }

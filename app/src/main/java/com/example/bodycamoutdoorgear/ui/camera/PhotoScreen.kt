@@ -123,27 +123,33 @@ fun PhotoScreen(
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
     val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
     val isTropical = appearanceMode == AppearanceMode.TROPICAL
-    val isGradientBtn = isIceCream || isTropical
-    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical
+    val isSpider   = appearanceMode == AppearanceMode.SPIDER
+    val isGradientBtn = isIceCream || isTropical || isSpider
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical || isSpider
     val matchaGreen  = Color(0xFF7BAF52)
     val icePink      = Color(0xFFFF8FAB)
     val icePeach     = Color(0xFFFFB347)
     val woodBrown    = Color(0xFF8B5E3C)
     val coconutCream = Color(0xFFF0D5A0)
+    val spiderRed    = Color(0xFFBB0000)
+    val spiderBlue   = Color(0xFF0033BB)
     val iceBrush      = Brush.linearGradient(listOf(icePink, icePeach))
     val tropicalBrush = Brush.linearGradient(listOf(woodBrown, coconutCream))
+    val spiderBrush   = Brush.linearGradient(listOf(spiderRed, spiderBlue))
     val accentColor = when (appearanceMode) {
         AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
         AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
         AppearanceMode.MATCHA    -> matchaGreen
         AppearanceMode.ICE_CREAM -> icePink
         AppearanceMode.TROPICAL  -> coconutCream
+        AppearanceMode.SPIDER    -> spiderRed
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
     val matchaBg      = Color(0xFF0D1208)   // dark base — glow provides the color
     val iceCreamBg    = Color(0xFF110609)
     val tropicalBg    = Color(0xFF0E0803)
+    val spiderBg      = Color(0xFF05050A)
     val isCapturing      by viewModel.isCapturing.collectAsState()
     val captureStatus    by viewModel.captureStatus.collectAsState()
     val isPreviewEnabled by viewModel.isPreviewEnabled.collectAsState()
@@ -288,6 +294,7 @@ fun PhotoScreen(
             isMatcha   -> matchaBg
             isIceCream -> iceCreamBg
             isTropical -> tropicalBg
+            isSpider   -> spiderBg
             isAlt      -> altBackground
             else       -> BackgroundDark
         })
@@ -380,6 +387,7 @@ fun PhotoScreen(
                     ) {
                         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
                         if (gridEnabled) { GridOverlay() }
+                        if (isSpider) { SpiderWebCorners() }
                         // Focus ring
                         focusPoint?.let { fp ->
                             FocusRing(offset = fp, onFinished = { focusPoint = null })
@@ -418,7 +426,11 @@ fun PhotoScreen(
                     if (isGradientBtn) {
                         GradientShutterButton(
                             isCapturing = isCapturing,
-                            gradientBrush = if (isTropical) tropicalBrush else iceBrush,
+                            gradientBrush = when {
+                                isTropical -> tropicalBrush
+                                isSpider   -> spiderBrush
+                                else       -> iceBrush
+                            },
                             onClick = { if (!isCapturing) takePhoto() }
                         )
                     } else if (isAlt) {
@@ -448,6 +460,7 @@ fun PhotoScreen(
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
                                     isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -471,6 +484,10 @@ fun PhotoScreen(
                                         CircleShape
                                     )
                                     isTropical -> Modifier.background(woodBrown.copy(if (isScreenDimmed) 0.1f else 0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(
+                                        Brush.linearGradient(listOf(spiderRed.copy(if (isScreenDimmed) 0.08f else 0.3f), spiderBlue.copy(if (isScreenDimmed) 0.08f else 0.3f))),
+                                        CircleShape
+                                    )
                                     isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
@@ -500,6 +517,7 @@ fun PhotoScreen(
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
                                     isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
@@ -524,6 +542,7 @@ fun PhotoScreen(
                                 .then(when {
                                     isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
                                     isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
+                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
                                     isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
                                     isAlt      -> Modifier
                                     else       -> Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape)

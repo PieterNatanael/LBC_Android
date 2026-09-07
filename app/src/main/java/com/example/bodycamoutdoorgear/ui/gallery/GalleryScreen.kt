@@ -81,6 +81,7 @@ fun GalleryScreen(
                 AppearanceMode.MATCHA    -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF243318), Color(0xFF111A09), Color.Black)))
                 AppearanceMode.ICE_CREAM -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF2D0F1F), Color(0xFF160810), Color.Black)))
                 AppearanceMode.TROPICAL  -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF1E0E06), Color(0xFF0F0702), Color.Black)))
+                AppearanceMode.SPIDER    -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF1A0000), Color(0xFF05050A), Color.Black)))
                 AppearanceMode.TACTICAL  -> Modifier.background(Color(0xFF0A0A0A))
                 AppearanceMode.SIMPLE    -> Modifier.background(Color.Black)
                 else                     -> Modifier.background(BackgroundDark)
