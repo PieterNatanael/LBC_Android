@@ -332,19 +332,19 @@ fun CameraScreen(
         .onGloballyPositioned { rootCoordsRef[0] = it }
     ) {
 
-        // Radial glow — peaks at preview border, fades to black outside
+        // Radial glow — theme color at preview border, darkening outward to screen edges
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (glowHalfDiag > 0f) {
-                val spread = size.width * 0.40f
-                val total  = glowHalfDiag + spread
-                val peak   = (glowHalfDiag / total).coerceAtMost(0.92f)
+                val screenDiag = sqrt(size.width.pow(2f) + size.height.pow(2f)) / 2f
+                val total = screenDiag * 1.05f
+                val peak  = (glowHalfDiag / total).coerceIn(0.05f, 0.88f)
                 drawRect(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
-                            0f              to Color.Transparent,
-                            peak * 0.88f    to Color.Transparent,
-                            peak            to accentColor.copy(alpha = 0.45f),
-                            1f              to Color.Transparent
+                            0f           to Color.Transparent,
+                            peak * 0.88f to Color.Transparent,
+                            peak         to accentColor.copy(alpha = 0.55f),
+                            1f           to Color.Black.copy(alpha = 0.85f)
                         ),
                         center = glowCenter,
                         radius = total
