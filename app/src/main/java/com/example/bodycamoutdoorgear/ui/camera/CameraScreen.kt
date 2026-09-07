@@ -335,19 +335,34 @@ fun CameraScreen(
         .onGloballyPositioned { rootCoordsRef[0] = it }
     ) {
 
-        // Radial glow — theme color at preview border, darkening outward to screen edges
+        // Glow: accent ring at preview border fading outward, plus a dark vignette toward edges
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (glowHalfDiag > 0f) {
                 val screenDiag = sqrt(size.width.pow(2f) + size.height.pow(2f)) / 2f
-                val total = screenDiag * 1.05f
-                val peak  = (glowHalfDiag / total).coerceIn(0.05f, 0.88f)
+                val total = screenDiag * 1.1f
+                val peak  = (glowHalfDiag / total).coerceIn(0.05f, 0.85f)
+                val peakOuter = (peak + (1f - peak) * 0.55f).coerceAtMost(0.97f)
+                // Pass 1: accent color peaks at preview border, fades inward and outward
                 drawRect(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
-                            0f           to Color.Transparent,
-                            peak * 0.88f to Color.Transparent,
-                            peak         to accentColor.copy(alpha = 0.55f),
-                            1f           to Color.Black.copy(alpha = 0.85f)
+                            0f         to Color.Transparent,
+                            peak * 0.8f to Color.Transparent,
+                            peak       to accentColor.copy(alpha = 0.70f),
+                            peakOuter  to accentColor.copy(alpha = 0.12f),
+                            1f         to Color.Transparent
+                        ),
+                        center = glowCenter,
+                        radius = total
+                    )
+                )
+                // Pass 2: dark vignette — transparent at preview center, dark at screen edges
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colorStops = arrayOf(
+                            0f     to Color.Transparent,
+                            peak   to Color.Transparent,
+                            1f     to Color.Black.copy(alpha = 0.80f)
                         ),
                         center = glowCenter,
                         radius = total
