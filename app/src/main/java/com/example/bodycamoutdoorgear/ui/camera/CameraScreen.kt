@@ -444,7 +444,7 @@ fun CameraScreen(
                             .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
                             .border(
                                 if (isAlt) 2.dp else 1.dp,
-                                if (isAlt) Color.White else Color.White.copy(0.3f),
+                                if (isAlt) accentColor else Color.White.copy(0.3f),
                                 RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
                             )
                             .pointerInput(Unit) {
@@ -934,7 +934,7 @@ fun GradientRecordButton(isRecording: Boolean, onClick: () -> Unit, gradientBrus
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(width = 3.dp, brush = gradientBrush, shape = CircleShape)
+            .border(width = 3.dp, color = Color.White, shape = CircleShape)
             .background(if (isRecording) gradientBrush else Brush.radialGradient(listOf(Color(0xFF1A0810), Color.Black)))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -953,7 +953,7 @@ fun BauhausRecordButton(isRecording: Boolean, onClick: () -> Unit, accentColor: 
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(3.dp, accentColor, CircleShape)
+            .border(3.dp, Color.White, CircleShape)
             .background(if (isRecording) accentColor else Color.Black)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center

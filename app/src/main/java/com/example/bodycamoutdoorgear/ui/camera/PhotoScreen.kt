@@ -412,7 +412,7 @@ fun PhotoScreen(
                             .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
                             .border(
                                 if (isAlt) 2.dp else 1.dp,
-                                if (isAlt) Color.White else Color.White.copy(0.3f),
+                                if (isAlt) accentColor else Color.White.copy(0.3f),
                                 RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
                             )
                             .pointerInput(Unit) {
@@ -865,7 +865,7 @@ fun GradientShutterButton(isCapturing: Boolean, onClick: () -> Unit, gradientBru
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(width = 3.dp, brush = gradientBrush, shape = CircleShape)
+            .border(width = 3.dp, color = Color.White, shape = CircleShape)
             .background(Color(0xFF100608))
             .clickable(enabled = !isCapturing, onClick = onClick),
         contentAlignment = Alignment.Center
@@ -885,7 +885,7 @@ fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor:
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .border(3.dp, accentColor, CircleShape)
+            .border(3.dp, Color.White, CircleShape)
             .background(Color.Black)
             .clickable(enabled = !isCapturing, onClick = onClick),
         contentAlignment = Alignment.Center
