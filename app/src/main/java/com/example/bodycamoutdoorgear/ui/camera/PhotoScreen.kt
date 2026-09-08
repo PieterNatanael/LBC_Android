@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
+import android.media.ToneGenerator
+import android.media.AudioManager
 import android.view.WindowManager
 import java.io.File
 import androidx.camera.core.CameraSelector
@@ -296,20 +298,26 @@ fun PhotoScreen(
     fun takePhoto() {
         val ic = imageCapture ?: return
         viewModel.setCapturing(true)
+        try {
+            ToneGenerator(AudioManager.STREAM_MUSIC, 35).apply {
+                startTone(ToneGenerator.TONE_PROP_BEEP, 60)
+            }
+        } catch (_: Exception) {}
+
         val photoFile = File(context.filesDir, "bodycam_${System.currentTimeMillis()}.jpg")
         val opts = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         ic.takePicture(opts, ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     viewModel.setCapturing(false)
-                    viewModel.setCaptureStatus(CaptureStatus.SUCCESS)
+                    viewModel.setCaptureStatus(null)
                     MediaScannerConnection.scanFile(
                         context, arrayOf(photoFile.absolutePath), arrayOf("image/jpeg"), null
                     )
                 }
                 override fun onError(e: ImageCaptureException) {
                     viewModel.setCapturing(false)
-                    viewModel.setCaptureStatus(CaptureStatus.FAILURE)
+                    viewModel.setCaptureStatus(null)
                 }
             }
         )
@@ -487,15 +495,7 @@ fun PhotoScreen(
 
                     Spacer(Modifier.height(14.dp))
 
-                    // ── Status badge ──────────────────────────────────────────
-                    Box(modifier = Modifier.height(28.dp), contentAlignment = Alignment.Center) {
-                        when (captureStatus) {
-                            CaptureStatus.SUCCESS -> PhotoStatusBadge("SAVED", SuccessGreen)
-                            CaptureStatus.FAILURE -> PhotoStatusBadge("FAILED", RecordRed)
-                            CaptureStatus.SAVING  -> PhotoStatusBadge("SAVING...", Color.White.copy(0.5f))
-                            null                  -> {}
-                        }
-                    }
+                    Spacer(Modifier.height(28.dp))
                     Spacer(Modifier.height(6.dp))
 
                 // ── Shutter + Flip/Dim left + Settings right ─────────────────

@@ -514,8 +514,8 @@ fun CameraScreen(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // ── REC indicator — always in layout, invisible when idle ──
-                    Box(Modifier.alpha(if (isRecording) 1f else 0f)) { RecIndicator() }
+                    // ── Recording timer badge — invisible when idle ──
+                    Box(Modifier.alpha(if (isRecording) 1f else 0f)) { RecTimerBadge(isRecording) }
                     Spacer(Modifier.height(6.dp))
                     Spacer(Modifier.height(10.dp))
 
@@ -1052,25 +1052,39 @@ private fun PreviewToggleButton(isOn: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun RecIndicator() {
-    val alpha by rememberInfiniteTransition(label = "rec").animateFloat(
-        initialValue = 1f,
-        targetValue  = 0.15f,
-        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-        label = "recAlpha"
-    )
+@Composable
+private fun RecTimerBadge(isRecording: Boolean) {
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    LaunchedEffect(isRecording) {
+        elapsedSeconds = 0L
+        if (isRecording) {
+            while (true) {
+                kotlinx.coroutines.delay(1000L)
+                elapsedSeconds++
+            }
+        }
+    }
+    val h = elapsedSeconds / 3600
+    val m = (elapsedSeconds % 3600) / 60
+    val s = elapsedSeconds % 60
+    val timeText = if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
+
     Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(RecordRed)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(RecordRed.copy(alpha = alpha)))
+        Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White))
         Text(
-            "REC",
-            color = RecordRed.copy(alpha = alpha),
-            fontSize = 13.sp,
+            text       = timeText,
+            color      = Color.White,
+            fontSize   = 14.sp,
             fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.W900,
-            letterSpacing = 3.sp
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
         )
     }
 }
