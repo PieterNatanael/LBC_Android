@@ -26,12 +26,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -99,6 +103,9 @@ import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import android.graphics.BlurMaskFilter
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import kotlin.math.pow
 import kotlin.math.sqrt
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -111,7 +118,8 @@ fun PhotoScreen(
     viewModel: PhotoViewModel,
     subscriptionManager: SubscriptionManager,
     onRequestPermissions: () -> Unit,
-    onShowIntro: () -> Unit = {}
+    onShowIntro: () -> Unit = {},
+    isActive: Boolean = true
 ) {
     val context        = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -123,6 +131,7 @@ fun PhotoScreen(
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
+    val isCircle         = displayMode == DisplayMode.CIRCLE
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
@@ -134,8 +143,8 @@ fun PhotoScreen(
     val matchaGreen  = Color(0xFF7BAF52)
     val icePink      = Color(0xFFFF8FAB)
     val icePeach     = Color(0xFFFFB347)
-    val woodBrown    = Color(0xFF8B5E3C)
-    val coconutCream = Color(0xFFF0D5A0)
+    val woodBrown    = Color(0xFF6B3A2A)
+    val coconutCream = Color(0xFFA0522D)
     val spiderRed    = Color(0xFFBB0000)
     val spiderBlue   = Color(0xFF0033BB)
     val iceBrush      = Brush.linearGradient(listOf(icePink, icePeach))
@@ -161,8 +170,18 @@ fun PhotoScreen(
     val isFrontCamera    by viewModel.isFrontCamera.collectAsState()
     val isScreenDimmed   by viewModel.isScreenDimmed.collectAsState()
 
-    val camPerm      = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-    val permsGranted = camPerm
+    fun checkPerms() =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    var permsGranted by remember { mutableStateOf(checkPerms()) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) permsGranted = checkPerms()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val isSubscribed    by subscriptionManager.isSubscribed.collectAsState()
     val isGrandfathered by subscriptionManager.isGrandfathered.collectAsState()
@@ -178,7 +197,11 @@ fun PhotoScreen(
     var previewBounds    by remember { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
 
     val cameraExecutor  = remember { Executors.newSingleThreadExecutor() }
-    val previewView     = remember { PreviewView(context) }
+    val previewView     = remember {
+        PreviewView(context).apply {
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        }
+    }
     val providerRef     = remember { arrayOfNulls<ProcessCameraProvider>(1) }
     var imageCapture    by remember { mutableStateOf<ImageCapture?>(null) }
     var cameraControl   by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
@@ -208,9 +231,15 @@ fun PhotoScreen(
         imageCapture?.targetRotation = targetRotation
     }
 
-    // Rebind camera when facing or quality changes
-    LaunchedEffect(isFrontCamera, qualityTier, permsGranted) {
-        if (!permsGranted) return@LaunchedEffect
+    // Rebind camera when facing, quality, permission, or active-tab changes
+    LaunchedEffect(isFrontCamera, qualityTier, permsGranted, isActive) {
+        if (!permsGranted || !isActive) {
+            // Do NOT call unbindAll here — CameraScreen's active bind also calls unbindAll,
+            // and a concurrent unbindAll from the inactive screen would undo that bind.
+            imageCapture = null
+            return@LaunchedEffect
+        }
+        imageCapture = null
         val provider = suspendCoroutine<ProcessCameraProvider> { cont ->
             val future = ProcessCameraProvider.getInstance(context)
             future.addListener({ cont.resume(future.get()) }, ContextCompat.getMainExecutor(context))
@@ -307,54 +336,17 @@ fun PhotoScreen(
         .onGloballyPositioned { rootCoordsRef[0] = it }
     ) {
 
-        // Glow: 4 directional gradients from each preview edge outward, plus vignette
+        // Box glow via BlurMaskFilter — draw preview rect filled with accent, blur outward; no seams
         Canvas(modifier = Modifier.fillMaxSize()) {
             val pB = previewBounds
             if (pB.width > 0f) {
-                val ga = accentColor.copy(alpha = 0.65f)
-                // Top strip — accent at preview top, fading to dark at screen top
-                if (pB.top > 0f) {
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colorStops = arrayOf(0f to Color.Transparent, 1f to ga),
-                            startY = 0f, endY = pB.top
-                        ),
-                        topLeft = Offset(0f, 0f),
-                        size = Size(size.width, pB.top)
-                    )
-                }
-                // Bottom strip — accent at preview bottom, fading to dark at screen bottom
-                if (pB.bottom < size.height) {
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colorStops = arrayOf(0f to ga, 1f to Color.Transparent),
-                            startY = pB.bottom, endY = size.height
-                        ),
-                        topLeft = Offset(0f, pB.bottom),
-                        size = Size(size.width, size.height - pB.bottom)
-                    )
-                }
-                // Left strip — accent at preview left, fading to dark at screen left
-                if (pB.left > 0f) {
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colorStops = arrayOf(0f to Color.Transparent, 1f to ga),
-                            startX = 0f, endX = pB.left
-                        ),
-                        topLeft = Offset(0f, pB.top),
-                        size = Size(pB.left, pB.height)
-                    )
-                }
-                // Right strip — accent at preview right, fading to dark at screen right
-                if (pB.right < size.width) {
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colorStops = arrayOf(0f to ga, 1f to Color.Transparent),
-                            startX = pB.right, endX = size.width
-                        ),
-                        topLeft = Offset(pB.right, pB.top),
-                        size = Size(size.width - pB.right, pB.height)
-                    )
+                drawIntoCanvas { canvas ->
+                    val glowPaint = Paint().apply {
+                        color = accentColor.copy(alpha = 0.85f)
+                        asFrameworkPaint().maskFilter =
+                            BlurMaskFilter(416f, BlurMaskFilter.Blur.NORMAL)
+                    }
+                    canvas.drawRect(pB, glowPaint)
                 }
                 // Vignette — screen-centred, darkens toward corners
                 drawRect(
@@ -374,34 +366,12 @@ fun PhotoScreen(
         if (!permsGranted) {
             PhotoPermissionRequest(onRequest = onRequestPermissions)
         } else {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // ── Toolbar ──────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // PRO chip
-                    if (!isUnlocked) {
-                        SubtleProChip(onClick = { showPaywall = true })
-                    }
-                }
-
-                // ── Preview area — 20% smaller, centered in flexible space ──────
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // ── NORMAL mode: preview as fullscreen background ─────────────
+                if (appearanceMode == AppearanceMode.NORMAL) {
                     Box(
                         modifier = Modifier
-                            .then(if (isSaveBattery) Modifier.fillMaxWidth(0.72f).fillMaxHeight(0.80f) else Modifier.fillMaxSize())
+                            .fillMaxSize()
                             .onGloballyPositioned { coords ->
                                 val root = rootCoordsRef[0] ?: return@onGloballyPositioned
                                 val bounds = root.localBoundingBoxOf(coords, clipBounds = false)
@@ -409,12 +379,6 @@ fun PhotoScreen(
                                 glowHalfDiag = sqrt((bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f))
                                 previewBounds = bounds
                             }
-                            .clip(RoundedCornerShape(if (isAlt) 0.dp else 10.dp))
-                            .border(
-                                if (isAlt) 2.dp else 1.dp,
-                                if (isAlt) accentColor else Color.White.copy(0.3f),
-                                RoundedCornerShape(if (isAlt) 0.dp else 10.dp)
-                            )
                             .pointerInput(Unit) {
                                 detectTapGestures { tap ->
                                     focusPoint = tap
@@ -434,36 +398,105 @@ fun PhotoScreen(
                     ) {
                         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
                         if (gridEnabled) { GridOverlay() }
-                        if (isSpider) { SpiderWebCorners() }
-                        // Focus ring
-                        focusPoint?.let { fp ->
-                            FocusRing(offset = fp, onFinished = { focusPoint = null })
-                        }
-
-                        // White flash overlay on capture
+                        focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
                         if (isCapturing) {
+                            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.55f)))
+                        }
+                    }
+                }
+
+                // ── Column layout: toolbar + preview slot + controls ──────────
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Toolbar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (!isUnlocked) {
+                            SubtleProChip(onClick = { showPaywall = true })
+                        }
+                    }
+
+                    // Preview slot — non-NORMAL modes only
+                    Box(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (appearanceMode != AppearanceMode.NORMAL) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.White.copy(alpha = 0.55f))
-                            )
+                                    .then(when {
+                                        isCircle      -> Modifier.fillMaxWidth(0.82f).aspectRatio(1f)
+                                        isSaveBattery -> Modifier.fillMaxWidth(0.72f).fillMaxHeight(0.80f)
+                                        else          -> Modifier.fillMaxSize()
+                                    })
+                                    .onGloballyPositioned { coords ->
+                                        val root = rootCoordsRef[0] ?: return@onGloballyPositioned
+                                        val bounds = root.localBoundingBoxOf(coords, clipBounds = false)
+                                        glowCenter   = bounds.center
+                                        glowHalfDiag = sqrt((bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f))
+                                        previewBounds = bounds
+                                    }
+                                    .clip(when {
+                                        isCircle -> CircleShape
+                                        isAlt    -> RoundedCornerShape(0.dp)
+                                        else     -> RoundedCornerShape(10.dp)
+                                    })
+                                    .border(
+                                        if (isAlt || isCircle) 2.dp else 1.dp,
+                                        if (isAlt) accentColor else accentColor,
+                                        when {
+                                            isCircle -> CircleShape
+                                            isAlt    -> RoundedCornerShape(0.dp)
+                                            else     -> RoundedCornerShape(10.dp)
+                                        }
+                                    )
+                                    .pointerInput(Unit) {
+                                        detectTapGestures { tap ->
+                                            focusPoint = tap
+                                            val factory = previewView.meteringPointFactory
+                                            val point = factory.createPoint(tap.x, tap.y)
+                                            val action = androidx.camera.core.FocusMeteringAction.Builder(point).build()
+                                            cameraControl?.startFocusAndMetering(action)
+                                        }
+                                    }
+                                    .pointerInput(Unit) {
+                                        detectTransformGestures { _, _, zoom, _ ->
+                                            val newZoom = (zoomRatio * zoom).coerceAtLeast(1f)
+                                            try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                                if (gridEnabled) { GridOverlay() }
+                                if (isSpider) { SpiderWebCorners() }
+                                focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
+                                if (isCapturing) {
+                                    Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.55f)))
+                                }
+                            }
                         }
                     }
-                }
 
-                Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(14.dp))
 
-                // ── Status badge ─────────────────────────────────────────────
-                Box(modifier = Modifier.height(28.dp), contentAlignment = Alignment.Center) {
-                    when (captureStatus) {
-                        CaptureStatus.SUCCESS -> PhotoStatusBadge("SAVED", SuccessGreen)
-                        CaptureStatus.FAILURE -> PhotoStatusBadge("FAILED", RecordRed)
-                        CaptureStatus.SAVING  -> PhotoStatusBadge("SAVING...", Color.White.copy(0.5f))
-                        null                  -> {}
+                    // ── Status badge ──────────────────────────────────────────
+                    Box(modifier = Modifier.height(28.dp), contentAlignment = Alignment.Center) {
+                        when (captureStatus) {
+                            CaptureStatus.SUCCESS -> PhotoStatusBadge("SAVED", SuccessGreen)
+                            CaptureStatus.FAILURE -> PhotoStatusBadge("FAILED", RecordRed)
+                            CaptureStatus.SAVING  -> PhotoStatusBadge("SAVING...", Color.White.copy(0.5f))
+                            null                  -> {}
+                        }
                     }
-                }
-
-                Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(6.dp))
 
                 // ── Shutter + Flip/Dim left + Settings right ─────────────────
                 Box(
@@ -607,13 +640,15 @@ fun PhotoScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
-            }
+                    Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                    Spacer(Modifier.height(100.dp))
+                } // end Column layout
 
-            // ── Full-screen dim overlay ───────────────────────────────────────
-            if (isScreenDimmed) {
-                PhotoDimOverlay(onWake = { viewModel.setScreenDimmed(false) })
-            }
+                // ── Full-screen dim overlay ───────────────────────────────────────
+                if (isScreenDimmed) {
+                    PhotoDimOverlay(onWake = { viewModel.setScreenDimmed(false) })
+                }
+            } // end content Box
         }
     }
 
@@ -751,6 +786,20 @@ fun PhotoScreen(
                     Switch(
                         checked = gridEnabled,
                         onCheckedChange = { settingsViewModel.toggleGrid() }
+                    )
+                }
+
+                // Gallery timestamp
+                val showGalleryTimestamp by settingsViewModel.showGalleryTimestamp.collectAsState()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("GALLERY DATE", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Switch(
+                        checked = showGalleryTimestamp,
+                        onCheckedChange = { settingsViewModel.toggleGalleryTimestamp() }
                     )
                 }
 

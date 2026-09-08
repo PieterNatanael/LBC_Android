@@ -1,132 +1,215 @@
 package com.example.bodycamoutdoorgear.ui.navigation
 
 import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.camera.CameraScreen
 import com.example.bodycamoutdoorgear.ui.camera.PhotoScreen
 import com.example.bodycamoutdoorgear.ui.gallery.GalleryScreen
-import com.example.bodycamoutdoorgear.ui.theme.CompassGold
-import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
-import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import com.example.bodycamoutdoorgear.viewmodel.CameraViewModel
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
 
 private sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Video   : Screen("video",   "VIDEO",   Icons.Default.Videocam)
     object Photo   : Screen("photo",   "PHOTO",   Icons.Default.CameraAlt)
-    object Gallery : Screen("gallery", "GALLERY", Icons.Default.VideoLibrary)
+    object Gallery : Screen("gallery", "LBC",     Icons.Default.VideoLibrary)
 }
 
 @Composable
 fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> Unit = {}) {
-    val navController    = rememberNavController()
     val cameraViewModel: CameraViewModel = viewModel()
     val photoViewModel: PhotoViewModel   = viewModel()
 
     val permissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { /* permissions handled in screen */ }
+    ) { }
 
-    Scaffold(
-        containerColor = SurfaceDark,
-        bottomBar = {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
+    var currentTab by rememberSaveable { mutableStateOf(Screen.Video.route) }
 
-            NavigationBar(containerColor = SurfaceDark) {
-                listOf(Screen.Video, Screen.Photo, Screen.Gallery).forEach { screen ->
-                    val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(imageVector = screen.icon, contentDescription = screen.label)
-                        },
-                        label = {
-                            Text(
-                                text = screen.label,
-                                fontSize = 10.sp,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                letterSpacing = 1.sp
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor   = CompassGold,
-                            selectedTextColor   = CompassGold,
-                            unselectedIconColor = TextSecondary,
-                            unselectedTextColor = TextSecondary,
-                            indicatorColor      = Color.Transparent
-                        )
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController    = navController,
-            startDestination = Screen.Video.route,
-            modifier         = Modifier.padding(innerPadding)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ── Camera screens: always in composition so the camera lifecycle is
+        //    never torn down on tab switch. Hidden via graphicsLayer alpha when
+        //    inactive; only the active screen binds the camera hardware.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(if (currentTab == Screen.Video.route) 1f else 0f)
+                .graphicsLayer { alpha = if (currentTab == Screen.Video.route) 1f else 0f }
         ) {
-            composable(Screen.Video.route) {
-                CameraScreen(
-                    viewModel            = cameraViewModel,
-                    subscriptionManager  = subscriptionManager,
-                    onRequestPermissions = {
-                        permissionsLauncher.launch(
-                            arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
-                        )
-                    },
-                    onShowIntro = onShowIntro
-                )
-            }
-            composable(Screen.Photo.route) {
-                PhotoScreen(
-                    viewModel            = photoViewModel,
-                    subscriptionManager  = subscriptionManager,
-                    onRequestPermissions = {
-                        permissionsLauncher.launch(arrayOf(Manifest.permission.CAMERA))
-                    },
-                    onShowIntro = onShowIntro
-                )
-            }
-            composable(Screen.Gallery.route) {
+            CameraScreen(
+                viewModel            = cameraViewModel,
+                subscriptionManager  = subscriptionManager,
+                onRequestPermissions = {
+                    permissionsLauncher.launch(
+                        arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+                    )
+                },
+                onShowIntro = onShowIntro,
+                isActive    = currentTab == Screen.Video.route
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(if (currentTab == Screen.Photo.route) 1f else 0f)
+                .graphicsLayer { alpha = if (currentTab == Screen.Photo.route) 1f else 0f }
+        ) {
+            PhotoScreen(
+                viewModel            = photoViewModel,
+                subscriptionManager  = subscriptionManager,
+                onRequestPermissions = {
+                    permissionsLauncher.launch(arrayOf(Manifest.permission.CAMERA))
+                },
+                onShowIntro = onShowIntro,
+                isActive    = currentTab == Screen.Photo.route
+            )
+        }
+
+        // Gallery has no camera — safe to add/remove from composition.
+        if (currentTab == Screen.Gallery.route) {
+            Box(modifier = Modifier.fillMaxSize().zIndex(2f)) {
                 GalleryScreen(subscriptionManager = subscriptionManager)
             }
+        }
+
+        // ── Floating liquid-glass pill ────────────────────────────────────────
+        LiquidGlassPill(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 20.dp)
+                .zIndex(2f),
+            currentTab = currentTab,
+            onNavigate = { screen -> currentTab = screen.route }
+        )
+    }
+}
+
+@Composable
+private fun LiquidGlassPill(
+    modifier: Modifier = Modifier,
+    currentTab: String,
+    onNavigate: (Screen) -> Unit
+) {
+    val screens  = listOf(Screen.Video, Screen.Photo, Screen.Gallery)
+    val isModern = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    val pillBg = if (isModern)
+        Brush.verticalGradient(listOf(Color.White.copy(0.26f), Color.White.copy(0.12f)))
+    else
+        Brush.verticalGradient(listOf(Color(0xFF1E1E20).copy(0.95f), Color(0xFF111113).copy(0.93f)))
+
+    val pillBorder = if (isModern)
+        Brush.verticalGradient(listOf(Color.White.copy(0.55f), Color.White.copy(0.10f)))
+    else
+        Brush.verticalGradient(listOf(Color.White.copy(0.20f), Color.White.copy(0.06f)))
+
+    Row(
+        modifier = modifier
+            .background(brush = pillBg, shape = RoundedCornerShape(50))
+            .border(width = 1.dp, brush = pillBorder, shape = RoundedCornerShape(50))
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        screens.forEach { screen ->
+            val selected = currentTab == screen.route
+            PillTab(screen = screen, selected = selected, isModern = isModern) { onNavigate(screen) }
+        }
+    }
+}
+
+@Composable
+private fun PillTab(
+    screen: Screen,
+    selected: Boolean,
+    isModern: Boolean,
+    onClick: () -> Unit
+) {
+    val targetBg = when {
+        selected && isModern -> Color.White.copy(alpha = 0.90f)
+        selected             -> Color.White.copy(alpha = 0.18f)
+        else                 -> Color.Transparent
+    }
+    val targetContent = when {
+        selected && isModern -> Color.Black
+        selected             -> Color.White
+        else                 -> Color.White.copy(alpha = 0.50f)
+    }
+
+    val bgColor      by animateColorAsState(targetBg,      tween(200), label = "tabBg")
+    val contentColor by animateColorAsState(targetContent, tween(200), label = "tabContent")
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(bgColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 21.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            Icon(
+                imageVector        = screen.icon,
+                contentDescription = screen.label,
+                tint               = contentColor,
+                modifier           = Modifier.size(27.dp)
+            )
+            Text(
+                text          = screen.label,
+                fontSize      = 7.sp,
+                lineHeight    = 7.sp,
+                fontWeight    = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                fontFamily    = FontFamily.Monospace,
+                color         = contentColor,
+                letterSpacing = 0.8.sp,
+                modifier      = Modifier.offset(y = (-2).dp)
+            )
         }
     }
 }
