@@ -19,11 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.ui.res.painterResource
+import com.example.bodycamoutdoorgear.R
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -60,7 +62,6 @@ import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 
 private val FEATURES = listOf(
-    "Full playback — no 15-second cap",
     "Save recordings to Photos",
     "Share recordings",
     "All quality levels & settings",
@@ -114,15 +115,20 @@ fun PaywallScreen(
                     }
                 }
 
-                // Lock icon + title
-                Icon(Icons.Default.Lock, contentDescription = null, tint = CompassGold, modifier = Modifier.size(48.dp))
+                // App logo + title
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_round),
+                    contentDescription = null,
+                    modifier = Modifier.size(72.dp)
+                )
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = "LOW BATTERY CAMERA PRO",
                     color = TextPrimary,
-                    fontSize = 24.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 3.sp
+                    letterSpacing = 2.sp,
+                    textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(

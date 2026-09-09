@@ -35,16 +35,19 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,8 +63,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -76,6 +83,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
@@ -160,6 +168,7 @@ fun PhotoScreen(
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
+    val glowColor = if (isSimple) Color(0xFFFF2020) else accentColor
     val matchaBg      = Color(0xFF0D1208)   // dark base — glow provides the color
     val iceCreamBg    = Color(0xFF110609)
     val tropicalBg    = Color(0xFF0E0803)
@@ -189,6 +198,8 @@ fun PhotoScreen(
 
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showFlash    by remember { mutableStateOf(false) }
+    val scope        = rememberCoroutineScope()
 
     // Glow positioning — updated by onGloballyPositioned on the preview box
     val rootCoordsRef    = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -202,7 +213,13 @@ fun PhotoScreen(
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
+    val cameraPreviewContent = remember {
+        movableContentOf {
+            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        }
+    }
     val providerRef     = remember { arrayOfNulls<ProcessCameraProvider>(1) }
+    val previewRef      = remember { arrayOfNulls<Preview>(1) }
     var imageCapture    by remember { mutableStateOf<ImageCapture?>(null) }
     var cameraControl   by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
     var cameraInfo      by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
@@ -249,6 +266,7 @@ fun PhotoScreen(
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
+        previewRef[0] = preview
         val iCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
             .setJpegQuality(settingsViewModel.photoJpegQuality)
@@ -284,18 +302,33 @@ fun PhotoScreen(
         onDispose { info.zoomState.removeObserver(observer) }
     }
 
-    // Screen brightness
+    // Screen brightness + preview pipeline
     LaunchedEffect(isScreenDimmed) {
         val activity = context as? Activity ?: return@LaunchedEffect
         val params = activity.window.attributes
         params.screenBrightness =
             if (isScreenDimmed) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         activity.window.attributes = params
+
+        val provider = providerRef[0] ?: return@LaunchedEffect
+        val preview  = previewRef[0]  ?: return@LaunchedEffect
+        if (isScreenDimmed) {
+            provider.unbind(preview)
+        } else {
+            val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA
+                           else CameraSelector.DEFAULT_BACK_CAMERA
+            try { provider.bindToLifecycle(lifecycleOwner, selector, preview) } catch (_: Exception) {}
+        }
     }
 
     fun takePhoto() {
         val ic = imageCapture ?: return
         viewModel.setCapturing(true)
+        scope.launch {
+            showFlash = true
+            delay(60)
+            showFlash = false
+        }
         try {
             ToneGenerator(AudioManager.STREAM_MUSIC, 35).apply {
                 startTone(ToneGenerator.TONE_PROP_BEEP, 60)
@@ -358,9 +391,9 @@ fun PhotoScreen(
                             colorStops = arrayOf(
                                 0f                            to Color.Transparent,
                                 (edgeFrac * 0.92f)            to Color.Transparent,
-                                edgeFrac                      to accentColor.copy(alpha = 0.76f),
-                                (edgeFrac + 0.12f).coerceAtMost(1f) to accentColor.copy(alpha = 0.44f),
-                                (edgeFrac + 0.30f).coerceAtMost(1f) to accentColor.copy(alpha = 0.16f),
+                                edgeFrac                      to glowColor.copy(alpha = 0.65f),
+                                (edgeFrac + 0.12f).coerceAtMost(1f) to glowColor.copy(alpha = 0.35f),
+                                (edgeFrac + 0.30f).coerceAtMost(1f) to glowColor.copy(alpha = 0.12f),
                                 1f                            to Color.Transparent
                             ),
                             center = Offset(cx, cy),
@@ -372,9 +405,9 @@ fun PhotoScreen(
                     drawRect(
                         brush = Brush.radialGradient(
                             colorStops = arrayOf(
-                                shortEdgeFrac                      to accentColor.copy(alpha = 0.76f),
-                                (shortEdgeFrac + 0.15f).coerceAtMost(1f) to accentColor.copy(alpha = 0.44f),
-                                (shortEdgeFrac + 0.35f).coerceAtMost(1f) to accentColor.copy(alpha = 0.16f),
+                                shortEdgeFrac                      to glowColor.copy(alpha = 0.65f),
+                                (shortEdgeFrac + 0.15f).coerceAtMost(1f) to glowColor.copy(alpha = 0.35f),
+                                (shortEdgeFrac + 0.35f).coerceAtMost(1f) to glowColor.copy(alpha = 0.12f),
                                 1f                                 to Color.Transparent
                             ),
                             center = Offset(cx, cy),
@@ -389,8 +422,9 @@ fun PhotoScreen(
             PhotoPermissionRequest(onRequest = onRequestPermissions)
         } else {
             Box(modifier = Modifier.fillMaxSize()) {
-                // ── NORMAL mode: preview as fullscreen background ─────────────
-                if (appearanceMode == AppearanceMode.NORMAL) {
+                // ── Display mode NORMAL: fullscreen preview behind toolbar/buttons ──
+                val isNormalDisplay = !isCircle && !isSaveBattery
+                if (isNormalDisplay) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -418,11 +452,11 @@ fun PhotoScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                        cameraPreviewContent()
                         if (gridEnabled) { GridOverlay() }
                         focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
-                        if (isCapturing) {
-                            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.55f)))
+                        if (showFlash) {
+                            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)))
                         }
                     }
                 }
@@ -436,6 +470,7 @@ fun PhotoScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .statusBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -445,12 +480,12 @@ fun PhotoScreen(
                         }
                     }
 
-                    // Preview slot — non-NORMAL modes only
+                    // Preview slot — only for CIRCLE and SAVE_BATTERY display modes
                     Box(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (appearanceMode != AppearanceMode.NORMAL) {
+                        if (!isNormalDisplay) {
                             Box(
                                 modifier = Modifier
                                     .then(when {
@@ -465,20 +500,16 @@ fun PhotoScreen(
                                         glowHalfDiag = sqrt((bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f))
                                         previewBounds = bounds
                                     }
-                                    .clip(when {
-                                        isCircle -> CircleShape
-                                        isAlt    -> RoundedCornerShape(0.dp)
-                                        else     -> RoundedCornerShape(10.dp)
+                                    .then(when {
+                                        isCircle -> Modifier.clip(CircleShape)
+                                        isAlt    -> Modifier.clip(RoundedCornerShape(0.dp))
+                                        else     -> Modifier
                                     })
-                                    .border(
-                                        if (isAlt || isCircle) 2.dp else 1.dp,
-                                        if (isAlt) accentColor else accentColor,
-                                        when {
-                                            isCircle -> CircleShape
-                                            isAlt    -> RoundedCornerShape(0.dp)
-                                            else     -> RoundedCornerShape(10.dp)
-                                        }
-                                    )
+                                    .then(when {
+                                        isCircle -> Modifier.border(2.dp, accentColor, CircleShape)
+                                        isAlt    -> Modifier.border(2.dp, accentColor, RoundedCornerShape(0.dp))
+                                        else     -> Modifier
+                                    })
                                     .pointerInput(Unit) {
                                         detectTapGestures { tap ->
                                             focusPoint = tap
@@ -496,12 +527,12 @@ fun PhotoScreen(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                                cameraPreviewContent()
                                 if (gridEnabled) { GridOverlay() }
                                 if (isSpider) { SpiderWebCorners() }
                                 focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
-                                if (isCapturing) {
-                                    Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.55f)))
+                                if (showFlash) {
+                                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)))
                                 }
                             }
                         }
@@ -551,14 +582,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
-                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
-                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(SurfaceDark, CircleShape)
                                 .clickable(enabled = !isCapturing) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -572,25 +596,12 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(
-                                        Brush.linearGradient(listOf(icePink.copy(if (isScreenDimmed) 0.08f else 0.3f), icePeach.copy(if (isScreenDimmed) 0.08f else 0.3f))),
-                                        CircleShape
-                                    )
-                                    isTropical -> Modifier.background(woodBrown.copy(if (isScreenDimmed) 0.1f else 0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(
-                                        Brush.linearGradient(listOf(spiderRed.copy(if (isScreenDimmed) 0.08f else 0.3f), spiderBlue.copy(if (isScreenDimmed) 0.08f else 0.3f))),
-                                        CircleShape
-                                    )
-                                    isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, CircleShape)
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.WbSunny,
+                                Icons.Default.DarkMode,
                                 contentDescription = "Dim screen",
                                 tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
                                 modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
@@ -608,14 +619,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
-                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
-                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(SurfaceDark, CircleShape)
                                 .clickable {
                                     zoomRatio = 1f
                                     cameraControl?.setZoomRatio(1f)
@@ -633,14 +637,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
-                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
-                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(Color.White.copy(alpha = 0.15f), CircleShape)
-                                })
+                                .background(SurfaceDark, CircleShape)
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -655,7 +652,7 @@ fun PhotoScreen(
                 }
 
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-                    Spacer(Modifier.height(156.dp))
+                    Spacer(Modifier.height((LocalConfiguration.current.screenHeightDp * 0.16f).dp.coerceAtLeast(100.dp)))
                 } // end Column layout
 
                 // ── Full-screen dim overlay ───────────────────────────────────────
@@ -683,6 +680,7 @@ fun PhotoScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
@@ -934,11 +932,19 @@ fun GradientShutterButton(isCapturing: Boolean, onClick: () -> Unit, gradientBru
         contentAlignment = Alignment.Center
     ) {
         Box(
-            Modifier
+            modifier = Modifier
                 .size(size * 0.75f)
                 .clip(CircleShape)
-                .background(gradientBrush.let { if (isCapturing) Brush.linearGradient(listOf(Color.White.copy(0.2f), Color.White.copy(0.1f))) else it })
-        )
+                .background(gradientBrush.let { if (isCapturing) Brush.linearGradient(listOf(Color.White.copy(0.2f), Color.White.copy(0.1f))) else it }),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.CameraAlt,
+                contentDescription = "Take photo",
+                tint = if (isCapturing) Color.Black.copy(0.3f) else Color.Black,
+                modifier = Modifier.size(size * 0.35f)
+            )
+        }
     }
 }
 
@@ -954,11 +960,19 @@ fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor:
         contentAlignment = Alignment.Center
     ) {
         Box(
-            Modifier
+            modifier = Modifier
                 .size(size * innerRatio)
                 .clip(CircleShape)
-                .background(if (isCapturing) accentColor.copy(0.4f) else accentColor)
-        )
+                .background(if (isCapturing) accentColor.copy(0.4f) else accentColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.CameraAlt,
+                contentDescription = "Take photo",
+                tint = if (isCapturing) Color.Black.copy(0.3f) else Color.Black,
+                modifier = Modifier.size(size * 0.32f)
+            )
+        }
     }
 }
 
@@ -1034,7 +1048,7 @@ private fun PhotoDimScreenButton(isDimmed: Boolean, onToggle: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(
-            Icons.Default.WbSunny,
+            Icons.Default.DarkMode,
             null,
             tint = if (isDimmed) Color.White.copy(0.3f) else Color.White.copy(0.7f),
             modifier = Modifier.size(13.dp)

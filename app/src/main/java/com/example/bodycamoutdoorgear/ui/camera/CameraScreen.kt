@@ -35,18 +35,21 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -78,6 +82,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
@@ -165,6 +170,8 @@ fun CameraScreen(
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
+    // SIMPLE uses pure black bg — boost glow to a vivid red so it's visible against black
+    val glowColor = if (isSimple) Color(0xFFFF2020) else accentColor
     val matchaBg      = Color(0xFF0D1208)   // dark base — glow provides the color
     val iceCreamBg    = Color(0xFF110609)
     val tropicalBg    = Color(0xFF0E0803)
@@ -208,7 +215,15 @@ fun CameraScreen(
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
+    // Single movable composable for the camera preview — avoids "already has parent" crash
+    // when switching between NORMAL (fullscreen) and alt (circle/rect) display modes.
+    val cameraPreviewContent = remember {
+        movableContentOf {
+            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        }
+    }
     val providerRef     = remember { arrayOfNulls<ProcessCameraProvider>(1) }
+    val previewRef      = remember { arrayOfNulls<Preview>(1) }
     var videoCapture    by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     var cameraControl   by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
     var cameraInfo      by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
@@ -256,6 +271,7 @@ fun CameraScreen(
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
+        previewRef[0] = preview
         val recorder = Recorder.Builder()
             .setQualitySelector(QualitySelector.from(settingsViewModel.videoQuality.cameraQuality))
             .setExecutor(cameraExecutor)
@@ -293,13 +309,25 @@ fun CameraScreen(
         onDispose { info.zoomState.removeObserver(observer) }
     }
 
-    // Screen brightness
+    // Screen brightness + preview pipeline on dim
     LaunchedEffect(isScreenDimmed) {
         val activity = context as? Activity ?: return@LaunchedEffect
         val params = activity.window.attributes
         params.screenBrightness =
             if (isScreenDimmed) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         activity.window.attributes = params
+
+        val provider = providerRef[0] ?: return@LaunchedEffect
+        val preview  = previewRef[0]  ?: return@LaunchedEffect
+        if (isScreenDimmed) {
+            // Stop preview pipeline — VideoCapture keeps recording uninterrupted
+            provider.unbind(preview)
+        } else {
+            // Restore preview to the existing camera session
+            val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA
+                           else CameraSelector.DEFAULT_BACK_CAMERA
+            try { provider.bindToLifecycle(lifecycleOwner, selector, preview) } catch (_: Exception) {}
+        }
     }
 
     // Keep screen on while recording
@@ -384,9 +412,9 @@ fun CameraScreen(
                             colorStops = arrayOf(
                                 0f                            to Color.Transparent,
                                 (edgeFrac * 0.92f)            to Color.Transparent,
-                                edgeFrac                      to accentColor.copy(alpha = 0.76f),
-                                (edgeFrac + 0.12f).coerceAtMost(1f) to accentColor.copy(alpha = 0.44f),
-                                (edgeFrac + 0.30f).coerceAtMost(1f) to accentColor.copy(alpha = 0.16f),
+                                edgeFrac                      to glowColor.copy(alpha = 0.65f),
+                                (edgeFrac + 0.12f).coerceAtMost(1f) to glowColor.copy(alpha = 0.35f),
+                                (edgeFrac + 0.30f).coerceAtMost(1f) to glowColor.copy(alpha = 0.12f),
                                 1f                            to Color.Transparent
                             ),
                             center = Offset(cx, cy),
@@ -400,9 +428,9 @@ fun CameraScreen(
                     drawRect(
                         brush = Brush.radialGradient(
                             colorStops = arrayOf(
-                                shortEdgeFrac                      to accentColor.copy(alpha = 0.76f),
-                                (shortEdgeFrac + 0.15f).coerceAtMost(1f) to accentColor.copy(alpha = 0.44f),
-                                (shortEdgeFrac + 0.35f).coerceAtMost(1f) to accentColor.copy(alpha = 0.16f),
+                                shortEdgeFrac                      to glowColor.copy(alpha = 0.65f),
+                                (shortEdgeFrac + 0.15f).coerceAtMost(1f) to glowColor.copy(alpha = 0.35f),
+                                (shortEdgeFrac + 0.35f).coerceAtMost(1f) to glowColor.copy(alpha = 0.12f),
                                 1f                                 to Color.Transparent
                             ),
                             center = Offset(cx, cy),
@@ -417,8 +445,9 @@ fun CameraScreen(
             PermissionRequest(onRequest = onRequestPermissions)
         } else {
             Box(modifier = Modifier.fillMaxSize()) {
-                // ── NORMAL mode: preview as fullscreen background ─────────────
-                if (appearanceMode == AppearanceMode.NORMAL) {
+                // ── Display mode NORMAL: fullscreen preview behind toolbar/buttons ──
+                val isNormalDisplay = !isCircle && !isSaveBattery
+                if (isNormalDisplay) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -446,7 +475,7 @@ fun CameraScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                        cameraPreviewContent()
                         if (gridEnabled) { GridOverlay() }
                         focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
                     }
@@ -461,6 +490,7 @@ fun CameraScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .statusBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -470,16 +500,16 @@ fun CameraScreen(
                         }
                     }
 
-                    // Preview slot — non-NORMAL modes only (NORMAL uses fullscreen background)
+                    // Preview slot — only for CIRCLE and SAVE_BATTERY display modes
                     Box(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (appearanceMode != AppearanceMode.NORMAL) {
+                        if (!isNormalDisplay) {
                             Box(
                                 modifier = Modifier
                                     .then(when {
-                                        isCircle     -> Modifier.fillMaxWidth(0.82f).aspectRatio(1f)
+                                        isCircle      -> Modifier.fillMaxWidth(0.82f).aspectRatio(1f)
                                         isSaveBattery -> Modifier.fillMaxWidth(0.72f).fillMaxHeight(0.80f)
                                         else          -> Modifier.fillMaxSize()
                                     })
@@ -490,20 +520,16 @@ fun CameraScreen(
                                         glowHalfDiag = sqrt((bounds.width / 2f).pow(2f) + (bounds.height / 2f).pow(2f))
                                         previewBounds = bounds
                                     }
-                                    .clip(when {
-                                        isCircle -> CircleShape
-                                        isAlt    -> RoundedCornerShape(0.dp)
-                                        else     -> RoundedCornerShape(10.dp)
+                                    .then(when {
+                                        isCircle -> Modifier.clip(CircleShape)
+                                        isAlt    -> Modifier.clip(RoundedCornerShape(0.dp))
+                                        else     -> Modifier
                                     })
-                                    .border(
-                                        if (isAlt || isCircle) 2.dp else 1.dp,
-                                        if (isAlt) accentColor else accentColor,
-                                        when {
-                                            isCircle -> CircleShape
-                                            isAlt    -> RoundedCornerShape(0.dp)
-                                            else     -> RoundedCornerShape(10.dp)
-                                        }
-                                    )
+                                    .then(when {
+                                        isCircle -> Modifier.border(2.dp, accentColor, CircleShape)
+                                        isAlt    -> Modifier.border(2.dp, accentColor, RoundedCornerShape(0.dp))
+                                        else     -> Modifier
+                                    })
                                     .pointerInput(Unit) {
                                         detectTapGestures { tap ->
                                             focusPoint = tap
@@ -521,7 +547,7 @@ fun CameraScreen(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                                cameraPreviewContent()
                                 if (gridEnabled) { GridOverlay() }
                                 if (isSpider) { SpiderWebCorners() }
                                 focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
@@ -575,14 +601,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
-                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
-                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(SurfaceDark, CircleShape)
                                 .clickable(enabled = !isRecording) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -596,25 +615,12 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(
-                                        Brush.linearGradient(listOf(icePink.copy(if (isScreenDimmed) 0.08f else 0.3f), icePeach.copy(if (isScreenDimmed) 0.08f else 0.3f))),
-                                        CircleShape
-                                    )
-                                    isTropical -> Modifier.background(woodBrown.copy(if (isScreenDimmed) 0.1f else 0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(
-                                        Brush.linearGradient(listOf(spiderRed.copy(if (isScreenDimmed) 0.08f else 0.3f), spiderBlue.copy(if (isScreenDimmed) 0.08f else 0.3f))),
-                                        CircleShape
-                                    )
-                                    isMatcha   -> Modifier.background(if (isScreenDimmed) accentColor.copy(0.08f) else accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(if (isScreenDimmed) Color.White.copy(0.05f) else Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, CircleShape)
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.WbSunny,
+                                Icons.Default.DarkMode,
                                 contentDescription = "Dim screen",
                                 tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
                                 modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
@@ -632,14 +638,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
-                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
-                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(SurfaceDark, CircleShape)
                                 .clickable {
                                     zoomRatio = 1f
                                     cameraControl?.setZoomRatio(1f)
@@ -657,14 +656,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .then(when {
-                                    isIceCream -> Modifier.background(Brush.linearGradient(listOf(icePink.copy(0.3f), icePeach.copy(0.3f))), CircleShape)
-                                    isTropical -> Modifier.background(woodBrown.copy(0.3f), RoundedCornerShape(8.dp))
-                                    isSpider   -> Modifier.background(Brush.linearGradient(listOf(spiderRed.copy(0.3f), spiderBlue.copy(0.3f))), CircleShape)
-                                    isMatcha   -> Modifier.background(accentColor.copy(0.25f), RoundedCornerShape(8.dp))
-                                    isAlt      -> Modifier
-                                    else       -> Modifier.background(Color.White.copy(0.15f), CircleShape)
-                                })
+                                .background(SurfaceDark, CircleShape)
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -679,7 +671,7 @@ fun CameraScreen(
                 }
 
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-                    Spacer(Modifier.height(156.dp))
+                    Spacer(Modifier.height((LocalConfiguration.current.screenHeightDp * 0.16f).dp.coerceAtLeast(100.dp)))
                 } // end Column layout
 
                 // ── Full-screen dim overlay ───────────────────────────────────────
@@ -718,6 +710,7 @@ fun CameraScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -877,6 +870,37 @@ fun CameraScreen(
                         checked = showGalleryTimestamp,
                         onCheckedChange = { settingsViewModel.toggleGalleryTimestamp() }
                     )
+                }
+
+                // Gallery columns
+                Text(
+                    "GALLERY COLUMNS",
+                    color = Color.White.copy(0.4f),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+                val galleryColumns by settingsViewModel.galleryColumns.collectAsState()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(2, 3).forEach { cols ->
+                        val selected = cols == galleryColumns
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clickable { settingsViewModel.setGalleryColumns(cols) }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("$cols", color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        }
+                    }
                 }
 
                 // View Intro Again
@@ -1124,7 +1148,7 @@ private fun DimScreenButton(isDimmed: Boolean, onToggle: () -> Unit, modifier: M
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(
-            Icons.Default.WbSunny,
+            Icons.Default.DarkMode,
             null,
             tint = if (isDimmed) Color.White.copy(0.3f) else Color.White.copy(0.7f),
             modifier = Modifier.size(13.dp)
