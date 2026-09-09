@@ -109,9 +109,7 @@ import java.io.File
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import android.graphics.BlurMaskFilter
 import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
@@ -369,30 +367,49 @@ fun CameraScreen(
         .onGloballyPositioned { rootCoordsRef[0] = it }
     ) {
 
-        // Box glow via BlurMaskFilter — draw preview rect filled with accent, blur outward; no seams
+        // Glow + vignette
         Canvas(modifier = Modifier.fillMaxSize()) {
             val pB = previewBounds
             if (pB.width > 0f) {
-                drawIntoCanvas { canvas ->
-                    val glowPaint = Paint().apply {
-                        color = accentColor.copy(alpha = 0.85f)
-                        asFrameworkPaint().maskFilter =
-                            BlurMaskFilter(416f, BlurMaskFilter.Blur.NORMAL)
-                    }
-                    canvas.drawRect(pB, glowPaint)
-                }
-                // Vignette — screen-centred, darkens toward corners
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colorStops = arrayOf(
-                            0f to Color.Transparent,
-                            0.45f to Color.Transparent,
-                            1f to Color.Black.copy(alpha = 0.75f)
-                        ),
-                        center = Offset(size.width / 2f, size.height / 2f),
-                        radius = sqrt(size.width.pow(2f) + size.height.pow(2f)) / 2f
+                val cx = pB.center.x
+                val cy = pB.center.y
+                val screenDiag = sqrt(size.width.pow(2f) + size.height.pow(2f))
+
+                if (isCircle) {
+                    // Radial gradient: transparent inside circle → accent at edge → soft fade to screen corners
+                    val r = pB.width / 2f
+                    val edgeFrac = (r / screenDiag).coerceIn(0f, 0.95f)
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colorStops = arrayOf(
+                                0f                            to Color.Transparent,
+                                (edgeFrac * 0.92f)            to Color.Transparent,
+                                edgeFrac                      to accentColor.copy(alpha = 0.76f),
+                                (edgeFrac + 0.12f).coerceAtMost(1f) to accentColor.copy(alpha = 0.44f),
+                                (edgeFrac + 0.30f).coerceAtMost(1f) to accentColor.copy(alpha = 0.16f),
+                                1f                            to Color.Transparent
+                            ),
+                            center = Offset(cx, cy),
+                            radius = screenDiag
+                        )
                     )
-                )
+                } else {
+                    // Rect modes: glow starts at shortest preview edge and spreads to screen edges.
+                    // No transparent center zone needed — the preview view covers anything underneath.
+                    val shortEdgeFrac = (minOf(pB.width, pB.height) / 2f / screenDiag).coerceIn(0f, 0.90f)
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colorStops = arrayOf(
+                                shortEdgeFrac                      to accentColor.copy(alpha = 0.76f),
+                                (shortEdgeFrac + 0.15f).coerceAtMost(1f) to accentColor.copy(alpha = 0.44f),
+                                (shortEdgeFrac + 0.35f).coerceAtMost(1f) to accentColor.copy(alpha = 0.16f),
+                                1f                                 to Color.Transparent
+                            ),
+                            center = Offset(cx, cy),
+                            radius = screenDiag
+                        )
+                    )
+                }
             }
         }
 
@@ -662,7 +679,7 @@ fun CameraScreen(
                 }
 
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-                    Spacer(Modifier.height(100.dp))
+                    Spacer(Modifier.height(156.dp))
                 } // end Column layout
 
                 // ── Full-screen dim overlay ───────────────────────────────────────
@@ -1051,7 +1068,6 @@ private fun PreviewToggleButton(isOn: Boolean, onClick: () -> Unit) {
     }
 }
 
-@Composable
 @Composable
 private fun RecTimerBadge(isRecording: Boolean) {
     var elapsedSeconds by remember { mutableStateOf(0L) }

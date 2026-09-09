@@ -56,7 +56,8 @@ fun VideoThumbnailCard(
     thumbnail: Bitmap?,
     durationMs: Long,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    showTimestamp: Boolean = false
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val imageBitmap: ImageBitmap? = remember(thumbnail) { thumbnail?.asImageBitmap() }
@@ -120,24 +121,26 @@ fun VideoThumbnailCard(
             }
         }
 
-        // Metadata
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 6.dp)
-        ) {
-            Text(
-                text = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(video.createdAt),
-                color = TextPrimary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(video.createdAt),
-                color = TextSecondary,
-                fontSize = 11.sp
-            )
+        // Metadata — only shown when timestamp display is enabled
+        if (showTimestamp) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(video.createdAt),
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(video.createdAt),
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            }
         }
 
         // Context menu

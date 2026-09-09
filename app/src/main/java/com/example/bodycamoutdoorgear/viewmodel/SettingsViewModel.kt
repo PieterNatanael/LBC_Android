@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
 enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER") }
-enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL") }
+enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE") }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -41,6 +41,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         DisplayMode.entries[prefs.getInt("display_mode", DisplayMode.SAVE_BATTERY.ordinal)]
     )
     val displayMode: StateFlow<DisplayMode> = _displayMode.asStateFlow()
+
+    private val _showGalleryTimestamp = MutableStateFlow(
+        prefs.getBoolean("show_gallery_timestamp", false)
+    )
+    val showGalleryTimestamp: StateFlow<Boolean> = _showGalleryTimestamp.asStateFlow()
 
     init {
         // Remove legacy low_light pref so any user who had it on is reset
@@ -84,6 +89,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setDisplayMode(mode: DisplayMode) {
         _displayMode.value = mode
         prefs.edit().putInt("display_mode", mode.ordinal).apply()
+    }
+
+    fun toggleGalleryTimestamp() {
+        _showGalleryTimestamp.value = !_showGalleryTimestamp.value
+        prefs.edit().putBoolean("show_gallery_timestamp", _showGalleryTimestamp.value).apply()
     }
 
     fun resetIntro() {

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">LBC</string>
+    <string name="app_tagline">Low Battery Camera</string>
+    <string name="app_developer">Developed by Pieter Natanael</string>
+</resources>
