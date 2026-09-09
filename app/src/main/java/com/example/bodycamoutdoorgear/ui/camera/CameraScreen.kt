@@ -317,16 +317,18 @@ fun CameraScreen(
             if (isScreenDimmed) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         activity.window.attributes = params
 
-        val provider = providerRef[0] ?: return@LaunchedEffect
-        val preview  = previewRef[0]  ?: return@LaunchedEffect
-        if (isScreenDimmed) {
-            // Stop preview pipeline — VideoCapture keeps recording uninterrupted
-            provider.unbind(preview)
-        } else {
-            // Restore preview to the existing camera session
-            val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA
-                           else CameraSelector.DEFAULT_BACK_CAMERA
-            try { provider.bindToLifecycle(lifecycleOwner, selector, preview) } catch (_: Exception) {}
+        // Skip preview unbind/rebind while recording to avoid session reconfiguration
+        // artifacts in the recorded file — brightness change alone handles dim during recording
+        if (!isRecording) {
+            val provider = providerRef[0] ?: return@LaunchedEffect
+            val preview  = previewRef[0]  ?: return@LaunchedEffect
+            if (isScreenDimmed) {
+                provider.unbind(preview)
+            } else {
+                val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA
+                               else CameraSelector.DEFAULT_BACK_CAMERA
+                try { provider.bindToLifecycle(lifecycleOwner, selector, preview) } catch (_: Exception) {}
+            }
         }
     }
 
