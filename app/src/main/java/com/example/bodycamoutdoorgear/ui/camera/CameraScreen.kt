@@ -932,6 +932,31 @@ fun CameraScreen(
                     )
                 }
 
+                // Also from us
+                Text(
+                    "ALSO FROM US",
+                    color = Color.White.copy(0.4f),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+                listOf(
+                    "Low Battery Camera (iOS)" to "https://apps.apple.com/id/app/low-battery-camera/id6496689003",
+                    "Low Battery Voice Recorder (iOS)" to "https://apps.apple.com/id/app/lbvr-low-battery-recorder/id6670330613",
+                    "Goodmood Screen Companion (Mac)" to "https://apps.apple.com/id/app/goodmood-screen-companion/id6765573775?mt=12"
+                ).forEach { (label, url) ->
+                    Text(
+                        label,
+                        color = Color.White.copy(0.5f),
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.clickable {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        }
+                    )
+                }
+
                 // Privacy & Terms
                 Row(
                     modifier = Modifier.fillMaxWidth(),
