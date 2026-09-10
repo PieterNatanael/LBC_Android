@@ -19,14 +19,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
-import androidx.compose.ui.res.painterResource
-import com.example.bodycamoutdoorgear.R
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.asImageBitmap
+import com.example.bodycamoutdoorgear.R
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -116,11 +117,17 @@ fun PaywallScreen(
                 }
 
                 // App logo + title
-                Image(
-                    painter = painterResource(R.mipmap.ic_launcher_round),
-                    contentDescription = null,
-                    modifier = Modifier.size(72.dp)
-                )
+                val ctx = LocalContext.current
+                val iconBitmap = remember {
+                    BitmapFactory.decodeResource(ctx.resources, R.mipmap.ic_launcher_round)
+                }
+                if (iconBitmap != null) {
+                    Image(
+                        bitmap = iconBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = "LOW BATTERY CAMERA PRO",
