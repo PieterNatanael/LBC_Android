@@ -11,7 +11,9 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.QueryProductDetailsParams
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.android.billingclient.api.QueryPurchasesParams
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +68,7 @@ class SubscriptionManager(private val context: Context) {
 
     private val billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(purchasesUpdatedListener)
-        .enablePendingPurchases()
+        .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
         .build()
 
     fun start() {
@@ -128,10 +130,9 @@ class SubscriptionManager(private val context: Context) {
         val params = QueryProductDetailsParams.newBuilder()
             .setProductList(productList)
             .build()
-        billingClient.queryProductDetailsAsync(params) { result: BillingResult, productDetailsList: List<ProductDetails> ->
+        billingClient.queryProductDetailsAsync(params) { result: BillingResult, queryResult: QueryProductDetailsResult ->
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                // Sort: weekly → monthly → yearly
-                val sorted = productDetailsList.sortedBy { pd ->
+                val sorted = queryResult.productDetailsList.sortedBy { pd ->
                     ALL_PRODUCTS.indexOf(pd.productId)
                 }
                 _products.value = sorted
