@@ -69,8 +69,8 @@ private val FEATURES = listOf(
     "Free updates"
 )
 
-private const val PRIVACY_URL = "https://github.com/PieterNatanael/Low-Battery-Camera/tree/main"
-private const val TERMS_URL   = "https://github.com/PieterNatanael/Low-Battery-Camera/blob/main/terms.md"
+private const val PRIVACY_URL = "https://gogoodmood.com/apps/en/bodycamz/privacy/"
+private const val TERMS_URL   = "https://gogoodmood.com/apps/en/bodycamz/terms/"
 
 private data class PlanLabel(val billing: String, val badge: String?)
 

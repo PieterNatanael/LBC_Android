@@ -2,7 +2,9 @@ package com.example.bodycamoutdoorgear.ui.camera
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.media.MediaScannerConnection
 import android.media.ToneGenerator
 import android.media.AudioManager
@@ -837,6 +839,33 @@ fun PhotoScreen(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp
+                    )
+                }
+
+                // Privacy & Terms
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Privacy Policy",
+                        color = Color.White.copy(0.4f),
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.clickable {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/en/bodycamz/privacy/")))
+                        }
+                    )
+                    Text("  ·  ", color = Color.White.copy(0.25f), fontSize = 11.sp)
+                    Text(
+                        "Terms of Use",
+                        color = Color.White.copy(0.4f),
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.clickable {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/en/bodycamz/terms/")))
+                        }
                     )
                 }
 
