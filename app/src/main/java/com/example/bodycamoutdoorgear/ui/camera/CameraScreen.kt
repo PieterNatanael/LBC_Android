@@ -560,9 +560,6 @@ fun CameraScreen(
                     }
 
                     Spacer(Modifier.height(8.dp))
-
-                    // ── Recording timer badge — invisible when idle ──
-                    Box(Modifier.alpha(if (isRecording) 1f else 0f)) { RecTimerBadge(isRecording) }
                     Spacer(Modifier.height(6.dp))
                     Spacer(Modifier.height(10.dp))
 
@@ -677,6 +674,20 @@ fun CameraScreen(
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     Spacer(Modifier.height((LocalConfiguration.current.screenHeightDp * 0.16f).dp.coerceAtLeast(100.dp)))
                 } // end Column layout
+
+                // ── Recording timer badge — top center, clears camera cutout ──
+                if (isRecording) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(top = 12.dp)
+                            .align(Alignment.TopCenter),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        RecTimerBadge(isRecording)
+                    }
+                }
 
                 // ── Full-screen dim overlay ───────────────────────────────────────
                 if (isScreenDimmed) {
