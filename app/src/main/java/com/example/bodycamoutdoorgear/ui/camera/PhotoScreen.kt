@@ -457,9 +457,7 @@ fun PhotoScreen(
                         cameraPreviewContent()
                         if (gridEnabled) { GridOverlay() }
                         focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
-                        if (showFlash) {
-                            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)))
-                        }
+                        Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = if (showFlash) 0.85f else 0f)))
                     }
                 }
 
@@ -533,9 +531,7 @@ fun PhotoScreen(
                                 if (gridEnabled) { GridOverlay() }
                                 if (isSpider) { SpiderWebCorners() }
                                 focusPoint?.let { fp -> FocusRing(offset = fp, onFinished = { focusPoint = null }) }
-                                if (showFlash) {
-                                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)))
-                                }
+                                Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = if (showFlash) 0.85f else 0f)))
                             }
                         }
                     }
