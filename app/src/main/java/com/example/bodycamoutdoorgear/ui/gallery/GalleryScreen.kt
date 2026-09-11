@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -71,6 +73,7 @@ fun GalleryScreen(
     val settingsViewModel: SettingsViewModel = viewModel()
     val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
     val showTimestamp  by settingsViewModel.showGalleryTimestamp.collectAsState()
+    val galleryColumns by settingsViewModel.galleryColumns.collectAsState()
     val isAlt = appearanceMode != AppearanceMode.NORMAL
 
     val videos by galleryViewModel.videos.collectAsState()
@@ -83,7 +86,7 @@ fun GalleryScreen(
     LaunchedEffect(Unit) { galleryViewModel.loadVideos() }
 
     val bgColor = when (appearanceMode) {
-        AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
+        AppearanceMode.SIMPLE    -> BackgroundDark
         AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
         AppearanceMode.MATCHA    -> Color(0xFF7BAF52)
         AppearanceMode.ICE_CREAM -> Color(0xFFFF8FAB)
@@ -109,18 +112,18 @@ fun GalleryScreen(
                     else                         -> "$totalBytes B"
                 }
             }
-            var infoExpanded by remember { mutableStateOf(true) }
+            var infoExpanded by remember { mutableStateOf(false) }
 
-            Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().navigationBarsPadding().padding(bottom = 72.dp)) {
                 // ── Header + collapsible info ─────────────────────────────────
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(15f),
+                    modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.BottomStart
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, bottom = 6.dp)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().clickable { infoExpanded = !infoExpanded }
                         ) {
                             Text(
                                 text       = "Gallery",
@@ -133,7 +136,7 @@ fun GalleryScreen(
                                 imageVector = if (infoExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp).clickable { infoExpanded = !infoExpanded }
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                         AnimatedVisibility(visible = infoExpanded) {
@@ -154,42 +157,42 @@ fun GalleryScreen(
                         }
                     }
                 }
+            val gridSpacing = if (galleryColumns >= 3) 3.dp else 12.dp
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().weight(50f)
+                columns = GridCells.Fixed(galleryColumns),
+                contentPadding = PaddingValues(gridSpacing),
+                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                verticalArrangement = Arrangement.spacedBy(gridSpacing),
+                modifier = Modifier.fillMaxWidth().weight(1f)
             ) {
                 itemsIndexed(videos, key = { _, v -> v.id }) { index, video ->
                     val path = video.file.absolutePath
-                    LaunchedEffect(path) { galleryViewModel.loadThumbnail(path) }
+                    LaunchedEffect(path) {
+                        galleryViewModel.loadThumbnail(path)
+                        if (!video.isPhoto) galleryViewModel.loadDuration(path)
+                    }
 
                     VideoThumbnailCard(
                         video = video,
                         thumbnail = thumbnails[path],
-                        durationMs = 0L,
+                        durationMs = galleryViewModel.durations[path] ?: 0L,
                         onClick = { selectedIndex = index },
                         onDelete = { galleryViewModel.deleteVideo(video) },
-                        showTimestamp = showTimestamp
+                        showTimestamp = showTimestamp,
+                        columns = galleryColumns
                     )
                 }
             } // end LazyVerticalGrid
 
-            // Disclaimer — sits between the grid and the bottom of the column
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(10f).padding(horizontal = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text          = "Photos and videos may be lost due to bugs or device issues.\nBack up important footage.",
-                    color         = Color.White.copy(alpha = 0.8f),
-                    fontSize      = 7.7.sp,
-                    textAlign     = androidx.compose.ui.text.style.TextAlign.Center,
-                    lineHeight    = 11.sp,
-                    modifier      = Modifier.fillMaxWidth()
-                )
-            }
+            // Disclaimer
+            Text(
+                text       = "Photos and videos may be lost due to bugs or device issues.\nBack up important footage.",
+                color      = Color.White.copy(alpha = 0.8f),
+                fontSize   = 7.7.sp,
+                textAlign  = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 11.sp,
+                modifier   = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
+            )
             } // end Column
         }
     }
