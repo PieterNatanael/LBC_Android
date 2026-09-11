@@ -34,6 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,8 +50,11 @@ import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.camera.CameraScreen
 import com.example.bodycamoutdoorgear.ui.camera.PhotoScreen
 import com.example.bodycamoutdoorgear.ui.gallery.GalleryScreen
+import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.CameraViewModel
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
+import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
+import androidx.compose.runtime.collectAsState
 
 private sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Video   : Screen("video",   "VIDEO",   Icons.Default.Videocam)
@@ -58,8 +64,23 @@ private sealed class Screen(val route: String, val label: String, val icon: Imag
 
 @Composable
 fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> Unit = {}) {
-    val cameraViewModel: CameraViewModel = viewModel()
-    val photoViewModel: PhotoViewModel   = viewModel()
+    val cameraViewModel: CameraViewModel   = viewModel()
+    val photoViewModel: PhotoViewModel     = viewModel()
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
+    val accentColor = when (appearanceMode) {
+        AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
+        AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
+        AppearanceMode.MATCHA    -> Color(0xFF7BAF52)
+        AppearanceMode.ICE_CREAM -> Color(0xFFFF8FAB)
+        AppearanceMode.TROPICAL  -> Color(0xFFA0522D)
+        AppearanceMode.SPIDER    -> Color(0xFFBB0000)
+        else                     -> Color.White
+    }
+
+    val cameraScreenDimmed by cameraViewModel.isScreenDimmed.collectAsState()
+    val photoScreenDimmed  by photoViewModel.isScreenDimmed.collectAsState()
+    val isScreenDimmed = cameraScreenDimmed || photoScreenDimmed
 
     val permissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -71,11 +92,20 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
         // ── Camera screens: always in composition so the camera lifecycle is
         //    never torn down on tab switch. Hidden via graphicsLayer alpha when
         //    inactive; only the active screen binds the camera hardware.
+        val isVideoActive = currentTab == Screen.Video.route
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .zIndex(if (currentTab == Screen.Video.route) 1f else 0f)
-                .graphicsLayer { alpha = if (currentTab == Screen.Video.route) 1f else 0f }
+                .zIndex(if (isVideoActive) 1f else 0f)
+                .graphicsLayer { alpha = if (isVideoActive) 1f else 0f }
+                .then(if (!isVideoActive) Modifier.pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                                .changes.forEach { it.consume() }
+                        }
+                    }
+                } else Modifier)
         ) {
             CameraScreen(
                 viewModel            = cameraViewModel,
@@ -90,11 +120,20 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
             )
         }
 
+        val isPhotoActive = currentTab == Screen.Photo.route
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .zIndex(if (currentTab == Screen.Photo.route) 1f else 0f)
-                .graphicsLayer { alpha = if (currentTab == Screen.Photo.route) 1f else 0f }
+                .zIndex(if (isPhotoActive) 1f else 0f)
+                .graphicsLayer { alpha = if (isPhotoActive) 1f else 0f }
+                .then(if (!isPhotoActive) Modifier.pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                                .changes.forEach { it.consume() }
+                        }
+                    }
+                } else Modifier)
         ) {
             PhotoScreen(
                 viewModel            = photoViewModel,
@@ -114,16 +153,19 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
             }
         }
 
-        // ── Floating liquid-glass pill ────────────────────────────────────────
-        LiquidGlassPill(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 20.dp)
-                .zIndex(2f),
-            currentTab = currentTab,
-            onNavigate = { screen -> currentTab = screen.route }
-        )
+        // ── Floating liquid-glass pill — hidden when screen is dimmed ────────
+        if (!isScreenDimmed) {
+            LiquidGlassPill(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 20.dp)
+                    .zIndex(2f),
+                currentTab  = currentTab,
+                accentColor = accentColor,
+                onNavigate  = { screen -> currentTab = screen.route }
+            )
+        }
     }
 }
 
@@ -131,26 +173,30 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
 private fun LiquidGlassPill(
     modifier: Modifier = Modifier,
     currentTab: String,
+    accentColor: Color = Color.White,
     onNavigate: (Screen) -> Unit
 ) {
     val screens  = listOf(Screen.Video, Screen.Photo, Screen.Gallery)
     val isModern = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
+    // Nearly invisible body — the bright top rim carries the "glass" signal
     val pillBg = if (isModern)
-        Brush.verticalGradient(listOf(Color.White.copy(0.26f), Color.White.copy(0.12f)))
+        Brush.verticalGradient(listOf(Color.White.copy(0.14f), Color.White.copy(0.04f)))
     else
-        Brush.verticalGradient(listOf(Color(0xFF1E1E20).copy(0.95f), Color(0xFF111113).copy(0.93f)))
+        Brush.verticalGradient(listOf(Color(0xFF2A2A2C).copy(0.85f), Color(0xFF111113).copy(0.82f)))
 
+    // Strong specular highlight at top, fades to nothing at bottom
     val pillBorder = if (isModern)
-        Brush.verticalGradient(listOf(Color.White.copy(0.55f), Color.White.copy(0.10f)))
+        Brush.verticalGradient(listOf(Color.White.copy(0.72f), Color.White.copy(0.04f)))
     else
-        Brush.verticalGradient(listOf(Color.White.copy(0.20f), Color.White.copy(0.06f)))
+        Brush.verticalGradient(listOf(Color.White.copy(0.28f), Color.White.copy(0.04f)))
 
     Row(
         modifier = modifier
+            .shadow(elevation = 12.dp, shape = RoundedCornerShape(50), ambientColor = Color.Black.copy(0.6f), spotColor = Color.Black.copy(0.6f))
             .background(brush = pillBg, shape = RoundedCornerShape(50))
             .border(width = 1.dp, brush = pillBorder, shape = RoundedCornerShape(50))
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 5.dp, vertical = 2.5.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment     = Alignment.CenterVertically
     ) {
@@ -176,7 +222,7 @@ private fun PillTab(
     val targetContent = when {
         selected && isModern -> Color.Black
         selected             -> Color.White
-        else                 -> Color.White.copy(alpha = 0.50f)
+        else                 -> Color.White
     }
 
     val bgColor      by animateColorAsState(targetBg,      tween(200), label = "tabBg")
@@ -187,7 +233,7 @@ private fun PillTab(
             .clip(RoundedCornerShape(50))
             .background(bgColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 21.dp, vertical = 2.dp),
+            .padding(horizontal = 25.dp, vertical = 3.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
