@@ -325,11 +325,13 @@ fun PhotoScreen(
 
     fun takePhoto() {
         val ic = imageCapture ?: return
-        viewModel.setCapturing(true)
+        // Flash + tone then immediately re-enable the button — image saves in background
         scope.launch {
+            viewModel.setCapturing(true)
             showFlash = true
             delay(60)
             showFlash = false
+            viewModel.setCapturing(false)
         }
         try {
             ToneGenerator(AudioManager.STREAM_MUSIC, 35).apply {
@@ -342,14 +344,12 @@ fun PhotoScreen(
         ic.takePicture(opts, ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    viewModel.setCapturing(false)
                     viewModel.setCaptureStatus(null)
                     MediaScannerConnection.scanFile(
                         context, arrayOf(photoFile.absolutePath), arrayOf("image/jpeg"), null
                     )
                 }
                 override fun onError(e: ImageCaptureException) {
-                    viewModel.setCapturing(false)
                     viewModel.setCaptureStatus(null)
                 }
             }
