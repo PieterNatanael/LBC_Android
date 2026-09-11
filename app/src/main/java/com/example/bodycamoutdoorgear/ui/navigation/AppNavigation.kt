@@ -87,6 +87,7 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
     ) { }
 
     var currentTab by rememberSaveable { mutableStateOf(Screen.Video.route) }
+    var isGallerySelectMode by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // ── Camera screens: always in composition so the camera lifecycle is
@@ -149,12 +150,15 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
         // Gallery has no camera — safe to add/remove from composition.
         if (currentTab == Screen.Gallery.route) {
             Box(modifier = Modifier.fillMaxSize().zIndex(2f)) {
-                GalleryScreen(subscriptionManager = subscriptionManager)
+                GalleryScreen(
+                    subscriptionManager = subscriptionManager,
+                    onSelectModeChanged = { isGallerySelectMode = it }
+                )
             }
         }
 
-        // ── Floating liquid-glass pill — hidden when screen is dimmed ────────
-        if (!isScreenDimmed) {
+        // ── Floating liquid-glass pill — hidden when screen is dimmed or gallery select mode ──
+        if (!isScreenDimmed && !isGallerySelectMode) {
             LiquidGlassPill(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

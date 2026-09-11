@@ -3,17 +3,21 @@ package com.example.bodycamoutdoorgear.ui.gallery
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,25 +61,28 @@ fun VideoThumbnailCard(
     durationMs: Long,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    showTimestamp: Boolean = false
+    showTimestamp: Boolean = false,
+    columns: Int = 2,
+    isSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val imageBitmap: ImageBitmap? = remember(thumbnail) { thumbnail?.asImageBitmap() }
 
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(SurfaceDark)
+            .background(if (isSelected) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark)
             .combinedClickable(
-                onClick = onClick,
-                onLongClick = { showMenu = true }
+                onClick = if (isSelectMode) onToggleSelect else onClick,
+                onLongClick = { if (isSelectMode) onToggleSelect() else showMenu = true }
             )
     ) {
         // Thumbnail
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(16f / 9f)
+                .aspectRatio(if (columns >= 3) 0.75f else 1f)
                 .background(BackgroundDark),
             contentAlignment = Alignment.Center
         ) {
@@ -84,7 +91,7 @@ fun VideoThumbnailCard(
                     bitmap = imageBitmap,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                    modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Icon(
@@ -92,16 +99,6 @@ fun VideoThumbnailCard(
                     contentDescription = null,
                     tint = BorderColor,
                     modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            // Play icon overlay — videos only
-            if (!video.isPhoto) {
-                Icon(
-                    Icons.Default.PlayCircleOutline,
-                    contentDescription = "Play",
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.align(Alignment.Center).padding(8.dp)
                 )
             }
 
@@ -118,6 +115,36 @@ fun VideoThumbnailCard(
                         .background(OverlayDark, RoundedCornerShape(4.dp))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 )
+            }
+
+            // Select mode overlay
+            if (isSelectMode) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(if (isSelected) Color.White.copy(alpha = 0.25f) else Color.Transparent)
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .size(22.dp)
+                        .background(
+                            if (isSelected) Color.White else Color.Black.copy(alpha = 0.4f),
+                            androidx.compose.foundation.shape.CircleShape
+                        )
+                        .border(1.5.dp, Color.White, androidx.compose.foundation.shape.CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             }
         }
 

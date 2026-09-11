@@ -68,6 +68,15 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/io.netty.versions.properties",
+                "META-INF/DEPENDENCIES"
+            )
+        }
+    }
 }
 
 // ── Bump version code after every release build ───────────────────────────────
@@ -118,6 +127,13 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
 
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+    // QR code generation
+    implementation(libs.zxing.core)
+    // Ktor embedded HTTP server and client
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

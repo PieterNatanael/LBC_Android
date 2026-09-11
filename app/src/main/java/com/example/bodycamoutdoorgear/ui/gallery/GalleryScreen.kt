@@ -1,7 +1,10 @@
 package com.example.bodycamoutdoorgear.ui.gallery
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,9 +21,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -29,6 +34,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -43,12 +50,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
@@ -62,14 +72,19 @@ import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import com.example.bodycamoutdoorgear.viewmodel.GalleryViewModel
+import com.example.bodycamoutdoorgear.ui.transfer.ReceiveScreen
+import com.example.bodycamoutdoorgear.ui.transfer.SendScreen
+import androidx.compose.material.icons.filled.Wifi
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GalleryScreen(
     subscriptionManager: SubscriptionManager,
+    onSelectModeChanged: (Boolean) -> Unit = {},
     galleryViewModel: GalleryViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val settingsViewModel: SettingsViewModel = viewModel()
     val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
     val showTimestamp  by settingsViewModel.showGalleryTimestamp.collectAsState()
@@ -77,11 +92,23 @@ fun GalleryScreen(
     val isAlt = appearanceMode != AppearanceMode.NORMAL
 
     val videos by galleryViewModel.videos.collectAsState()
-    val thumbnails = galleryViewModel.thumbnails  // SnapshotStateMap — no collectAsState needed
+    val thumbnails = galleryViewModel.thumbnails
     val scope = rememberCoroutineScope()
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    var isSelectMode by remember { mutableStateOf(false) }
+    val selectedPaths = remember { mutableListOf<String>().toMutableStateList() }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showSendScreen by remember { mutableStateOf(false) }
+    var showReceiveScreen by remember { mutableStateOf(false) }
+
+    fun exitSelectMode() {
+        isSelectMode = false
+        selectedPaths.clear()
+        onSelectModeChanged(false)
+    }
 
     LaunchedEffect(Unit) { galleryViewModel.loadVideos() }
 
@@ -114,46 +141,86 @@ fun GalleryScreen(
             }
             var infoExpanded by remember { mutableStateOf(false) }
 
-            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().navigationBarsPadding().padding(bottom = 72.dp)) {
-                // ── Header + collapsible info ─────────────────────────────────
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.BottomStart
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().navigationBarsPadding().padding(bottom = if (isSelectMode) 80.dp else 72.dp)) {
+                // ── Header ────────────────────────────────────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, bottom = 6.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { infoExpanded = !infoExpanded }
-                        ) {
-                            Text(
-                                text       = "Gallery",
-                                color      = Color.White,
-                                fontSize   = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Spacer(Modifier.weight(1f))
+                    // "Gallery ↓" tappable group
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { if (!isSelectMode) infoExpanded = !infoExpanded }
+                    ) {
+                        Text(
+                            text       = "Gallery",
+                            color      = Color.White,
+                            fontSize   = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = if (infoExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    if (isSelectMode) {
+                        if (selectedPaths.isNotEmpty()) {
+                            Text("${selectedPaths.size} selected", color = Color.White.copy(0.7f), fontSize = 13.sp)
+                            Spacer(Modifier.width(12.dp))
+                        }
+                        Text(
+                            "Cancel",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                .clickable { exitSelectMode() }
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = if (infoExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
+                                Icons.Default.Wifi,
+                                contentDescription = "Receive via WiFi",
+                                tint = Color.White.copy(0.7f),
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clickable { showReceiveScreen = true }
+                            )
+                            Text(
+                                "Select",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                    .clickable {
+                                        isSelectMode = true
+                                        onSelectModeChanged(true)
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
-                        AnimatedVisibility(visible = infoExpanded) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
-                                    Text("${videos.size} files", color = Color.White.copy(0.65f), fontSize = 11.sp)
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
-                                    Text(totalSizeLabel, color = Color.White.copy(0.65f), fontSize = 11.sp)
-                                }
-                            }
+                    }
+                }
+                AnimatedVisibility(visible = infoExpanded && !isSelectMode) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
+                            Text("${videos.size} files", color = Color.White.copy(0.65f), fontSize = 11.sp)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
+                            Text(totalSizeLabel, color = Color.White.copy(0.65f), fontSize = 11.sp)
                         }
                     }
                 }
@@ -179,7 +246,13 @@ fun GalleryScreen(
                         onClick = { selectedIndex = index },
                         onDelete = { galleryViewModel.deleteVideo(video) },
                         showTimestamp = showTimestamp,
-                        columns = galleryColumns
+                        columns = galleryColumns,
+                        isSelectMode = isSelectMode,
+                        isSelected = selectedPaths.contains(path),
+                        onToggleSelect = {
+                            if (selectedPaths.contains(path)) selectedPaths.remove(path)
+                            else selectedPaths.add(path)
+                        }
                     )
                 }
             } // end LazyVerticalGrid
@@ -194,7 +267,131 @@ fun GalleryScreen(
                 modifier   = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
             )
             } // end Column
+
+        // ── Select mode bottom action bar ────────────────────────────────
+        if (isSelectMode) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            if (selectedPaths.isNotEmpty()) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.07f),
+                            androidx.compose.foundation.shape.CircleShape
+                        )
+                        .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
+                        .clickable(enabled = selectedPaths.isNotEmpty()) {
+                            val uris = ArrayList<Uri>(selectedPaths.map { path ->
+                                val file = java.io.File(path)
+                                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                            })
+                            val mime = if (selectedPaths.all { it.endsWith(".jpg") }) "image/*"
+                                       else if (selectedPaths.all { it.endsWith(".mp4") }) "video/*"
+                                       else "*/*"
+                            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                type = mime
+                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share"))
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.IosShare,
+                        contentDescription = "Share",
+                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            if (selectedPaths.isNotEmpty()) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.07f),
+                            androidx.compose.foundation.shape.CircleShape
+                        )
+                        .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
+                        .clickable(enabled = selectedPaths.isNotEmpty()) {
+                            showSendScreen = true
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Wifi,
+                        contentDescription = "Send via WiFi",
+                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            if (selectedPaths.isNotEmpty()) RecordRed.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.07f),
+                            androidx.compose.foundation.shape.CircleShape
+                        )
+                        .border(1.dp, if (selectedPaths.isNotEmpty()) RecordRed else Color.White.copy(alpha = 0.15f), androidx.compose.foundation.shape.CircleShape)
+                        .clickable(enabled = selectedPaths.isNotEmpty()) {
+                            showDeleteConfirm = true
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
+        }
+    }
+
+    // ── Delete confirm dialog ─────────────────────────────────────────────
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete ${selectedPaths.size} item${if (selectedPaths.size > 1) "s" else ""}?", color = TextPrimary) },
+            text = { Text("This cannot be undone.", color = TextSecondary) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    val toDelete = selectedPaths.toList()
+                    exitSelectMode()
+                    toDelete.forEach { path ->
+                        videos.find { it.file.absolutePath == path }
+                            ?.let { galleryViewModel.deleteVideo(it) }
+                    }
+                }) { Text("Delete", color = RecordRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel", color = TextSecondary) }
+            },
+            containerColor = SurfaceDark
+        )
+    }
+
+    // WiFi transfer overlays
+    if (showSendScreen) {
+        val filesToSend = remember(selectedPaths.toList()) {
+            selectedPaths.mapNotNull { path -> java.io.File(path).takeIf { it.exists() } }
+        }
+        SendScreen(files = filesToSend, onDismiss = { showSendScreen = false })
+    }
+    if (showReceiveScreen) {
+        ReceiveScreen(
+            onDismiss = { showReceiveScreen = false },
+            onFilesReceived = { galleryViewModel.loadVideos() }
+        )
     }
 
     // Swipeable viewer sheet
