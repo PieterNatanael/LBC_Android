@@ -74,6 +74,7 @@ import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import com.example.bodycamoutdoorgear.viewmodel.GalleryViewModel
 import com.example.bodycamoutdoorgear.ui.transfer.ReceiveScreen
 import com.example.bodycamoutdoorgear.ui.transfer.SendScreen
+import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import androidx.compose.material.icons.filled.Wifi
 import kotlinx.coroutines.launch
 
@@ -103,6 +104,8 @@ fun GalleryScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showSendScreen by remember { mutableStateOf(false) }
     var showReceiveScreen by remember { mutableStateOf(false) }
+    val isUnlocked = subscriptionManager.isUnlocked
+    var showPaywall by remember { mutableStateOf(false) }
 
     fun exitSelectMode() {
         isSelectMode = false
@@ -290,19 +293,23 @@ fun GalleryScreen(
                         )
                         .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
                         .clickable(enabled = selectedPaths.isNotEmpty()) {
-                            val uris = ArrayList<Uri>(selectedPaths.map { path ->
-                                val file = java.io.File(path)
-                                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                            })
-                            val mime = if (selectedPaths.all { it.endsWith(".jpg") }) "image/*"
-                                       else if (selectedPaths.all { it.endsWith(".mp4") }) "video/*"
-                                       else "*/*"
-                            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                                type = mime
-                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            if (!isUnlocked) {
+                                showPaywall = true
+                            } else {
+                                val uris = ArrayList<Uri>(selectedPaths.map { path ->
+                                    val file = java.io.File(path)
+                                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                                })
+                                val mime = if (selectedPaths.all { it.endsWith(".jpg") }) "image/*"
+                                           else if (selectedPaths.all { it.endsWith(".mp4") }) "video/*"
+                                           else "*/*"
+                                val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = mime
+                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share"))
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share"))
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -395,6 +402,9 @@ fun GalleryScreen(
             onDismiss = { showReceiveScreen = false },
             onFilesReceived = { galleryViewModel.loadVideos() }
         )
+    }
+    if (showPaywall) {
+        PaywallScreen(subscriptionManager = subscriptionManager, onDismiss = { showPaywall = false })
     }
 
     // Swipeable viewer sheet
