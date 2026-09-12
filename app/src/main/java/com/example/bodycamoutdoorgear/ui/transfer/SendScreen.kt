@@ -99,7 +99,7 @@ fun SendScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Both devices must be on the same WiFi network.\nOpen LBC on the other device and tap Receive, then scan this code.",
+                "Both devices must be on the same WiFi network.\nOpen LBC on the other device and tap HipHop, then scan this code.",
                 color = TextSecondary,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
