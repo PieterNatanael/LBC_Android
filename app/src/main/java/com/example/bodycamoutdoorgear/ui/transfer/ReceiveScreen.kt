@@ -150,6 +150,14 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             )
 
             Text(
+                "Both devices must be on the same WiFi.\nOpen LBC on the other device, tap HipHop,\nthen scan the QR code shown there.",
+                color = Color.White.copy(0.4f),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
+            )
+
+            Text(
                 status,
                 color = TextSecondary,
                 fontSize = 14.sp,
