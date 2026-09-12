@@ -132,7 +132,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                "Receive from Other Device",
+                "HipHop",
                 color = TextPrimary,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold

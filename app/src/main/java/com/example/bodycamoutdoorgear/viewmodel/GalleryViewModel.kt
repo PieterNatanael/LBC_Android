@@ -31,6 +31,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     // SnapshotStateMap: Compose tracks per-key reads, so only the card whose
     // thumbnail just loaded recomposes — not the entire screen.
     val thumbnails: SnapshotStateMap<String, Bitmap> = mutableStateMapOf()
+    val durations: SnapshotStateMap<String, Long> = mutableStateMapOf()
 
     init {
         loadVideos()
@@ -40,7 +41,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val list = withContext(Dispatchers.IO) {
                 val dir = getApplication<Application>().filesDir
-                dir.listFiles { f -> f.extension == "mp4" || f.extension == "jpg" }
+                dir.listFiles { f -> f.extension in setOf("mp4", "mov", "jpg", "jpeg", "png") }
                     ?.sortedByDescending { it.lastModified() }
                     ?.map { VideoItem(it) }
                     ?: emptyList()
@@ -54,7 +55,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val bmp = withContext(Dispatchers.IO) {
                 try {
-                    if (File(videoPath).extension == "jpg") {
+                    if (File(videoPath).extension in setOf("jpg", "jpeg", "png")) {
                         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                         BitmapFactory.decodeFile(videoPath, opts)
                         opts.inSampleSize = thumbnailSampleSize(opts.outWidth, opts.outHeight)
@@ -95,6 +96,22 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         var size = 1
         while ((width / (size * 2)) >= THUMB_SIZE || (height / (size * 2)) >= THUMB_SIZE) size *= 2
         return size
+    }
+
+    fun loadDuration(videoPath: String) {
+        if (durations.containsKey(videoPath)) return
+        viewModelScope.launch {
+            val ms = withContext(Dispatchers.IO) {
+                try {
+                    val retriever = MediaMetadataRetriever()
+                    retriever.setDataSource(videoPath)
+                    val d = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                    retriever.release()
+                    d
+                } catch (e: Exception) { 0L }
+            }
+            if (ms > 0) durations[videoPath] = ms
+        }
     }
 
     fun deleteVideo(video: VideoItem) {

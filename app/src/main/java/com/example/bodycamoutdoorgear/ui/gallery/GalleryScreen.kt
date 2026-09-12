@@ -184,13 +184,15 @@ fun GalleryScreen(
                         )
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Wifi,
-                                contentDescription = "Receive via WiFi",
-                                tint = Color.White.copy(0.7f),
+                            Text(
+                                "HipHop",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
                                 modifier = Modifier
-                                    .size(22.dp)
+                                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
                                     .clickable { showReceiveScreen = true }
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                             Text(
                                 "Select",
@@ -324,11 +326,12 @@ fun GalleryScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Wifi,
-                        contentDescription = "Send via WiFi",
-                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
-                        modifier = Modifier.size(24.dp)
+                    Text(
+                        "HipHop",
+                        color = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.sp
                     )
                 }
                 Box(

@@ -8,5 +8,5 @@ data class VideoItem(val file: File) {
     val url: String get() = file.absolutePath
     val createdAt: Date get() = Date(file.lastModified())
     val name: String get() = file.name
-    val isPhoto: Boolean get() = file.extension == "jpg"
+    val isPhoto: Boolean get() = file.extension in setOf("jpg", "jpeg", "png")
 }
