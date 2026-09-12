@@ -186,7 +186,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                         if (hasCameraPermission) showScanner = true
                         else permLauncher.launch(Manifest.permission.CAMERA)
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = RecordRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Scan QR Code", fontWeight = FontWeight.Bold)
