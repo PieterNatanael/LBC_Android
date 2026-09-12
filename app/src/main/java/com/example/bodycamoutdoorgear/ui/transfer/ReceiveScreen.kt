@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -36,8 +36,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import com.example.bodycamoutdoorgear.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -138,19 +141,13 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                 fontWeight = FontWeight.Bold
             )
 
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.hiphop),
+                contentDescription = "HipHop",
                 modifier = Modifier
                     .size(120.dp)
-                    .background(SurfaceDark, RoundedCornerShape(60.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Download,
-                    contentDescription = null,
-                    tint = Color.White.copy(0.7f),
-                    modifier = Modifier.size(52.dp)
-                )
-            }
+                    .clip(RoundedCornerShape(24.dp))
+            )
 
             Text(
                 status,
