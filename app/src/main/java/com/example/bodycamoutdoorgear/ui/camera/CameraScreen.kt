@@ -233,6 +233,7 @@ fun CameraScreen(
     var cameraInfo      by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
     var focusPoint      by remember { mutableStateOf<Offset?>(null) }
     var zoomRatio       by remember { mutableStateOf(1f) }
+    var minZoomRatio    by remember { mutableStateOf(1f) }
     val initialRotation = remember { (context as? Activity)?.display?.rotation ?: android.view.Surface.ROTATION_0 }
     var targetRotation  by remember { mutableStateOf(initialRotation) }
 
@@ -308,6 +309,7 @@ fun CameraScreen(
         val info = cameraInfo ?: return@DisposableEffect onDispose {}
         val observer = androidx.lifecycle.Observer<androidx.camera.core.ZoomState> { state ->
             zoomRatio = state.zoomRatio
+            minZoomRatio = state.minZoomRatio
         }
         info.zoomState.observeForever(observer)
         onDispose { info.zoomState.removeObserver(observer) }
@@ -475,7 +477,7 @@ fun CameraScreen(
                             }
                             .pointerInput(Unit) {
                                 detectTransformGestures { _, _, zoom, _ ->
-                                    val newZoom = (zoomRatio * zoom).coerceAtLeast(1f)
+                                    val newZoom = (zoomRatio * zoom).coerceAtLeast(minZoomRatio)
                                     try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
                                 }
                             },
@@ -547,7 +549,7 @@ fun CameraScreen(
                                     }
                                     .pointerInput(Unit) {
                                         detectTransformGestures { _, _, zoom, _ ->
-                                            val newZoom = (zoomRatio * zoom).coerceAtLeast(1f)
+                                            val newZoom = (zoomRatio * zoom).coerceAtLeast(minZoomRatio)
                                             try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
                                         }
                                     },
