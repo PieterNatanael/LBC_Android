@@ -134,19 +134,19 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text(
-                "HipHop",
-                color = TextPrimary,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-
             Image(
                 painter = painterResource(id = R.drawable.hiphop),
                 contentDescription = "HipHop",
                 modifier = Modifier
                     .size(120.dp)
                     .clip(RoundedCornerShape(24.dp))
+            )
+
+            Text(
+                "HipHop",
+                color = TextPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Text(
@@ -189,7 +189,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                     colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Scan QR Code", fontWeight = FontWeight.Bold)
+                    Text("Scan QR Code", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
