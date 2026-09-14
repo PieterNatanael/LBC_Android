@@ -1,12 +1,14 @@
 package com.example.bodycamoutdoorgear.ui.disclaimer
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -54,56 +56,66 @@ private val ITEMS = listOf(
 @Composable
 fun DisclaimerScreen(onDismiss: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = BackgroundDark) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(40.dp))
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Scrollable content — bottom padding reserves space for the fixed button
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 88.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(40.dp))
 
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = null,
-                tint = CompassGold,
-                modifier = Modifier.size(48.dp)
-            )
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = CompassGold,
+                    modifier = Modifier.size(48.dp)
+                )
 
-            Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(14.dp))
 
-            Text(
-                text = "Low Battery Camera",
-                color = TextPrimary,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
-            )
+                Text(
+                    text = "Low Battery Camera",
+                    color = TextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
 
-            Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(4.dp))
 
-            Text(
-                text = "IMPORTANT NOTICE",
-                color = TextSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
-            )
+                Text(
+                    text = "IMPORTANT NOTICE",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
 
-            Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(32.dp))
 
-            ITEMS.forEachIndexed { index, item ->
-                DisclaimerRow(item)
-                if (index < ITEMS.lastIndex) {
-                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 14.dp))
+                ITEMS.forEachIndexed { index, item ->
+                    DisclaimerRow(item)
+                    if (index < ITEMS.lastIndex) {
+                        HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 14.dp))
+                    }
                 }
+
+                Spacer(Modifier.height(16.dp))
             }
 
-            Spacer(Modifier.height(40.dp))
-
+            // Fixed button always pinned at the bottom
             Button(
                 onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .height(52.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = ButtonFace)
             ) {
@@ -114,8 +126,6 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                     letterSpacing = 1.sp
                 )
             }
-
-            Spacer(Modifier.height(32.dp))
         }
     }
 }

@@ -33,12 +33,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val gridEnabled: StateFlow<Boolean> = _gridEnabled.asStateFlow()
 
     private val _appearanceMode = MutableStateFlow(
-        AppearanceMode.entries[prefs.getInt("appearance_mode", AppearanceMode.NORMAL.ordinal)]
+        AppearanceMode.entries[prefs.getInt("appearance_mode", AppearanceMode.TROPICAL.ordinal)]
     )
     val appearanceMode: StateFlow<AppearanceMode> = _appearanceMode.asStateFlow()
 
     private val _displayMode = MutableStateFlow(
-        DisplayMode.entries[prefs.getInt("display_mode", DisplayMode.SAVE_BATTERY.ordinal)]
+        DisplayMode.entries[prefs.getInt("display_mode", DisplayMode.CIRCLE.ordinal)]
     )
     val displayMode: StateFlow<DisplayMode> = _displayMode.asStateFlow()
 
@@ -46,6 +46,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean("show_gallery_timestamp", false)
     )
     val showGalleryTimestamp: StateFlow<Boolean> = _showGalleryTimestamp.asStateFlow()
+
+    private val _galleryColumns = MutableStateFlow(
+        prefs.getInt("gallery_columns", 3)
+    )
+    val galleryColumns: StateFlow<Int> = _galleryColumns.asStateFlow()
 
     init {
         // Remove legacy low_light pref so any user who had it on is reset
@@ -94,6 +99,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleGalleryTimestamp() {
         _showGalleryTimestamp.value = !_showGalleryTimestamp.value
         prefs.edit().putBoolean("show_gallery_timestamp", _showGalleryTimestamp.value).apply()
+    }
+
+    fun setGalleryColumns(columns: Int) {
+        _galleryColumns.value = columns
+        prefs.edit().putInt("gallery_columns", columns).apply()
     }
 
     fun resetIntro() {

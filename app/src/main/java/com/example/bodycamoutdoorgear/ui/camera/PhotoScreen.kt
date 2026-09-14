@@ -343,7 +343,7 @@ fun PhotoScreen(
             }
         } catch (_: Exception) {}
 
-        val photoFile = File(context.filesDir, "bodycam_${System.currentTimeMillis()}.jpg")
+        val photoFile = File(context.filesDir, "LBC_${System.currentTimeMillis()}.jpg")
         val opts = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         ic.takePicture(opts, ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {

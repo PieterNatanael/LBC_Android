@@ -365,7 +365,7 @@ fun CameraScreen(
                     is VideoRecordEvent.Finalize -> {
                         viewModel.setRecording(false)
                         if (!event.hasError()) {
-                            tmp.renameTo(File(context.filesDir, "video_${System.currentTimeMillis()}.mp4"))
+                            tmp.renameTo(File(context.filesDir, "LBC_${System.currentTimeMillis()}.mp4"))
                         } else {
                             tmp.delete()
                             viewModel.setError("Recording failed (error ${event.error})")

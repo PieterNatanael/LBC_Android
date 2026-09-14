@@ -99,7 +99,7 @@ fun SendScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Both devices must be on the same WiFi network.\nOpen LBC on the other device and tap HipHop, then scan this code.",
+                "Works best on a personal hotspot or home WiFi. Public WiFi (cafes, hotels) will not work.\nIf transferring between two iPhones, have one iPhone create the hotspot.\nOpen LBC on the other device and tap HipHop, then scan this code.",
                 color = TextSecondary,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,

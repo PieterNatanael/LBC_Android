@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -25,7 +27,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +74,8 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
     val receivedFiles = remember { mutableStateListOf<String>() }
 
     var showScanner by remember { mutableStateOf(false) }
+    var showManualEntry by remember { mutableStateOf(false) }
+    var manualIp by remember { mutableStateOf("") }
     val hasCameraPermission = remember {
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
     }
@@ -74,10 +83,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
         if (granted) showScanner = true
     }
 
-    fun onQrScanned(raw: String) {
-        showScanner = false
-        val uri = android.net.Uri.parse(raw)
-        val ip = uri.getQueryParameter("host") ?: return
+    fun connectToIp(ip: String) {
         hostIp = ip
         status = "Connected to $ip. Ready to receive."
         scope.launch {
@@ -102,6 +108,13 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             status = "Done. $done file(s) saved to gallery."
             if (done > 0) onFilesReceived()
         }
+    }
+
+    fun onQrScanned(raw: String) {
+        showScanner = false
+        val uri = android.net.Uri.parse(raw)
+        val ip = uri.getQueryParameter("host") ?: return
+        connectToIp(ip)
     }
 
     if (showScanner) {
@@ -150,7 +163,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             )
 
             Text(
-                "Both devices must be on the same WiFi.\nOpen LBC on the other device, tap HipHop,\nthen scan the QR code shown there.",
+                "Works best on a personal hotspot or home WiFi. Public WiFi (cafes, hotels) will not work.\nIf transferring between two iPhones, have one iPhone create the hotspot.\nOpen LBC on the other device, tap HipHop, then scan the QR code shown there.",
                 color = Color.White.copy(0.4f),
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -190,6 +203,43 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Scan QR Code", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                if (showManualEntry) {
+                    OutlinedTextField(
+                        value = manualIp,
+                        onValueChange = { manualIp = it },
+                        label = { Text("Sender IP (e.g. 192.168.1.5)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            val ip = manualIp.trim()
+                            if (ip.isNotEmpty()) { showManualEntry = false; connectToIp(ip) }
+                        }),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color.White.copy(0.5f),
+                            unfocusedBorderColor = Color.White.copy(0.2f),
+                            focusedLabelColor = Color.White.copy(0.6f),
+                            unfocusedLabelColor = Color.White.copy(0.4f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = {
+                            val ip = manualIp.trim()
+                            if (ip.isNotEmpty()) { showManualEntry = false; connectToIp(ip) }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Connect", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                } else {
+                    TextButton(onClick = { showManualEntry = true }) {
+                        Text("Enter IP manually", color = Color.White.copy(0.4f), fontSize = 13.sp)
+                    }
                 }
             }
         }
