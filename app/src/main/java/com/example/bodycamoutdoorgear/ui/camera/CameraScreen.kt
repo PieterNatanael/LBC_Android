@@ -6,8 +6,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.view.WindowManager
+import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.effects.OverlayEffect
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.QualitySelector
@@ -142,6 +145,7 @@ fun CameraScreen(
     val qualityTier      by settingsViewModel.videoQualityTier.collectAsState()
     val photoQualityTier by settingsViewModel.photoQualityTier.collectAsState()
     val gridEnabled      by settingsViewModel.gridEnabled.collectAsState()
+    val stampTimestamp   by settingsViewModel.stampTimestamp.collectAsState()
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
@@ -237,6 +241,68 @@ fun CameraScreen(
     val initialRotation = remember { (context as? Activity)?.display?.rotation ?: android.view.Surface.ROTATION_0 }
     var targetRotation  by remember { mutableStateOf(initialRotation) }
 
+    // Single atomic holds all overlay state: null = inactive, non-null = (text, isPortrait).
+    // One read gives a fully-consistent snapshot — no window where active+stale-orientation coexist.
+    val stampStateRef    = remember { java.util.concurrent.atomic.AtomicReference<Pair<String, Boolean>?>(null) }
+    val stampLastNanoRef = remember { java.util.concurrent.atomic.AtomicLong(0L) }
+
+    // OverlayEffect bakes timestamp into video frames in real-time (no post-processing needed)
+    val overlayEffect = remember {
+        OverlayEffect(
+            CameraEffect.VIDEO_CAPTURE,
+            0,
+            android.os.Handler(android.os.Looper.getMainLooper()),
+            {}
+        ).also { effect ->
+            val overlayPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.WHITE
+                typeface = android.graphics.Typeface.MONOSPACE
+                textAlign = android.graphics.Paint.Align.RIGHT
+            }
+            effect.setOnDrawListener { frame ->
+                val snap = stampStateRef.get() ?: return@setOnDrawListener true  // inactive
+                // Dedup: skip if drawn in the last 2ms (CameraX may invoke this twice per frame)
+                val now = System.nanoTime()
+                if (now - stampLastNanoRef.get() < 2_000_000L) return@setOnDrawListener true
+                stampLastNanoRef.set(now)
+                val (text, isPortraitRecording) = snap
+                if (text.isEmpty()) return@setOnDrawListener true
+                val canvas = frame.overlayCanvas
+                val bw = canvas.width.toFloat()
+                val bh = canvas.height.toFloat()
+                // For landscape recording, skip portrait-dimensioned canvases (SD internal surface)
+                if (!isPortraitRecording && bh >= bw) return@setOnDrawListener true
+                val label = "$text · LBC"
+                canvas.save()
+                when {
+                    isPortraitRecording && bw > bh -> {
+                        // Portrait recording, landscape buffer (HD/HIGH):
+                        // matrix maps portrait draw coords to landscape buffer so text reads
+                        // upright after 90° CCW playback rotation. portrait(px,py)→buffer(py, bh-1-px)
+                        val m = android.graphics.Matrix()
+                        m.setValues(floatArrayOf(0f, 1f, 0f, -1f, 0f, bh - 1f, 0f, 0f, 1f))
+                        canvas.concat(m)
+                        val textSize = (bh * 0.028f).coerceIn(18f, 54f)
+                        overlayPaint.textSize = textSize
+                        overlayPaint.setShadowLayer(textSize * 0.25f, 3f, 3f, 0x99000000.toInt())
+                        val margin = textSize * 1.5f
+                        canvas.drawText(label, bh - margin, bw - margin, overlayPaint)
+                    }
+                    else -> {
+                        // Landscape recording, or portrait recording on portrait buffer (SD quality)
+                        val textSize = (bw * 0.028f).coerceIn(18f, 54f)
+                        overlayPaint.textSize = textSize
+                        overlayPaint.setShadowLayer(textSize * 0.25f, 3f, 3f, 0x99000000.toInt())
+                        val margin = textSize * 1.5f
+                        canvas.drawText(label, bw - margin, bh - margin, overlayPaint)
+                    }
+                }
+                canvas.restore()
+                true
+            }
+        }
+    }
+
     DisposableEffect(context) {
         val listener = object : android.view.OrientationEventListener(context) {
             override fun onOrientationChanged(orientation: Int) {
@@ -286,13 +352,26 @@ fun CameraScreen(
                        else CameraSelector.DEFAULT_BACK_CAMERA
         try {
             provider.unbindAll()
-            val camera = provider.bindToLifecycle(lifecycleOwner, selector, preview, vCapture)
+            val useCaseGroup = UseCaseGroup.Builder()
+                .addUseCase(preview)
+                .addUseCase(vCapture)
+                .addEffect(overlayEffect)
+                .build()
+            val camera = provider.bindToLifecycle(lifecycleOwner, selector, useCaseGroup)
             videoCapture = vCapture
             cameraControl = camera.cameraControl
             cameraInfo = camera.cameraInfo
             zoomRatio = 1f
         } catch (e: Exception) {
             viewModel.setError("Camera error: ${e.message}")
+        }
+    }
+
+    // Stop and save recording when user navigates to a different tab
+    LaunchedEffect(isActive) {
+        if (!isActive && viewModel.isRecording.value) {
+            viewModel.activeRecording?.stop()
+            viewModel.activeRecording = null
         }
     }
 
@@ -388,6 +467,9 @@ fun CameraScreen(
             if (viewModel.isRecording.value) stopRecording() else startRecording()
         }
     }
+
+    // Video timestamp disabled — only photos get stamped (see PhotoScreen)
+    LaunchedEffect(isRecording) { stampStateRef.set(null) }
 
     // ── UI ───────────────────────────────────────────────────────────────────
     Box(modifier = Modifier
@@ -877,6 +959,19 @@ fun CameraScreen(
                     )
                 }
 
+                // Video timestamp overlay + photo stamp
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("PHOTO TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    androidx.compose.material3.Switch(
+                        checked = stampTimestamp,
+                        onCheckedChange = { settingsViewModel.toggleStampTimestamp() }
+                    )
+                }
+
                 // Gallery timestamp
                 val showGalleryTimestamp by settingsViewModel.showGalleryTimestamp.collectAsState()
                 Row(
@@ -949,28 +1044,14 @@ fun CameraScreen(
 
                 // Also from us
                 Text(
-                    "ALSO FROM US",
-                    color = Color.White.copy(0.4f),
-                    fontSize = 10.sp,
+                    "Our Apps",
+                    color = Color.White.copy(0.5f),
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp
+                    modifier = Modifier.clickable {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/")))
+                    }
                 )
-                listOf(
-                    "Low Battery Camera (iOS)" to "https://apps.apple.com/id/app/low-battery-camera/id6496689003",
-                    "Low Battery Voice Recorder (iOS)" to "https://apps.apple.com/id/app/lbvr-low-battery-recorder/id6670330613",
-                    "Goodmood Screen Companion (Mac)" to "https://apps.apple.com/id/app/goodmood-screen-companion/id6765573775?mt=12"
-                ).forEach { (label, url) ->
-                    Text(
-                        label,
-                        color = Color.White.copy(0.5f),
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.clickable {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        }
-                    )
-                }
 
                 // Privacy & Terms
                 Row(

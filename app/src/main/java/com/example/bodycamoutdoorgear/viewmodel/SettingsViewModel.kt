@@ -18,12 +18,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val prefs = application.getSharedPreferences("bodycam_settings", Context.MODE_PRIVATE)
 
     private val _videoQualityTier = MutableStateFlow(
-        QualityTier.entries[prefs.getInt("video_quality_tier", QualityTier.HIGH.ordinal)]
+        QualityTier.entries[prefs.getInt("video_quality_tier", QualityTier.MED.ordinal)]
     )
     val videoQualityTier: StateFlow<QualityTier> = _videoQualityTier.asStateFlow()
 
     private val _photoQualityTier = MutableStateFlow(
-        QualityTier.entries[prefs.getInt("photo_quality_tier", QualityTier.HIGH.ordinal)]
+        QualityTier.entries[prefs.getInt("photo_quality_tier", QualityTier.MED.ordinal)]
     )
     val photoQualityTier: StateFlow<QualityTier> = _photoQualityTier.asStateFlow()
 
@@ -46,6 +46,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getBoolean("show_gallery_timestamp", false)
     )
     val showGalleryTimestamp: StateFlow<Boolean> = _showGalleryTimestamp.asStateFlow()
+
+    private val _stampTimestamp = MutableStateFlow(
+        prefs.getBoolean("stamp_timestamp", true)
+    )
+    val stampTimestamp: StateFlow<Boolean> = _stampTimestamp.asStateFlow()
 
     private val _galleryColumns = MutableStateFlow(
         prefs.getInt("gallery_columns", 3)
@@ -99,6 +104,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleGalleryTimestamp() {
         _showGalleryTimestamp.value = !_showGalleryTimestamp.value
         prefs.edit().putBoolean("show_gallery_timestamp", _showGalleryTimestamp.value).apply()
+    }
+
+    fun toggleStampTimestamp() {
+        _stampTimestamp.value = !_stampTimestamp.value
+        prefs.edit().putBoolean("stamp_timestamp", _stampTimestamp.value).apply()
     }
 
     fun setGalleryColumns(columns: Int) {

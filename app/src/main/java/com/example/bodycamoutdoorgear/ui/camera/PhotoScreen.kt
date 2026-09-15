@@ -140,6 +140,7 @@ fun PhotoScreen(
     val qualityTier      by settingsViewModel.photoQualityTier.collectAsState()
     val videoQualityTier by settingsViewModel.videoQualityTier.collectAsState()
     val gridEnabled      by settingsViewModel.gridEnabled.collectAsState()
+    val stampTimestamp   by settingsViewModel.stampTimestamp.collectAsState()
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
@@ -345,13 +346,23 @@ fun PhotoScreen(
 
         val photoFile = File(context.filesDir, "LBC_${System.currentTimeMillis()}.jpg")
         val opts = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+        val shouldStamp = stampTimestamp
         ic.takePicture(opts, ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     viewModel.setCaptureStatus(null)
-                    MediaScannerConnection.scanFile(
-                        context, arrayOf(photoFile.absolutePath), arrayOf("image/jpeg"), null
-                    )
+                    if (shouldStamp) {
+                        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            bakeTimestampOnPhoto(photoFile)
+                            MediaScannerConnection.scanFile(
+                                context, arrayOf(photoFile.absolutePath), arrayOf("image/jpeg"), null
+                            )
+                        }
+                    } else {
+                        MediaScannerConnection.scanFile(
+                            context, arrayOf(photoFile.absolutePath), arrayOf("image/jpeg"), null
+                        )
+                    }
                 }
                 override fun onError(e: ImageCaptureException) {
                     viewModel.setCaptureStatus(null)
@@ -803,6 +814,19 @@ fun PhotoScreen(
                     )
                 }
 
+                // Bake timestamp into photo file
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("PHOTO TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Switch(
+                        checked = stampTimestamp,
+                        onCheckedChange = { settingsViewModel.toggleStampTimestamp() }
+                    )
+                }
+
                 // Gallery timestamp
                 val showGalleryTimestamp by settingsViewModel.showGalleryTimestamp.collectAsState()
                 Row(
@@ -844,28 +868,14 @@ fun PhotoScreen(
 
                 // Also from us
                 Text(
-                    "ALSO FROM US",
-                    color = Color.White.copy(0.4f),
-                    fontSize = 10.sp,
+                    "Our Apps",
+                    color = Color.White.copy(0.5f),
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp
+                    modifier = Modifier.clickable {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/")))
+                    }
                 )
-                listOf(
-                    "Low Battery Camera (iOS)" to "https://apps.apple.com/id/app/low-battery-camera/id6496689003",
-                    "Low Battery Voice Recorder (iOS)" to "https://apps.apple.com/id/app/lbvr-low-battery-recorder/id6670330613",
-                    "Goodmood Screen Companion (Mac)" to "https://apps.apple.com/id/app/goodmood-screen-companion/id6765573775?mt=12"
-                ).forEach { (label, url) ->
-                    Text(
-                        label,
-                        color = Color.White.copy(0.5f),
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.clickable {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        }
-                    )
-                }
 
                 // Privacy & Terms
                 Row(
@@ -1172,4 +1182,59 @@ private fun PhotoPermissionRequest(onRequest: () -> Unit) {
             ) { Text("Grant Permission", letterSpacing = 1.sp) }
         }
     }
+}
+
+private fun bakeTimestampOnPhoto(file: java.io.File) {
+    // Read EXIF rotation so we can produce an upright image before stamping
+    val exif = androidx.exifinterface.media.ExifInterface(file.absolutePath)
+    val orientation = exif.getAttributeInt(
+        androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
+        androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL
+    )
+    val rotateDeg = when (orientation) {
+        androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_90  -> 90f
+        androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+        androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+        else -> 0f
+    }
+
+    val raw = android.graphics.BitmapFactory.decodeFile(file.absolutePath) ?: return
+
+    // Physically rotate to upright, then copy to a mutable bitmap for Canvas
+    val upright = if (rotateDeg != 0f) {
+        val m = android.graphics.Matrix().apply { postRotate(rotateDeg) }
+        android.graphics.Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, m, true)
+            .also { raw.recycle() }
+    } else {
+        raw
+    }
+    val bitmap = upright.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+    upright.recycle()
+
+    val canvas = android.graphics.Canvas(bitmap)
+    val label = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+        .format(java.util.Date()) + " · LBC"
+    val textSize = (bitmap.width * 0.032f).coerceIn(28f, 96f)
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        this.textSize = textSize
+        typeface = android.graphics.Typeface.MONOSPACE
+        setShadowLayer(textSize * 0.25f, 4f, 4f, android.graphics.Color.parseColor("#99000000"))
+        textAlign = android.graphics.Paint.Align.RIGHT
+    }
+    val margin = textSize * 1.4f
+    canvas.drawText(label, bitmap.width - margin, bitmap.height - margin, paint)
+
+    java.io.FileOutputStream(file).use { out ->
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+    }
+    bitmap.recycle()
+
+    // The image is now physically upright; reset EXIF orientation so viewers don't re-rotate it
+    val outExif = androidx.exifinterface.media.ExifInterface(file.absolutePath)
+    outExif.setAttribute(
+        androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
+        androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL.toString()
+    )
+    outExif.saveAttributes()
 }

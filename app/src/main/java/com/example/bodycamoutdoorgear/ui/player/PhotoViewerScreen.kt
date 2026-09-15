@@ -54,7 +54,9 @@ import com.example.bodycamoutdoorgear.ui.theme.SuccessGreen
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
+import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.PlayerViewModel
+import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -72,6 +74,18 @@ fun PhotoViewerScreen(
     val isSaving by playerViewModel.isSaving.collectAsState()
     val saveSuccess by playerViewModel.saveSuccess.collectAsState()
     val saveError by playerViewModel.saveError.collectAsState()
+
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
+    val accentColor = when (appearanceMode) {
+        AppearanceMode.SIMPLE    -> androidx.compose.ui.graphics.Color(0xFFCC0000)
+        AppearanceMode.TACTICAL  -> androidx.compose.ui.graphics.Color(0xFF00CC44)
+        AppearanceMode.MATCHA    -> androidx.compose.ui.graphics.Color(0xFF7BAF52)
+        AppearanceMode.ICE_CREAM -> androidx.compose.ui.graphics.Color(0xFFFF8FAB)
+        AppearanceMode.TROPICAL  -> androidx.compose.ui.graphics.Color(0xFFA0522D)
+        AppearanceMode.SPIDER    -> androidx.compose.ui.graphics.Color(0xFFBB0000)
+        else                     -> BackgroundDark
+    }
 
     var showPaywall by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -147,6 +161,7 @@ fun PhotoViewerScreen(
             PhotoActionButton(
                 icon = Icons.Default.SaveAlt,
                 locked = !isUnlocked,
+                bgColor = accentColor,
                 onClick = {
                     if (!isUnlocked) showPaywall = true
                     else playerViewModel.savePhotoToGallery(photo.file.absolutePath)
@@ -155,6 +170,7 @@ fun PhotoViewerScreen(
             PhotoActionButton(
                 icon = Icons.Default.IosShare,
                 locked = !isUnlocked,
+                bgColor = accentColor,
                 onClick = {
                     if (!isUnlocked) {
                         showPaywall = true
@@ -176,6 +192,7 @@ fun PhotoViewerScreen(
             PhotoActionButton(
                 icon = Icons.Default.Delete,
                 locked = false,
+                bgColor = accentColor,
                 tint = RecordRed,
                 onClick = { showDeleteConfirm = true }
             )
@@ -227,13 +244,14 @@ fun PhotoViewerScreen(
 private fun PhotoActionButton(
     icon: ImageVector,
     locked: Boolean,
+    bgColor: androidx.compose.ui.graphics.Color = BackgroundDark,
     tint: androidx.compose.ui.graphics.Color = TextPrimary,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .size(52.dp)
-            .background(BackgroundDark, androidx.compose.foundation.shape.CircleShape)
+            .background(bgColor, androidx.compose.foundation.shape.CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {

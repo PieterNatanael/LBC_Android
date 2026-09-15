@@ -26,7 +26,7 @@ enum class CaptureStatus { SAVING, SUCCESS, FAILURE }
 
 class PhotoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _selectedQuality = MutableStateFlow(PhotoQuality.HIGH)
+    private val _selectedQuality = MutableStateFlow(PhotoQuality.MED)
     val selectedQuality: StateFlow<PhotoQuality> = _selectedQuality.asStateFlow()
 
     private val _isCapturing = MutableStateFlow(false)

@@ -111,6 +111,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.video)
     implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.effects)
     // Navigation
     implementation(libs.androidx.navigation.compose)
     // Media3 / ExoPlayer
