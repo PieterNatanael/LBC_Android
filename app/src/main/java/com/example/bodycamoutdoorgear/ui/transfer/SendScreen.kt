@@ -18,9 +18,13 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +54,7 @@ fun SendScreen(
     files: List<File>,
     onDismiss: () -> Unit
 ) {
+    var showNetworkTip by remember { mutableStateOf(false) }
     val ip = remember { TransferServer.getLocalIp() }
     val qrBitmap = remember(ip) {
         ip?.let {
@@ -70,13 +75,6 @@ fun SendScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -99,12 +97,34 @@ fun SendScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Works best on a personal hotspot or home WiFi. Public WiFi (cafes, hotels) will not work.\nIf transferring between two iPhones, have one iPhone create the hotspot.\nOpen LBC on the other device and tap HipHop, then scan this code.",
+                "HipHop transfers files directly between your devices. No internet needed, just WiFi.\nMake sure both devices are on the same WiFi network.\nOn the other device, open LBC, tap HipHop, then scan this code.",
                 color = TextSecondary,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
                 lineHeight = 18.sp
             )
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .background(Color.White.copy(0.12f), CircleShape)
+                    .clickable { showNetworkTip = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("?", color = Color.White.copy(0.55f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            }
+            if (showNetworkTip) {
+                AlertDialog(
+                    onDismissRequest = { showNetworkTip = false },
+                    title = { Text("Network Tips", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+                    text = { Text("Home WiFi and personal hotspot work best.\nSome public networks block device-to-device connections. If that happens, use your personal hotspot.", color = TextSecondary, lineHeight = 20.sp) },
+                    confirmButton = {
+                        TextButton(onClick = { showNetworkTip = false }) {
+                            Text("Got it", color = TextPrimary)
+                        }
+                    },
+                    containerColor = SurfaceDark
+                )
+            }
 
             if (qrBitmap != null) {
                 Box(
@@ -152,6 +172,15 @@ fun SendScreen(
                 color = Color.White.copy(0.5f),
                 fontSize = 12.sp
             )
+        }
+
+        // Declared after the Column so it stays on top for touch handling —
+        // see ReceiveScreen for why this ordering matters.
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+        ) {
+            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
     }
 }

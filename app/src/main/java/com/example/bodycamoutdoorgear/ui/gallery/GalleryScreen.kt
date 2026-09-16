@@ -131,7 +131,7 @@ fun GalleryScreen(
             .background(bgColor)
     ) {
         if (videos.isEmpty()) {
-            EmptyGallery()
+            EmptyGallery(onHipHopClick = { showReceiveScreen = true })
         } else {
             val totalBytes = remember(videos) { videos.sumOf { it.file.length() } }
             val totalSizeLabel = remember(totalBytes) {
@@ -419,10 +419,15 @@ fun GalleryScreen(
         ) {
             HorizontalPager(
                 state = pagerState,
+                key = { page -> videos.getOrNull(page)?.id ?: page },
                 modifier = Modifier.fillMaxWidth()
             ) { page ->
                 val item = videos.getOrNull(page) ?: return@HorizontalPager
                 val isCurrentPage = pagerState.currentPage == page
+
+                LaunchedEffect(item.file.absolutePath) {
+                    galleryViewModel.loadThumbnail(item.file.absolutePath)
+                }
 
                 if (item.isPhoto) {
                     PhotoViewerScreen(
@@ -457,7 +462,7 @@ fun GalleryScreen(
 }
 
 @Composable
-private fun EmptyGallery() {
+private fun EmptyGallery(onHipHopClick: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
@@ -478,6 +483,17 @@ private fun EmptyGallery() {
                 text = "Recordings will appear here",
                 color = TextSecondary.copy(alpha = 0.6f),
                 fontSize = 13.sp
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "HipHop",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .clickable(onClick = onHipHopClick)
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
     }

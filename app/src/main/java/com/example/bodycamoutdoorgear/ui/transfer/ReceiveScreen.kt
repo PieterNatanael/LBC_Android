@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -34,6 +35,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
@@ -76,6 +79,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
     var progress by remember { mutableStateOf(0f) }
     val receivedFiles = remember { mutableStateListOf<String>() }
 
+    var showNetworkTip by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
     var showManualEntry by remember { mutableStateOf(false) }
     var manualIp by remember { mutableStateOf("") }
@@ -101,8 +105,16 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             status = "Downloading ${files.size} file(s)..."
             var done = 0
             files.forEach { name ->
+                var lastReported = -1f
                 val ok = TransferClient.downloadFile(context, ip, TRANSFER_PORT, name) { p ->
-                    progress = (done + p) / files.size.toFloat()
+                    val overall = (done + p) / files.size.toFloat()
+                    // Chunk callbacks fire every 256 KB, which for large files can be
+                    // hundreds of times per second — only push a recomposition when the
+                    // visible progress actually moves, instead of on every chunk.
+                    if (overall - lastReported >= 0.01f) {
+                        lastReported = overall
+                        progress = overall
+                    }
                 }
                 if (ok) { done++; receivedFiles.add(name) }
             }
@@ -136,13 +148,6 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             .navigationBarsPadding()
             .imePadding()
     ) {
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -168,12 +173,34 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
             )
 
             Text(
-                "Works best on a personal hotspot or home WiFi. Public WiFi (cafes, hotels) will not work.\nIf transferring between two iPhones, have one iPhone create the hotspot.\nOpen LBC on the other device, tap HipHop, then scan the QR code shown there.",
+                "HipHop transfers files directly between your devices. No internet needed, just WiFi.\nMake sure both devices are on the same WiFi network.\nOn the sender's device, open LBC and tap HipHop to show their code, then scan it here.",
                 color = Color.White.copy(0.4f),
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
             )
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .background(Color.White.copy(0.12f), CircleShape)
+                    .clickable { showNetworkTip = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("?", color = Color.White.copy(0.55f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            }
+            if (showNetworkTip) {
+                AlertDialog(
+                    onDismissRequest = { showNetworkTip = false },
+                    title = { Text("Network Tips", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+                    text = { Text("Home WiFi and personal hotspot work best.\nSome public networks block device-to-device connections. If that happens, use your personal hotspot.", color = TextSecondary, lineHeight = 20.sp) },
+                    confirmButton = {
+                        TextButton(onClick = { showNetworkTip = false }) {
+                            Text("Got it", color = TextPrimary)
+                        }
+                    },
+                    containerColor = SurfaceDark
+                )
+            }
 
             Text(
                 status,
@@ -247,6 +274,17 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                     }
                 }
             }
+        }
+
+        // Declared after the scrollable Column so it stays on top for touch
+        // handling — otherwise the Column's own bounds (which grow tall once
+        // status/progress/received-files text stack up) can end up overlapping
+        // and swallowing taps meant for this button.
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+        ) {
+            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
     }
 }
