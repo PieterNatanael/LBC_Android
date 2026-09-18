@@ -117,6 +117,7 @@ import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import com.example.bodycamoutdoorgear.viewmodel.CameraViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
@@ -243,63 +244,45 @@ fun CameraScreen(
     val initialRotation = remember { (context as? Activity)?.display?.rotation ?: android.view.Surface.ROTATION_0 }
     var targetRotation  by remember { mutableStateOf(initialRotation) }
 
-    // Single atomic holds all overlay state: null = inactive, non-null = (text, isPortrait).
-    // One read gives a fully-consistent snapshot — no window where active+stale-orientation coexist.
-    val stampStateRef    = remember { java.util.concurrent.atomic.AtomicReference<Pair<String, Boolean>?>(null) }
-    val stampLastNanoRef = remember { java.util.concurrent.atomic.AtomicLong(0L) }
+    // ── Video timestamp overlay ─────────────────────────────────────────────────
+    // Rebuilt from scratch (see project memory for the history of failed attempts
+    // at orientation-correcting the text — all of them introduced a duplicate
+    // stamp). This version does the minimum possible: no orientation branching, no
+    // transform, just lock onto whichever exact canvas size CameraX hands us first
+    // for a given recording and refuse every other size for the rest of it. That's
+    // a structural guarantee against duplicates regardless of *why* CameraX is
+    // invoking the listener more than once (undocumented, and not worth guessing at
+    // again) — it can only ever draw on one specific buffer per recording.
+    val videoStampTextRef       = remember { java.util.concurrent.atomic.AtomicReference<String?>(null) }
+    val videoStampLockedSizeRef = remember { java.util.concurrent.atomic.AtomicReference<Pair<Int, Int>?>(null) }
 
-    // OverlayEffect bakes timestamp into video frames in real-time (no post-processing needed)
-    val overlayEffect = remember {
+    val videoStampEffect = remember {
         OverlayEffect(
             CameraEffect.VIDEO_CAPTURE,
             0,
             android.os.Handler(android.os.Looper.getMainLooper()),
             {}
         ).also { effect ->
-            val overlayPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.WHITE
                 typeface = android.graphics.Typeface.MONOSPACE
                 textAlign = android.graphics.Paint.Align.RIGHT
             }
             effect.setOnDrawListener { frame ->
-                val snap = stampStateRef.get() ?: return@setOnDrawListener true  // inactive
-                // Dedup: skip if drawn in the last 2ms (CameraX may invoke this twice per frame)
-                val now = System.nanoTime()
-                if (now - stampLastNanoRef.get() < 2_000_000L) return@setOnDrawListener true
-                stampLastNanoRef.set(now)
-                val (text, isPortraitRecording) = snap
-                if (text.isEmpty()) return@setOnDrawListener true
+                val text = videoStampTextRef.get() ?: return@setOnDrawListener true  // inactive
                 val canvas = frame.overlayCanvas
+                val size = canvas.width to canvas.height
+                val lockedSize = videoStampLockedSizeRef.updateAndGet { it ?: size }
+                if (lockedSize != size) return@setOnDrawListener true  // not the locked buffer — skip
+
                 val bw = canvas.width.toFloat()
                 val bh = canvas.height.toFloat()
-                // For landscape recording, skip portrait-dimensioned canvases (SD internal surface)
-                if (!isPortraitRecording && bh >= bw) return@setOnDrawListener true
                 val label = "$text · LBC"
-                canvas.save()
-                when {
-                    isPortraitRecording && bw > bh -> {
-                        // Portrait recording, landscape buffer (HD/HIGH):
-                        // matrix maps portrait draw coords to landscape buffer so text reads
-                        // upright after 90° CCW playback rotation. portrait(px,py)→buffer(py, bh-1-px)
-                        val m = android.graphics.Matrix()
-                        m.setValues(floatArrayOf(0f, 1f, 0f, -1f, 0f, bh - 1f, 0f, 0f, 1f))
-                        canvas.concat(m)
-                        val textSize = (bh * 0.028f).coerceIn(18f, 54f)
-                        overlayPaint.textSize = textSize
-                        overlayPaint.setShadowLayer(textSize * 0.25f, 3f, 3f, 0x99000000.toInt())
-                        val margin = textSize * 1.5f
-                        canvas.drawText(label, bh - margin, bw - margin, overlayPaint)
-                    }
-                    else -> {
-                        // Landscape recording, or portrait recording on portrait buffer (SD quality)
-                        val textSize = (bw * 0.028f).coerceIn(18f, 54f)
-                        overlayPaint.textSize = textSize
-                        overlayPaint.setShadowLayer(textSize * 0.25f, 3f, 3f, 0x99000000.toInt())
-                        val margin = textSize * 1.5f
-                        canvas.drawText(label, bw - margin, bh - margin, overlayPaint)
-                    }
-                }
-                canvas.restore()
+                val textSize = (minOf(bw, bh) * 0.026f).coerceIn(12f, 34f)
+                paint.textSize = textSize
+                paint.setShadowLayer(textSize * 0.25f, 3f, 3f, 0x99000000.toInt())
+                val margin = textSize * 0.6f
+                canvas.drawText(label, bw - margin, bh - margin, paint)
                 true
             }
         }
@@ -357,7 +340,7 @@ fun CameraScreen(
             val useCaseGroup = UseCaseGroup.Builder()
                 .addUseCase(preview)
                 .addUseCase(vCapture)
-                .addEffect(overlayEffect)
+                .addEffect(videoStampEffect)
                 .build()
             val camera = provider.bindToLifecycle(lifecycleOwner, selector, useCaseGroup)
             videoCapture = vCapture
@@ -470,8 +453,19 @@ fun CameraScreen(
         }
     }
 
-    // Video timestamp disabled — only photos get stamped (see PhotoScreen)
-    LaunchedEffect(isRecording) { stampStateRef.set(null) }
+    // Drives the video overlay while recording, using the same TIMESTAMP toggle as photos.
+    LaunchedEffect(isRecording, stampTimestamp) {
+        if (isRecording && stampTimestamp) {
+            videoStampLockedSizeRef.set(null)  // fresh recording — re-lock to its first buffer
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+            while (true) {
+                videoStampTextRef.set(dateFormat.format(java.util.Date()))
+                delay(1000)
+            }
+        } else {
+            videoStampTextRef.set(null)
+        }
+    }
 
     // ── UI ───────────────────────────────────────────────────────────────────
     Box(modifier = Modifier
@@ -961,13 +955,13 @@ fun CameraScreen(
                     )
                 }
 
-                // Video timestamp overlay + photo stamp
+                // Timestamp overlay — shared toggle for both photo and video
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("PHOTO TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     androidx.compose.material3.Switch(
                         checked = stampTimestamp,
                         onCheckedChange = { settingsViewModel.toggleStampTimestamp() }

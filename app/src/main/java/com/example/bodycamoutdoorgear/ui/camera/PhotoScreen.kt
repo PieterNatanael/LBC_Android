@@ -814,13 +814,13 @@ fun PhotoScreen(
                     )
                 }
 
-                // Bake timestamp into photo file
+                // Timestamp overlay — shared toggle for both photo and video
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("PHOTO TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Switch(
                         checked = stampTimestamp,
                         onCheckedChange = { settingsViewModel.toggleStampTimestamp() }
