@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
 enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER") }
-enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE") }
+enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE"), YAPPING("YAP") }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -56,6 +56,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getInt("gallery_columns", 3)
     )
     val galleryColumns: StateFlow<Int> = _galleryColumns.asStateFlow()
+
+    // Script text shown in YAPPING display mode, so the user's typed/pasted script
+    // survives across recordings and app restarts rather than resetting every take.
+    private val _yappingScript = MutableStateFlow(
+        prefs.getString("yapping_script", "") ?: ""
+    )
+    val yappingScript: StateFlow<String> = _yappingScript.asStateFlow()
 
     init {
         // Remove legacy low_light pref so any user who had it on is reset
@@ -114,6 +121,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setGalleryColumns(columns: Int) {
         _galleryColumns.value = columns
         prefs.edit().putInt("gallery_columns", columns).apply()
+    }
+
+    fun setYappingScript(text: String) {
+        _yappingScript.value = text
+        prefs.edit().putString("yapping_script", text).apply()
     }
 
     fun resetIntro() {

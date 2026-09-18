@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
@@ -51,6 +52,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Cameraswitch
@@ -91,6 +95,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -131,6 +136,8 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,6 +160,7 @@ fun CameraScreen(
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
     val isCircle         = displayMode == DisplayMode.CIRCLE
+    val isYapping        = displayMode == DisplayMode.YAPPING
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
@@ -481,10 +489,12 @@ fun CameraScreen(
         .onGloballyPositioned { rootCoordsRef[0] = it }
     ) {
 
-        // Glow + vignette
+        // Glow + vignette — skipped in YAPPING, whose preview doesn't update
+        // previewBounds (it floats independently), so the glow would otherwise
+        // render around a stale rectangle from whatever mode was active before
         Canvas(modifier = Modifier.fillMaxSize()) {
             val pB = previewBounds
-            if (pB.width > 0f) {
+            if (pB.width > 0f && !isYapping) {
                 val cx = pB.center.x
                 val cy = pB.center.y
                 val screenDiag = sqrt(size.width.pow(2f) + size.height.pow(2f))
@@ -532,7 +542,7 @@ fun CameraScreen(
         } else {
             Box(modifier = Modifier.fillMaxSize()) {
                 // ── Display mode NORMAL: fullscreen preview behind toolbar/buttons ──
-                val isNormalDisplay = !isCircle && !isSaveBattery
+                val isNormalDisplay = !isCircle && !isSaveBattery && !isYapping
                 if (isNormalDisplay) {
                     Box(
                         modifier = Modifier
@@ -586,12 +596,81 @@ fun CameraScreen(
                         }
                     }
 
-                    // Preview slot — only for CIRCLE and SAVE_BATTERY display modes
+                    // Preview slot — CIRCLE/SAVE_BATTERY show the preview here; YAPPING
+                    // shows the script instead, with the preview floating separately
                     Box(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!isNormalDisplay) {
+                        if (isYapping) {
+                            val yappingScript by settingsViewModel.yappingScript.collectAsState()
+                            val clipboardManager = LocalClipboardManager.current
+                            Column(
+                                modifier = Modifier.fillMaxSize().padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = yappingScript,
+                                    onValueChange = { settingsViewModel.setYappingScript(it) },
+                                    placeholder = {
+                                        Text(
+                                            "Type or paste your script here…",
+                                            color = Color.White.copy(0.35f),
+                                            fontSize = 18.sp
+                                        )
+                                    },
+                                    textStyle = androidx.compose.ui.text.TextStyle(
+                                        color = Color.White,
+                                        fontSize = 19.sp,
+                                        lineHeight = 27.sp
+                                    ),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        focusedBorderColor = accentColor.copy(0.6f),
+                                        unfocusedBorderColor = Color.White.copy(0.15f),
+                                        cursorColor = accentColor
+                                    ),
+                                    // Always narrow — a shorter line length means less
+                                    // eye travel per line while reading during a take.
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth(0.62f)
+                                        .align(Alignment.CenterHorizontally)
+                                )
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        "PASTE",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        fontFamily = FontFamily.Monospace,
+                                        modifier = Modifier
+                                            .background(Color.Black, RoundedCornerShape(4.dp))
+                                            .clickable {
+                                                clipboardManager.getText()?.text?.let {
+                                                    settingsViewModel.setYappingScript(it)
+                                                }
+                                            }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                    Text(
+                                        "CLEAR",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        fontFamily = FontFamily.Monospace,
+                                        modifier = Modifier
+                                            .background(Color.Black, RoundedCornerShape(4.dp))
+                                            .clickable { settingsViewModel.setYappingScript("") }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        } else if (!isNormalDisplay) {
                             Box(
                                 modifier = Modifier
                                     .then(when {
@@ -768,6 +847,29 @@ fun CameraScreen(
                         contentAlignment = Alignment.TopCenter
                     ) {
                         RecTimerBadge(isRecording)
+                    }
+                }
+
+                // ── Floating movable preview (YAPPING mode) ───────────────────────
+                if (isYapping) {
+                    var yapOffset by remember { mutableStateOf(Offset.Zero) }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(top = 56.dp, end = 16.dp)
+                            .offset { IntOffset(yapOffset.x.roundToInt(), yapOffset.y.roundToInt()) }
+                            .size(width = 110.dp, height = 150.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(2.dp, accentColor, RoundedCornerShape(12.dp))
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    yapOffset += dragAmount
+                                }
+                            }
+                    ) {
+                        cameraPreviewContent()
                     }
                 }
 
