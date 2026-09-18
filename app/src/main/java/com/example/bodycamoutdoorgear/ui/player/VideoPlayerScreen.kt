@@ -83,6 +83,7 @@ import java.util.Locale
 @Composable
 fun VideoPlayerScreen(
     video: VideoItem,
+    exoPlayer: ExoPlayer,
     subscriptionManager: SubscriptionManager,
     onDismiss: () -> Unit,
     onDeleted: () -> Unit,
@@ -113,23 +114,22 @@ fun VideoPlayerScreen(
     val prefs = remember { context.getSharedPreferences("player_prefs", Context.MODE_PRIVATE) }
     var loopEnabled by remember { mutableStateOf(prefs.getBoolean("loop_enabled", true)) }
 
-    val exoPlayer = remember(video.id) {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.fromFile(video.file)))
-            repeatMode = if (loopEnabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-            prepare()
-            playWhenReady = true
+    // exoPlayer is shared across every page of the swipe viewer (see GalleryScreen) —
+    // only the active page may point it at its own file, so an inactive/background
+    // page (briefly composed during a swipe transition) never steals playback.
+    LaunchedEffect(video.id, isActive) {
+        if (isActive) {
+            exoPlayer.setMediaItem(MediaItem.fromUri(Uri.fromFile(video.file)))
+            exoPlayer.repeatMode = if (loopEnabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true
         }
     }
 
-    DisposableEffect(video.id) {
-        onDispose { exoPlayer.release() }
-    }
-
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, isActive) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause()
+            if (isActive && event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -191,12 +191,12 @@ fun VideoPlayerScreen(
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
-                        player = exoPlayer
                         useController = true
                         controllerAutoShow = false
                     }
                 },
-                update = { view -> view.player = exoPlayer },
+                update = { view -> view.player = if (isActive) exoPlayer else null },
+                onRelease = { view -> view.player = null },
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(video.id) {

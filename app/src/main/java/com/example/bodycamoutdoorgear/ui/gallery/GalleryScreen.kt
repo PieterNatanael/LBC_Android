@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,6 +66,7 @@ import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import com.example.bodycamoutdoorgear.ui.player.PhotoViewerScreen
 import com.example.bodycamoutdoorgear.ui.player.VideoPlayerScreen
+import androidx.media3.exoplayer.ExoPlayer
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
 import com.example.bodycamoutdoorgear.ui.theme.BorderColor
 import com.example.bodycamoutdoorgear.ui.theme.RecordRed
@@ -412,6 +414,17 @@ fun GalleryScreen(
         val safeIndex = selectedIndex!!.coerceIn(0, videos.lastIndex)
         val pagerState = rememberPagerState(initialPage = safeIndex) { videos.size }
 
+        // One ExoPlayer shared across every page of this viewer session — each page
+        // used to create its own player (and hardware decoder), and swiping through
+        // several videos without the old ones being torn down fast enough exhausted
+        // decoder/heap resources and crashed with OutOfMemoryError. A single reused
+        // player, with only the current page attaching it to its PlayerView, avoids
+        // that entirely: there's only ever one decoder alive for this screen.
+        val sharedVideoPlayer = remember { ExoPlayer.Builder(context).build() }
+        DisposableEffect(Unit) {
+            onDispose { sharedVideoPlayer.release() }
+        }
+
         ModalBottomSheet(
             onDismissRequest = { selectedIndex = null },
             sheetState = sheetState,
@@ -446,6 +459,7 @@ fun GalleryScreen(
                     VideoPlayerScreen(
                         video = item,
                         isActive = isCurrentPage,
+                        exoPlayer = sharedVideoPlayer,
                         subscriptionManager = subscriptionManager,
                         onDismiss = {
                             scope.launch { sheetState.hide() }.invokeOnCompletion { selectedIndex = null }
