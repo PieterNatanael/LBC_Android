@@ -14,10 +14,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.bodycamoutdoorgear.sound.ShutterSoundPlayer
+import com.example.bodycamoutdoorgear.sound.ShutterSoundStore
+import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
+import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +47,11 @@ fun ShutterSoundSection(
     selectedId: String,
     onSelect: (ShutterSound) -> Unit,
     onPreview: (ShutterSound) -> Unit,
-    sounds: List<ShutterSound> = ShutterSound.builtIn
+    sounds: List<ShutterSound> = ShutterSound.builtIn,
+    accent: Color = Color.White,
+    canRecord: Boolean = false,
+    onRecord: () -> Unit = {},
+    onDelete: (ShutterSound) -> Unit = {}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -83,6 +101,40 @@ fun ShutterSoundSection(
                         .size(22.dp)
                         .clickable { onPreview(sound) }
                 )
+                if (sound.isCustom) {
+                    Spacer(Modifier.width(12.dp))
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.White.copy(0.6f),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { onDelete(sound) }
+                    )
+                }
+            }
+        }
+        if (canRecord) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(accent)
+                    .clickable { onRecord() }
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Filled.Mic, contentDescription = null, tint = accent.readableTextColor(), modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "RECORD YOUR OWN",
+                    color = accent.readableTextColor(),
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
             }
         }
         Text(
@@ -90,6 +142,62 @@ fun ShutterSoundSection(
             color = Color.White.copy(0.3f),
             fontSize = 9.sp,
             fontFamily = FontFamily.Monospace
+        )
+    }
+}
+
+/** The whole SHUTTER SOUND block for a Settings sheet: list, recorder and delete confirmation. */
+@Composable
+fun ShutterSoundSettings(settingsViewModel: SettingsViewModel, accent: Color) {
+    val context = LocalContext.current
+    val store = remember { ShutterSoundStore.get(context) }
+    val player = remember { ShutterSoundPlayer.get(context) }
+    val custom by store.custom.collectAsState()
+    val selectedId by settingsViewModel.shutterSoundId.collectAsState()
+    var showRecorder by remember { mutableStateOf(false) }
+    var toDelete by remember { mutableStateOf<ShutterSound?>(null) }
+
+    ShutterSoundSection(
+        selectedId = selectedId,
+        onSelect = { settingsViewModel.setShutterSound(it.id); player.play(it) },
+        onPreview = { player.play(it) },
+        sounds = ShutterSound.builtIn + custom,
+        accent = accent,
+        canRecord = custom.size < ShutterSoundStore.MAX_CUSTOM,
+        onRecord = { showRecorder = true },
+        onDelete = { toDelete = it }
+    )
+
+    if (showRecorder) {
+        RecordShutterSoundDialog(
+            accent = accent,
+            onDismiss = { showRecorder = false },
+            onSaved = { sound ->
+                settingsViewModel.setShutterSound(sound.id)
+                player.play(sound)
+                showRecorder = false
+            }
+        )
+    }
+
+    toDelete?.let { sound ->
+        AlertDialog(
+            onDismissRequest = { toDelete = null },
+            containerColor = SurfaceDark,
+            titleContentColor = Color.White,
+            textContentColor = Color.White.copy(0.7f),
+            title = { Text("Delete this sound?") },
+            text = { Text("This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (selectedId == sound.id) settingsViewModel.setShutterSound(ShutterSound.CLASSIC.id)
+                    store.remove(sound)
+                    toDelete = null
+                }) { Text("Delete", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { toDelete = null }) { Text("Cancel", color = Color.White.copy(0.7f)) }
+            }
         )
     }
 }

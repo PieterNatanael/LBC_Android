@@ -111,8 +111,7 @@ import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.DisplayMode
 import com.example.bodycamoutdoorgear.viewmodel.QualityTier
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
-import com.example.bodycamoutdoorgear.sound.ShutterSoundPlayer
-import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSection
+import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
@@ -1046,13 +1045,7 @@ fun CameraScreen(
                     }
                 }
 
-                val shutterSoundId by settingsViewModel.shutterSoundId.collectAsState()
-                val soundPlayer = remember { ShutterSoundPlayer.get(context) }
-                ShutterSoundSection(
-                    selectedId = shutterSoundId,
-                    onSelect = { settingsViewModel.setShutterSound(it.id); soundPlayer.play(it) },
-                    onPreview = { soundPlayer.play(it) }
-                )
+                ShutterSoundSettings(settingsViewModel, accentColor)
 
                 // Grid
                 Row(

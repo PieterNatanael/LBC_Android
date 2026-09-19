@@ -38,9 +38,20 @@ class ShutterSoundPlayer private constructor(private val appContext: Context) {
     }
 
     fun preload(sound: ShutterSound) {
-        val res = sound.rawRes ?: return
         if (poolIds.containsKey(sound.id)) return
-        poolIds[sound.id] = pool.load(appContext, res, 1)
+        val res = sound.rawRes
+        val path = sound.filePath
+        when {
+            res != null -> poolIds[sound.id] = pool.load(appContext, res, 1)
+            path != null -> poolIds[sound.id] = pool.load(path, 1)
+        }
+    }
+
+    /** Releases a deleted custom sound. */
+    fun forget(sound: ShutterSound) {
+        val poolId = poolIds.remove(sound.id) ?: return
+        synchronized(loaded) { loaded.remove(poolId) }
+        pool.unload(poolId)
     }
 
     fun play(sound: ShutterSound) {

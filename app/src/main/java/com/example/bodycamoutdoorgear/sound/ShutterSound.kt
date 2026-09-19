@@ -7,7 +7,8 @@ data class ShutterSound(
     val emoji: String,
     val name: String,
     val rawRes: Int? = null,
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    val filePath: String? = null
 ) {
     companion object {
         val CLASSIC = ShutterSound("classic", "📷", "Classic beep")
