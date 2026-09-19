@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import com.example.bodycamoutdoorgear.data.VideoQuality
+import com.example.bodycamoutdoorgear.sound.ShutterSound
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,6 +57,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getInt("gallery_columns", 3)
     )
     val galleryColumns: StateFlow<Int> = _galleryColumns.asStateFlow()
+
+    private val _shutterSoundId = MutableStateFlow(
+        prefs.getString("shutter_sound_id", ShutterSound.CLASSIC.id) ?: ShutterSound.CLASSIC.id
+    )
+    val shutterSoundId: StateFlow<String> = _shutterSoundId.asStateFlow()
 
     // Script text shown in YAPPING display mode, so the user's typed/pasted script
     // survives across recordings and app restarts rather than resetting every take.
@@ -121,6 +127,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setGalleryColumns(columns: Int) {
         _galleryColumns.value = columns
         prefs.edit().putInt("gallery_columns", columns).apply()
+    }
+
+    fun setShutterSound(id: String) {
+        _shutterSoundId.value = id
+        prefs.edit().putString("shutter_sound_id", id).apply()
     }
 
     fun setYappingScript(text: String) {

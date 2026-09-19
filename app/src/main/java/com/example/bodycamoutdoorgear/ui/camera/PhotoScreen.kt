@@ -6,8 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.media.MediaScannerConnection
-import android.media.ToneGenerator
-import android.media.AudioManager
 import android.view.WindowManager
 import java.io.File
 import androidx.camera.core.CameraSelector
@@ -114,6 +112,9 @@ import com.example.bodycamoutdoorgear.viewmodel.DisplayMode
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
 import com.example.bodycamoutdoorgear.viewmodel.QualityTier
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
+import com.example.bodycamoutdoorgear.sound.ShutterSound
+import com.example.bodycamoutdoorgear.sound.ShutterSoundPlayer
+import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSection
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -141,6 +142,8 @@ fun PhotoScreen(
     val videoQualityTier by settingsViewModel.videoQualityTier.collectAsState()
     val gridEnabled      by settingsViewModel.gridEnabled.collectAsState()
     val stampTimestamp   by settingsViewModel.stampTimestamp.collectAsState()
+    val shutterSoundId   by settingsViewModel.shutterSoundId.collectAsState()
+    val soundPlayer      = remember { ShutterSoundPlayer.get(context) }
     val appearanceMode   by settingsViewModel.appearanceMode.collectAsState()
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
@@ -338,11 +341,7 @@ fun PhotoScreen(
             showFlash = false
             viewModel.setCapturing(false)
         }
-        try {
-            ToneGenerator(AudioManager.STREAM_MUSIC, 35).apply {
-                startTone(ToneGenerator.TONE_PROP_BEEP, 60)
-            }
-        } catch (_: Exception) {}
+        soundPlayer.play(ShutterSound.byId(settingsViewModel.shutterSoundId.value))
 
         val photoFile = File(context.filesDir, "LBC_${System.currentTimeMillis()}.jpg")
         val opts = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -800,6 +799,12 @@ fun PhotoScreen(
                         }
                     }
                 }
+
+                ShutterSoundSection(
+                    selectedId = shutterSoundId,
+                    onSelect = { settingsViewModel.setShutterSound(it.id); soundPlayer.play(it) },
+                    onPreview = { soundPlayer.play(it) }
+                )
 
                 // Grid
                 Row(
