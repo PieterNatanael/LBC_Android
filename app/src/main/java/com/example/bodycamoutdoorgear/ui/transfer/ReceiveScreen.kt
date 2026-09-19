@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.bodycamoutdoorgear.sound.ShutterSoundStore
 import com.example.bodycamoutdoorgear.transfer.TRANSFER_PORT
 import com.example.bodycamoutdoorgear.transfer.TransferClient
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
@@ -102,12 +103,32 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                 isDownloading = false
                 return@launch
             }
-            status = "Downloading ${files.size} file(s)..."
+            val allSounds = files.all { it.isSound }
+            status = if (allSounds) "Adding ${files.size} sound(s)..." else "Downloading ${files.size} file(s)..."
             var done = 0
-            files.forEach { name ->
+            var soundsAdded = 0
+            files.forEachIndexed { index, file ->
+                if (file.isSound) {
+                    val label = file.title ?: file.name
+                    val temp = TransferClient.downloadSound(context, ip, TRANSFER_PORT, file) {}
+                    val result = if (temp == null) ShutterSoundStore.ImportResult.FAILED else try {
+                        ShutterSoundStore.get(context).importReceived(file.name, file.title, file.emoji, temp)
+                    } finally { temp.delete() }
+                    receivedFiles.add(
+                        when (result) {
+                            ShutterSoundStore.ImportResult.ADDED -> label
+                            ShutterSoundStore.ImportResult.DUPLICATE -> "$label (already added)"
+                            ShutterSoundStore.ImportResult.FULL -> "$label (sound list is full)"
+                            ShutterSoundStore.ImportResult.FAILED -> "$label (failed)"
+                        }
+                    )
+                    if (result == ShutterSoundStore.ImportResult.ADDED) soundsAdded++
+                    progress = (index + 1) / files.size.toFloat()
+                    return@forEachIndexed
+                }
                 var lastReported = -1f
-                val ok = TransferClient.downloadFile(context, ip, TRANSFER_PORT, name) { p ->
-                    val overall = (done + p) / files.size.toFloat()
+                val ok = TransferClient.downloadFile(context, ip, TRANSFER_PORT, file.name) { p ->
+                    val overall = (index + p) / files.size.toFloat()
                     // Chunk callbacks fire every 256 KB, which for large files can be
                     // hundreds of times per second — only push a recomposition when the
                     // visible progress actually moves, instead of on every chunk.
@@ -116,11 +137,12 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                         progress = overall
                     }
                 }
-                if (ok) { done++; receivedFiles.add(name) }
+                if (ok) { done++; receivedFiles.add(file.name) }
             }
             progress = 1f
             isDownloading = false
-            status = "Done. $done file(s) saved to gallery."
+            status = if (allSounds) "Done. $soundsAdded sound(s) added. Find them in Settings under Shutter Sound."
+                     else "Done. $done file(s) saved to gallery."
             if (done > 0) onFilesReceived()
         }
     }

@@ -56,6 +56,45 @@ class ShutterSoundStore private constructor(private val appContext: Context) {
         return sound
     }
 
+    enum class ImportResult { ADDED, DUPLICATE, FULL, FAILED }
+
+    /**
+     * Adds a sound received from another device. Everything about it comes from
+     * the network: the file name must be a UUID (it becomes a path here) and the
+     * audio is re-written by us instead of being kept as received.
+     */
+    fun importReceived(fileName: String, title: String?, emoji: String?, received: File): ImportResult {
+        if (!fileName.endsWith(".wav", ignoreCase = true)) return ImportResult.FAILED
+        val id = try {
+            UUID.fromString(fileName.dropLast(4)).toString()
+        } catch (_: Exception) { return ImportResult.FAILED }
+        if (_custom.value.any { it.id == id }) return ImportResult.DUPLICATE
+        if (_custom.value.size >= MAX_CUSTOM) return ImportResult.FULL
+
+        if (received.length() > ShutterSoundClip.MAX_IMPORT_BYTES) return ImportResult.FAILED
+        val pcm = ShutterSoundClip.readWavPcm16(received.readBytes()) ?: return ImportResult.FAILED
+        dir.mkdirs()
+        val file = fileFor(id)
+        ShutterSoundClip.writeWav(file, pcm)
+
+        val cleanTitle = (title ?: "").filter { !it.isISOControl() }.trim()
+        val name = cleanTitle.ifEmpty { "Shared sound" }.take(20)
+        val icon = firstGrapheme((emoji ?: "").trim()) ?: "🎵"
+        val sound = ShutterSound(id, icon, name, isCustom = true, filePath = file.absolutePath)
+        _custom.value = _custom.value + sound
+        persist()
+        player.preload(sound)
+        return ImportResult.ADDED
+    }
+
+    private fun firstGrapheme(text: String): String? {
+        if (text.isEmpty()) return null
+        val it = java.text.BreakIterator.getCharacterInstance()
+        it.setText(text)
+        val end = it.next()
+        return if (end == java.text.BreakIterator.DONE) null else text.substring(0, end)
+    }
+
     fun remove(sound: ShutterSound) {
         if (!sound.isCustom) return
         player.forget(sound)

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,10 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -28,7 +31,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.bodycamoutdoorgear.sound.ShutterSoundPlayer
+import com.example.bodycamoutdoorgear.transfer.SoundMeta
+import com.example.bodycamoutdoorgear.ui.transfer.SendScreen
 import com.example.bodycamoutdoorgear.sound.ShutterSoundStore
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
@@ -51,6 +58,7 @@ fun ShutterSoundSection(
     accent: Color = Color.White,
     canRecord: Boolean = false,
     onRecord: () -> Unit = {},
+    onShare: (ShutterSound) -> Unit = {},
     onDelete: (ShutterSound) -> Unit = {}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -102,15 +110,32 @@ fun ShutterSoundSection(
                         .clickable { onPreview(sound) }
                 )
                 if (sound.isCustom) {
-                    Spacer(Modifier.width(12.dp))
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = "Delete",
-                        tint = Color.White.copy(0.6f),
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clickable { onDelete(sound) }
-                    )
+                    Spacer(Modifier.width(8.dp))
+                    var menuOpen by remember { mutableStateOf(false) }
+                    Box {
+                        Icon(
+                            Icons.Filled.MoreVert,
+                            contentDescription = "More",
+                            tint = Color.White.copy(0.6f),
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clickable { menuOpen = true }
+                        )
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false },
+                            containerColor = SurfaceDark
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Share via HipHop", color = Color.White) },
+                                onClick = { menuOpen = false; onShare(sound) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = Color.White) },
+                                onClick = { menuOpen = false; onDelete(sound) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -156,6 +181,7 @@ fun ShutterSoundSettings(settingsViewModel: SettingsViewModel, accent: Color) {
     val selectedId by settingsViewModel.shutterSoundId.collectAsState()
     var showRecorder by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<ShutterSound?>(null) }
+    var toShare by remember { mutableStateOf<ShutterSound?>(null) }
 
     ShutterSoundSection(
         selectedId = selectedId,
@@ -165,8 +191,23 @@ fun ShutterSoundSettings(settingsViewModel: SettingsViewModel, accent: Color) {
         accent = accent,
         canRecord = custom.size < ShutterSoundStore.MAX_CUSTOM,
         onRecord = { showRecorder = true },
+        onShare = { toShare = it },
         onDelete = { toDelete = it }
     )
+
+    toShare?.let { sound ->
+        Dialog(
+            onDismissRequest = { toShare = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            val file = store.fileFor(sound.id)
+            SendScreen(
+                files = listOf(file),
+                onDismiss = { toShare = null },
+                soundMeta = mapOf(file.name to SoundMeta(sound.name, sound.emoji))
+            )
+        }
+    }
 
     if (showRecorder) {
         RecordShutterSoundDialog(

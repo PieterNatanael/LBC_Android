@@ -75,6 +75,52 @@ object ShutterSoundClip {
         return out
     }
 
+    /** Largest file accepted from another device: a saved sound is about 140 KB. */
+    const val MAX_IMPORT_BYTES = 300_000
+
+    private val maxImportSamples: Int get() = ((MAX_SECONDS + LEADING_SILENCE + 0.05) * SAMPLE_RATE).toInt()
+
+    /**
+     * Reads a WAV received from another device. Only our own format is accepted
+     * (mono, 44.1 kHz, 16-bit PCM) and only up to the length a saved sound can
+     * be; anything else returns null. Chunks are scanned instead of assuming a
+     * 44-byte header, because iOS writes extra ones (JUNK) before "fmt ".
+     */
+    fun readWavPcm16(bytes: ByteArray): ShortArray? {
+        if (bytes.size < 44 || bytes.size > MAX_IMPORT_BYTES) return null
+        val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        fun tag(at: Int) = String(bytes, at, 4, Charsets.US_ASCII)
+        if (tag(0) != "RIFF" || tag(8) != "WAVE") return null
+
+        var pos = 12
+        var formatOk = false
+        while (pos + 8 <= bytes.size) {
+            val id = tag(pos)
+            val size = b.getInt(pos + 4).toLong() and 0xFFFFFFFFL
+            val body = pos + 8
+            when (id) {
+                "fmt " -> {
+                    if (size < 16 || body + 16 > bytes.size) return null
+                    formatOk = b.getShort(body).toInt() == 1 &&
+                        b.getShort(body + 2).toInt() == 1 &&
+                        b.getInt(body + 4) == SAMPLE_RATE &&
+                        b.getShort(body + 14).toInt() == 16
+                    if (!formatOk) return null
+                }
+                "data" -> {
+                    if (!formatOk) return null
+                    val length = min(size, (bytes.size - body).toLong()).toInt() / 2
+                    if (length <= 0 || length > maxImportSamples) return null
+                    return ShortArray(length) { b.getShort(body + it * 2) }
+                }
+            }
+            val next = body.toLong() + size + (size and 1L)
+            if (next > bytes.size) return null
+            pos = next.toInt()
+        }
+        return null
+    }
+
     /** Mono, 44.1 kHz, 16-bit PCM WAV. */
     fun writeWav(file: File, pcm: ShortArray) {
         val dataBytes = pcm.size * 2

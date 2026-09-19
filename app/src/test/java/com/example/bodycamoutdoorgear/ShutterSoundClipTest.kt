@@ -63,4 +63,49 @@ class ShutterSoundClipTest {
         assertEquals(pcm.size * 2, b.int)
         file.delete()
     }
+
+    // ── Received files ──────────────────────────────────────────────────────
+
+    private fun wavBytes(pcm: ShortArray, rate: Int = 44100, channels: Int = 1, bits: Int = 16): ByteArray {
+        val dataBytes = pcm.size * 2
+        val buf = ByteBuffer.allocate(44 + dataBytes).order(ByteOrder.LITTLE_ENDIAN)
+        buf.put("RIFF".toByteArray()).putInt(36 + dataBytes).put("WAVE".toByteArray())
+        buf.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(channels.toShort())
+            .putInt(rate).putInt(rate * 2).putShort(2).putShort(bits.toShort())
+        buf.put("data".toByteArray()).putInt(dataBytes)
+        for (v in pcm) buf.putShort(v)
+        return buf.array()
+    }
+
+    @Test
+    fun readsOurOwnWavBackExactly() {
+        val pcm = ShutterSoundClip.process(tone(0.5))
+        val file = File.createTempFile("own", ".wav")
+        ShutterSoundClip.writeWav(file, pcm)
+        val read = ShutterSoundClip.readWavPcm16(file.readBytes())
+        assertTrue(read != null && read.contentEquals(pcm))
+        file.delete()
+    }
+
+    @Test
+    fun readsAnIosWavThatHasAJunkChunk() {
+        // Made by the iOS app: 0.5 s tone plus 0.1 s of leading silence, with a JUNK chunk before "fmt ".
+        val bytes = javaClass.getResourceAsStream("/ios_sound.wav")!!.readBytes()
+        val read = ShutterSoundClip.readWavPcm16(bytes)
+        assertEquals(26460, read?.size)
+        assertTrue(read!!.take(4410).all { it.toInt() == 0 })
+    }
+
+    @Test
+    fun rejectsWrongFormatsAndOverlongSounds() {
+        val ok = ShortArray(20000) { 100 }
+        assertTrue(ShutterSoundClip.readWavPcm16(wavBytes(ok)) != null)
+        assertEquals(null, ShutterSoundClip.readWavPcm16(wavBytes(ok, rate = 48000)))
+        assertEquals(null, ShutterSoundClip.readWavPcm16(wavBytes(ok, channels = 2)))
+        assertEquals(null, ShutterSoundClip.readWavPcm16(wavBytes(ok, bits = 8)))
+        assertEquals(null, ShutterSoundClip.readWavPcm16(wavBytes(ShortArray(80000))))   // 1.8 s
+        assertEquals(null, ShutterSoundClip.readWavPcm16(ByteArray(100)))
+        assertEquals(null, ShutterSoundClip.readWavPcm16("RIFFxxxxWAVE".toByteArray() + ByteArray(60)))
+        assertEquals(null, ShutterSoundClip.readWavPcm16(ByteArray(400_000)))
+    }
 }

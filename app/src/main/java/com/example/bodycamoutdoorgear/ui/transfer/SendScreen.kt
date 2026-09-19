@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bodycamoutdoorgear.transfer.QrCodeUtil
+import com.example.bodycamoutdoorgear.transfer.SoundMeta
 import com.example.bodycamoutdoorgear.transfer.TransferServer
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
@@ -52,7 +53,8 @@ import java.io.File
 @Composable
 fun SendScreen(
     files: List<File>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    soundMeta: Map<String, SoundMeta> = emptyMap()
 ) {
     var showNetworkTip by remember { mutableStateOf(false) }
     val ip = remember { TransferServer.getLocalIp() }
@@ -64,7 +66,7 @@ fun SendScreen(
     }
 
     DisposableEffect(files) {
-        TransferServer.start(files)
+        TransferServer.start(files, soundMeta)
         onDispose { TransferServer.stop() }
     }
 
@@ -160,7 +162,7 @@ fun SendScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "${files.size} file${if (files.size != 1) "s" else ""} ready to send",
+                    "${files.size} ${if (soundMeta.isEmpty()) "file" else "sound"}${if (files.size != 1) "s" else ""} ready to send",
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
