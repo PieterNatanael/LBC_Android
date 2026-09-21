@@ -39,7 +39,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val appearanceMode: StateFlow<AppearanceMode> = _appearanceMode.asStateFlow()
 
     private val _displayMode = MutableStateFlow(
-        DisplayMode.entries[prefs.getInt("display_mode", DisplayMode.CIRCLE.ordinal)]
+        DisplayMode.entries[prefs.getInt("display_mode", DisplayMode.NORMAL.ordinal)]
     )
     val displayMode: StateFlow<DisplayMode> = _displayMode.asStateFlow()
 
