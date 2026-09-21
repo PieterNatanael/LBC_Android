@@ -64,7 +64,7 @@ import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 
 private val FEATURES = listOf(
     "Save videos and photos to your Gallery",
-    "Share to any app. HipHop transfer stays free",
+    "Share photos and videos. HipHop transfer stays free",
     "Every future update included"
 )
 

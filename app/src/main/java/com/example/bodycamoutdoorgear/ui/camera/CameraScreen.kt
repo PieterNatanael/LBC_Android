@@ -251,6 +251,10 @@ fun CameraScreen(
     var focusPoint      by remember { mutableStateOf<Offset?>(null) }
     var zoomRatio       by remember { mutableStateOf(1f) }
     var minZoomRatio    by remember { mutableStateOf(1f) }
+    var maxZoomRatio    by remember { mutableStateOf(1f) }
+    val zoomGlider = rememberZoomGlider { ratio ->
+        try { cameraControl?.setZoomRatio(ratio) } catch (_: Exception) {}
+    }
     val initialRotation = remember { (context as? Activity)?.display?.rotation ?: android.view.Surface.ROTATION_0 }
     var targetRotation  by remember { mutableStateOf(initialRotation) }
 
@@ -320,6 +324,7 @@ fun CameraScreen(
 
     // Rebind camera on quality, facing, permission, or active-tab change
     LaunchedEffect(qualityTier, isFrontCamera, permsGranted, isActive) {
+        zoomGlider.cancel()  // tab left, camera flipped or rebound: drop any running glide
         if (!permsGranted || !isActive) {
             // Do NOT call unbindAll here — PhotoScreen's active bind also calls unbindAll,
             // and a concurrent unbindAll from the inactive screen would undo that bind.
@@ -384,6 +389,7 @@ fun CameraScreen(
         val observer = androidx.lifecycle.Observer<androidx.camera.core.ZoomState> { state ->
             zoomRatio = state.zoomRatio
             minZoomRatio = state.minZoomRatio
+            maxZoomRatio = state.maxZoomRatio
         }
         info.zoomState.observeForever(observer)
         onDispose { info.zoomState.removeObserver(observer) }
@@ -567,6 +573,7 @@ fun CameraScreen(
                             }
                             .pointerInput(Unit) {
                                 detectTransformGestures { _, _, zoom, _ ->
+                                    if (zoom != 1f) zoomGlider.cancel()
                                     val newZoom = (zoomRatio * zoom).coerceAtLeast(minZoomRatio)
                                     try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
                                 }
@@ -708,6 +715,7 @@ fun CameraScreen(
                                     }
                                     .pointerInput(Unit) {
                                         detectTransformGestures { _, _, zoom, _ ->
+                                            if (zoom != 1f) zoomGlider.cancel()
                                             val newZoom = (zoomRatio * zoom).coerceAtLeast(minZoomRatio)
                                             try { cameraControl?.setZoomRatio(newZoom) } catch (_: Exception) {}
                                         }
@@ -804,13 +812,12 @@ fun CameraScreen(
                                 .size(48.dp)
                                 .background(SurfaceDark, CircleShape)
                                 .clickable {
-                                    zoomRatio = 1f
-                                    cameraControl?.setZoomRatio(1f)
+                                    zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio)
                                 },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (zoomRatio == 1f) "1×" else "%.1f×".format(zoomRatio),
+                                text = formatZoom(zoomRatio),
                                 color = if (isAlt) accentColor else Color.White.copy(0.85f),
                                 fontSize = if (isAlt) 14.sp else 12.sp,
                                 fontFamily = FontFamily.Monospace,
