@@ -24,7 +24,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val videoQualityTier: StateFlow<QualityTier> = _videoQualityTier.asStateFlow()
 
     private val _photoQualityTier = MutableStateFlow(
-        QualityTier.entries[prefs.getInt("photo_quality_tier", QualityTier.MED.ordinal)]
+        QualityTier.entries[prefs.getInt("photo_quality_tier", QualityTier.HIGH.ordinal)]
     )
     val photoQualityTier: StateFlow<QualityTier> = _photoQualityTier.asStateFlow()
 

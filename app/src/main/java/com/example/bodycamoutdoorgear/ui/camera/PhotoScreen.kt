@@ -48,6 +48,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.Button
@@ -689,12 +690,15 @@ fun PhotoScreen(
             sheetState = sheetState,
             containerColor = SurfaceDark
         ) {
-            Column(
+            Column(modifier = Modifier.fillMaxWidth()) {
+            // Pinned header — stays visible while the settings below scroll, so the
+            // close button is always reachable without scrolling back to the top.
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .padding(start = 24.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     "SETTINGS",
@@ -704,6 +708,18 @@ fun PhotoScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp
                 )
+                IconButton(onClick = { showSettings = false }) {
+                    Icon(Icons.Default.Close, contentDescription = "Close settings", tint = Color.White.copy(0.7f))
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
 
                 // Appearance
                 Text("APPEARANCE", color = Color.White.copy(0.4f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
@@ -906,6 +922,7 @@ fun PhotoScreen(
                 }
 
                 Spacer(Modifier.height(8.dp))
+            }
             }
         }
     }

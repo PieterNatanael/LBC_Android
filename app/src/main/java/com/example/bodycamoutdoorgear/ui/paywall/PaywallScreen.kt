@@ -264,9 +264,8 @@ fun PaywallScreen(
                     }
                 }
 
-                // Developer credit
                 Text(
-                    text = "Low Battery Camera (LBC)\nDeveloped by Three Dollar",
+                    text = "Low Battery Camera (LBC)",
                     color = TextSecondary.copy(alpha = 0.5f),
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
