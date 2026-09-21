@@ -63,10 +63,9 @@ import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 
 private val FEATURES = listOf(
-    "Save recordings to Photos",
-    "Share recordings",
-    "All quality levels & settings",
-    "Free updates"
+    "Save videos and photos to your Gallery",
+    "Share to any app. HipHop transfer stays free",
+    "Every future update included"
 )
 
 private const val PRIVACY_URL = "https://gogoodmood.com/apps/en/bodycamz/privacy/"
@@ -233,7 +232,7 @@ fun PaywallScreen(
                 if (isGrandfathered) {
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bought Low Battery Camera before April 2026? Your full access is restored automatically — no action needed.",
+                        text = "Bought Low Battery Camera before April 2026? Your full access is restored automatically. No action needed.",
                         color = CompassGold,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
