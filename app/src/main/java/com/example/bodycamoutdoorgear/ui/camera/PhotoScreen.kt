@@ -115,6 +115,7 @@ import com.example.bodycamoutdoorgear.viewmodel.QualityTier
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import com.example.bodycamoutdoorgear.sound.ShutterSoundPlayer
 import com.example.bodycamoutdoorgear.sound.ShutterSoundStore
+import com.example.bodycamoutdoorgear.ui.settings.PrivateGallerySettingsSection
 import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
@@ -864,6 +865,8 @@ fun PhotoScreen(
                         onCheckedChange = { settingsViewModel.toggleGalleryTimestamp() }
                     )
                 }
+
+                PrivateGallerySettingsSection()
 
                 // View Intro Again
                 Box(
