@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.SaveAlt
@@ -66,6 +67,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.bodycamoutdoorgear.data.VideoItem
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
+import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
 import com.example.bodycamoutdoorgear.ui.theme.BorderColor
@@ -87,10 +89,17 @@ fun VideoPlayerScreen(
     subscriptionManager: SubscriptionManager,
     onDismiss: () -> Unit,
     onDeleted: () -> Unit,
+    // Fires after "Set as Private"/"Show in Gallery" actually moves the
+    // file — see PhotoViewerScreen's identical parameter.
+    onMoved: () -> Unit = {},
     isActive: Boolean = true,
     playerViewModel: PlayerViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val isPrivate = remember(video.file) {
+        video.file.parentFile?.path == PrivateGalleryStore.folder(context).path
+    }
+    var showMoveError by remember { mutableStateOf(false) }
     val isUnlocked = subscriptionManager.isUnlocked
     val isSaving by playerViewModel.isSaving.collectAsState()
     val saveSuccess by playerViewModel.saveSuccess.collectAsState()
@@ -302,6 +311,20 @@ fun VideoPlayerScreen(
                 }
             )
             ActionButton(
+                icon = if (isPrivate) Icons.Default.LockOpen else Icons.Default.Lock,
+                locked = false,
+                bgColor = accentColor,
+                onClick = {
+                    try {
+                        if (isPrivate) PrivateGalleryStore.moveOut(context, video.file)
+                        else PrivateGalleryStore.moveIn(context, video.file)
+                        onMoved()
+                    } catch (e: Exception) {
+                        showMoveError = true
+                    }
+                }
+            )
+            ActionButton(
                 icon = Icons.Default.Delete,
                 locked = false,
                 bgColor = accentColor,
@@ -327,6 +350,18 @@ fun VideoPlayerScreen(
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text("Cancel", color = TextSecondary)
                 }
+            },
+            containerColor = SurfaceDark
+        )
+    }
+
+    if (showMoveError) {
+        AlertDialog(
+            onDismissRequest = { showMoveError = false },
+            title = { Text("Couldn't move this video", color = TextPrimary) },
+            text = { Text("Please try again.", color = TextSecondary) },
+            confirmButton = {
+                Button(onClick = { showMoveError = false }) { Text("OK") }
             },
             containerColor = SurfaceDark
         )

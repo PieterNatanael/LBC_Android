@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -64,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
+import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
 import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import com.example.bodycamoutdoorgear.ui.player.PhotoViewerScreen
@@ -122,6 +124,8 @@ fun GalleryScreen(
     var isSelectMode by remember { mutableStateOf(false) }
     val selectedPaths = remember { mutableListOf<String>().toMutableStateList() }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showBulkMoveError by remember { mutableStateOf(false) }
+    var bulkMoveFailureCount by remember { mutableStateOf(0) }
     var showSendScreen by remember { mutableStateOf(false) }
     var showReceiveScreen by remember { mutableStateOf(false) }
     val isUnlocked = subscriptionManager.isUnlocked
@@ -394,6 +398,45 @@ fun GalleryScreen(
                         letterSpacing = 0.sp
                     )
                 }
+                // Bulk counterpart of each file's own Set as Private/Show in
+                // Gallery button — same underlying moves, same lack of a PIN
+                // check going in (adding to Private has never required
+                // proving the PIN, only opening Private to look at it does).
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            if (selectedPaths.isNotEmpty()) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.07f),
+                            androidx.compose.foundation.shape.CircleShape
+                        )
+                        .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
+                        .clickable(enabled = selectedPaths.isNotEmpty()) {
+                            var failures = 0
+                            selectedPaths.toList().forEach { path ->
+                                try {
+                                    val file = java.io.File(path)
+                                    if (isPrivateGallery) PrivateGalleryStore.moveOut(context, file)
+                                    else PrivateGalleryStore.moveIn(context, file)
+                                } catch (e: Exception) {
+                                    failures++
+                                }
+                            }
+                            galleryViewModel.loadVideos()
+                            exitSelectMode()
+                            if (failures > 0) {
+                                bulkMoveFailureCount = failures
+                                showBulkMoveError = true
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        if (isPrivateGallery) Icons.Default.LockOpen else Icons.Default.Lock,
+                        contentDescription = if (isPrivateGallery) "Move to Gallery" else "Add to Private",
+                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -438,6 +481,18 @@ fun GalleryScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel", color = TextSecondary) }
+            },
+            containerColor = SurfaceDark
+        )
+    }
+
+    if (showBulkMoveError) {
+        AlertDialog(
+            onDismissRequest = { showBulkMoveError = false },
+            title = { Text("Some files couldn't be moved", color = TextPrimary) },
+            text = { Text("$bulkMoveFailureCount of the selected files could not be moved. The rest moved successfully.", color = TextSecondary) },
+            confirmButton = {
+                TextButton(onClick = { showBulkMoveError = false }) { Text("OK", color = TextPrimary) }
             },
             containerColor = SurfaceDark
         )
@@ -504,6 +559,15 @@ fun GalleryScreen(
                         onDeleted = {
                             galleryViewModel.deleteVideo(item)
                             selectedIndex = null
+                        },
+                        onMoved = {
+                            // The file itself already moved — this instance
+                            // just needs to stop showing it as if it were
+                            // still here. galleryViewModel.loadVideos()
+                            // re-reads the folder it's already scoped to,
+                            // which now correctly excludes it.
+                            galleryViewModel.loadVideos()
+                            selectedIndex = null
                         }
                     )
                 } else {
@@ -517,6 +581,10 @@ fun GalleryScreen(
                         },
                         onDeleted = {
                             galleryViewModel.deleteVideo(item)
+                            selectedIndex = null
+                        },
+                        onMoved = {
+                            galleryViewModel.loadVideos()
                             selectedIndex = null
                         }
                     )

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.AlertDialog
@@ -54,6 +55,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bodycamoutdoorgear.data.VideoItem
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
+import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
 import com.example.bodycamoutdoorgear.ui.theme.ButtonFace
@@ -75,9 +77,17 @@ fun PhotoViewerScreen(
     subscriptionManager: SubscriptionManager,
     onDismiss: () -> Unit,
     onDeleted: () -> Unit,
+    // Fires after "Set as Private"/"Show in Gallery" actually moves the
+    // file — the caller drops it from whatever list is currently on
+    // screen, without this view touching that list itself.
+    onMoved: () -> Unit = {},
     playerViewModel: PlayerViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val isPrivate = remember(photo.file) {
+        photo.file.parentFile?.path == PrivateGalleryStore.folder(context).path
+    }
+    var showMoveError by remember { mutableStateOf(false) }
     val isUnlocked = subscriptionManager.isUnlocked
     val isSaving by playerViewModel.isSaving.collectAsState()
     val saveSuccess by playerViewModel.saveSuccess.collectAsState()
@@ -251,6 +261,20 @@ fun PhotoViewerScreen(
                 }
             )
             PhotoActionButton(
+                icon = if (isPrivate) Icons.Default.LockOpen else Icons.Default.Lock,
+                locked = false,
+                bgColor = accentColor,
+                onClick = {
+                    try {
+                        if (isPrivate) PrivateGalleryStore.moveOut(context, photo.file)
+                        else PrivateGalleryStore.moveIn(context, photo.file)
+                        onMoved()
+                    } catch (e: Exception) {
+                        showMoveError = true
+                    }
+                }
+            )
+            PhotoActionButton(
                 icon = Icons.Default.Delete,
                 locked = false,
                 bgColor = accentColor,
@@ -276,6 +300,18 @@ fun PhotoViewerScreen(
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text("Cancel", color = TextSecondary)
                 }
+            },
+            containerColor = SurfaceDark
+        )
+    }
+
+    if (showMoveError) {
+        AlertDialog(
+            onDismissRequest = { showMoveError = false },
+            title = { Text("Couldn't move this photo", color = TextPrimary) },
+            text = { Text("Please try again.", color = TextSecondary) },
+            confirmButton = {
+                Button(onClick = { showMoveError = false }) { Text("OK") }
             },
             containerColor = SurfaceDark
         )
