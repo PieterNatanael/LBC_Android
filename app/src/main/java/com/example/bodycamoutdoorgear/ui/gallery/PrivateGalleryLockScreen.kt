@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -36,7 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
+import com.example.bodycamoutdoorgear.privategallery.findActivity
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
 import com.example.bodycamoutdoorgear.ui.theme.RecordRed
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
@@ -51,12 +57,17 @@ enum class PrivateGalleryLockMode { SETUP, UNLOCK }
  * time and entering an existing one, since the two only differ in copy and
  * in what happens once 4 digits are in.
  *
- * Biometric unlock (fingerprint/face) is deliberately NOT here yet —
- * androidx.biometric.BiometricPrompt needs a FragmentActivity to host it,
- * and MainActivity is a plain ComponentActivity today. That's a Phase 4
- * change, not something to slip into the PIN screen unannounced.
+ * Fingerprint/face unlock (never on SETUP — there's no existing secret yet
+ * for a biometric check to stand in for) is offered automatically the
+ * moment this screen appears in UNLOCK mode, with a manual retry icon under
+ * the keypad for a cancelled or failed attempt. A biometric pass unlocks
+ * exactly like a correct PIN, but never touches
+ * PrivateGalleryStore.verify() — it's a separate, device-level check, not a
+ * guess at the 4-digit PIN, so it neither consumes nor resets that
+ * counter. A failed or cancelled attempt is silent: the keypad underneath
+ * is already fully usable, and it must never count as a wrong PIN.
  *
- * "Forgot PIN?" also isn't here — same call as the iOS build: a destructive
+ * "Forgot PIN?" isn't here — same call as the iOS build: a destructive
  * reset one tap away from the exact screen someone without the PIN is
  * staring at is too easy to trigger by accident. It lives only in Settings.
  */
@@ -68,6 +79,7 @@ fun PrivateGalleryLockScreen(
 ) {
     val context = LocalContext.current
     var enteredPin by remember { mutableStateOf("") }
+    var biometricsAvailable by remember { mutableStateOf(false) }
     // Set once the first of setup's two entries lands, so the second entry
     // can be compared against it. Never touched in UNLOCK mode.
     var setupFirstPin by remember { mutableStateOf<String?>(null) }
@@ -125,6 +137,52 @@ fun PrivateGalleryLockScreen(
                 enteredPin = ""
                 wipedMessageShown = true
             }
+        }
+    }
+
+    // A fresh BiometricPrompt is built each call rather than held across
+    // recompositions — this only ever needs a one-shot "did this succeed
+    // right now" answer, and building fresh means canAuthenticate is always
+    // checked against the device's CURRENT state (biometrics could be
+    // freshly disabled or enrolled since this screen last checked).
+    fun attemptBiometricUnlock() {
+        if (mode != PrivateGalleryLockMode.UNLOCK) return
+        val activity = context.findActivity() as? FragmentActivity ?: return
+        val manager = BiometricManager.from(context)
+        if (manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
+            != BiometricManager.BIOMETRIC_SUCCESS) return
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Unlock Private Gallery")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
+            .setNegativeButtonText("Use PIN")
+            .build()
+
+        val prompt = BiometricPrompt(
+            activity,
+            ContextCompat.getMainExecutor(context),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    onUnlocked()
+                }
+                // onAuthenticationFailed (a single rejected attempt, prompt
+                // stays open) and onAuthenticationError (cancelled, "Use
+                // PIN" tapped, too many failed attempts, etc.) are both left
+                // as no-ops on purpose — the keypad underneath is already
+                // fully usable, and neither should ever read as a wrong PIN.
+            }
+        )
+        prompt.authenticate(promptInfo)
+    }
+
+    LaunchedEffect(Unit) {
+        if (mode == PrivateGalleryLockMode.UNLOCK) {
+            val activity = context.findActivity() as? FragmentActivity
+            val manager = BiometricManager.from(context)
+            biometricsAvailable = activity != null &&
+                manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK) ==
+                BiometricManager.BIOMETRIC_SUCCESS
+            if (biometricsAvailable) attemptBiometricUnlock()
         }
     }
 
@@ -236,6 +294,20 @@ fun PrivateGalleryLockScreen(
                                 }
                             }
                         }
+                    }
+
+                    if (biometricsAvailable) {
+                        Spacer(Modifier.height(20.dp))
+                        // Manual re-trigger — the same check already ran
+                        // once automatically above, but a cancelled or
+                        // failed attempt leaves the PIN keypad as the only
+                        // way in unless this is here too.
+                        Icon(
+                            Icons.Default.Fingerprint,
+                            contentDescription = "Use fingerprint or face unlock",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(32.dp).clickable { attemptBiometricUnlock() }
+                        )
                     }
                 }
             }

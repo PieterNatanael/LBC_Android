@@ -54,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
 import com.example.bodycamoutdoorgear.privategallery.PrivateGallerySession
+import com.example.bodycamoutdoorgear.privategallery.findActivity
 import com.example.bodycamoutdoorgear.ui.camera.CameraScreen
 import com.example.bodycamoutdoorgear.ui.camera.PhotoScreen
 import com.example.bodycamoutdoorgear.ui.gallery.GalleryScreen
@@ -348,16 +349,4 @@ private fun PillTab(
             )
         }
     }
-}
-
-/** Unwraps a Compose Context down to its hosting Activity, for FLAG_SECURE
- *  — LocalContext.current is sometimes a ContextWrapper (a themed context,
- *  for instance) rather than the Activity itself. */
-private fun android.content.Context.findActivity(): android.app.Activity? {
-    var context = this
-    while (context is android.content.ContextWrapper) {
-        if (context is android.app.Activity) return context
-        context = context.baseContext
-    }
-    return null
 }

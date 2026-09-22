@@ -2,10 +2,10 @@ package com.example.bodycamoutdoorgear
 
 import android.os.Bundle
 import android.view.KeyEvent
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,7 +17,10 @@ import com.example.bodycamoutdoorgear.ui.theme.LBCTheme
 import com.example.bodycamoutdoorgear.viewmodel.CameraViewModel
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
 
-class MainActivity : ComponentActivity() {
+// FragmentActivity rather than plain ComponentActivity — a strict superset,
+// needed so Private Gallery's Face ID/Touch ID equivalent
+// (androidx.biometric.BiometricPrompt) has a FragmentActivity to host it.
+class MainActivity : FragmentActivity() {
 
     private lateinit var subscriptionManager: SubscriptionManager
 
