@@ -70,7 +70,15 @@ import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 @Composable
-fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
+fun ReceiveScreen(
+    onDismiss: () -> Unit,
+    onFilesReceived: () -> Unit = {},
+    // Where an incoming photo/video is saved — the normal gallery folder by
+    // default, or Private Gallery's own subfolder when this is opened from
+    // there (see GalleryScreen's call site). Sound files are unaffected;
+    // they always go through ShutterSoundStore regardless of this.
+    saveDir: java.io.File = LocalContext.current.filesDir
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -127,7 +135,7 @@ fun ReceiveScreen(onDismiss: () -> Unit, onFilesReceived: () -> Unit = {}) {
                     return@forEachIndexed
                 }
                 var lastReported = -1f
-                val ok = TransferClient.downloadFile(context, ip, TRANSFER_PORT, file.name) { p ->
+                val ok = TransferClient.downloadFile(context, ip, TRANSFER_PORT, file.name, saveDir) { p ->
                     val overall = (index + p) / files.size.toFloat()
                     // Chunk callbacks fire every 256 KB, which for large files can be
                     // hundreds of times per second — only push a recomposition when the

@@ -96,6 +96,11 @@ object TransferClient {
         host: String,
         port: Int,
         name: String,
+        // Defaults to the normal gallery folder — Private Gallery's own
+        // ReceiveScreen call passes its own subfolder instead, so a file
+        // received while Private is open lands there rather than somewhere
+        // the screen you're looking at doesn't even show.
+        saveDir: File = context.filesDir,
         onProgress: (Float) -> Unit
     ): Boolean = withContext(Dispatchers.IO) {
         if (!isPlainFileName(name)) return@withContext false
@@ -108,8 +113,9 @@ object TransferClient {
             val totalBytes = conn.contentLengthLong.takeIf { it > 0L }
             var downloaded = 0L
 
-            val dest = File(context.filesDir, name)
-            val tmp = File(context.filesDir, "_tmp_$name")
+            saveDir.mkdirs()
+            val dest = File(saveDir, name)
+            val tmp = File(saveDir, "_tmp_$name")
 
             conn.inputStream.use { input ->
                 tmp.outputStream().use { output ->

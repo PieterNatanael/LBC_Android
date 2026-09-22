@@ -508,7 +508,13 @@ fun GalleryScreen(
     if (showReceiveScreen) {
         ReceiveScreen(
             onDismiss = { showReceiveScreen = false },
-            onFilesReceived = { galleryViewModel.loadVideos() }
+            onFilesReceived = { galleryViewModel.loadVideos() },
+            // Whichever folder THIS instance is showing — filesDir itself,
+            // or Private Gallery's own subfolder. Without this, HipHop
+            // receive always landed in the normal gallery even while
+            // looking at Private, so a file received there silently didn't
+            // show up on screen at all.
+            saveDir = folder
         )
     }
     if (showPaywall) {
