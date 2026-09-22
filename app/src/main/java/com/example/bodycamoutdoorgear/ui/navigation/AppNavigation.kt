@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,15 +42,23 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
+import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
+import com.example.bodycamoutdoorgear.privategallery.PrivateGallerySession
 import com.example.bodycamoutdoorgear.ui.camera.CameraScreen
 import com.example.bodycamoutdoorgear.ui.camera.PhotoScreen
 import com.example.bodycamoutdoorgear.ui.gallery.GalleryScreen
+import com.example.bodycamoutdoorgear.ui.gallery.PrivateGalleryLockMode
+import com.example.bodycamoutdoorgear.ui.gallery.PrivateGalleryLockScreen
 import com.example.bodycamoutdoorgear.viewmodel.AppearanceMode
 import com.example.bodycamoutdoorgear.viewmodel.CameraViewModel
 import com.example.bodycamoutdoorgear.viewmodel.PhotoViewModel
@@ -88,6 +97,52 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
 
     var currentTab by rememberSaveable { mutableStateOf(Screen.Video.route) }
     var isGallerySelectMode by rememberSaveable { mutableStateOf(false) }
+
+    // ── Private Gallery ──────────────────────────────────────────────────
+    // Not rememberSaveable: neither should survive a process death the way
+    // currentTab does — resuming straight back into an unlocked Private
+    // Gallery after the OS killed and restored this Activity would defeat
+    // the whole point of it relocking on backgrounding, below.
+    var privateFlowMode by androidx.compose.runtime.remember { mutableStateOf<PrivateGalleryLockMode?>(null) }
+    var showPrivateGallery by androidx.compose.runtime.remember { mutableStateOf(false) }
+    val privateContext = LocalContext.current
+
+    // Relocks on every backgrounding, not just while Private happens to be
+    // open — cheap either way, and this is the one place that can't miss it
+    // the way a per-screen effect could if Private wasn't the active screen
+    // at the moment the app was backgrounded.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                PrivateGallerySession.lock()
+                showPrivateGallery = false
+                privateFlowMode = null
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // FLAG_SECURE for as long as either the PIN screen or Private Gallery
+    // itself is showing — blocks screenshots and screen recording outright,
+    // and blanks the recents-screen thumbnail, while either is on screen.
+    // iOS has no equivalent API; this is genuinely stronger than what that
+    // build could do, so there's no separate "screenshots aren't blocked"
+    // notice needed here at all.
+    val isPrivateFlowShowing = privateFlowMode != null || showPrivateGallery
+    DisposableEffect(isPrivateFlowShowing) {
+        val activity = privateContext.findActivity()
+        if (isPrivateFlowShowing) {
+            activity?.window?.setFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SECURE,
+                android.view.WindowManager.LayoutParams.FLAG_SECURE
+            )
+        }
+        onDispose {
+            activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // ── Camera screens: always in composition so the camera lifecycle is
@@ -152,7 +207,38 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
             Box(modifier = Modifier.fillMaxSize().zIndex(2f)) {
                 GalleryScreen(
                     subscriptionManager = subscriptionManager,
-                    onSelectModeChanged = { isGallerySelectMode = it }
+                    onSelectModeChanged = { isGallerySelectMode = it },
+                    onOpenPrivateGallery = {
+                        privateFlowMode = if (PrivateGalleryStore.isActive(privateContext))
+                            PrivateGalleryLockMode.UNLOCK else PrivateGalleryLockMode.SETUP
+                    }
+                )
+            }
+        }
+
+        // The PIN screen, then Private Gallery itself, both full-screen and
+        // above everything else — mirrors how the normal Gallery box above
+        // sits at zIndex 2f, just higher again.
+        privateFlowMode?.let { mode ->
+            Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
+                PrivateGalleryLockScreen(
+                    mode = mode,
+                    onUnlocked = {
+                        PrivateGallerySession.unlock()
+                        privateFlowMode = null
+                        showPrivateGallery = true
+                    },
+                    onDismiss = { privateFlowMode = null }
+                )
+            }
+        }
+        if (showPrivateGallery) {
+            Box(modifier = Modifier.fillMaxSize().zIndex(3f)) {
+                GalleryScreen(
+                    subscriptionManager = subscriptionManager,
+                    folder = PrivateGalleryStore.folder(privateContext),
+                    isPrivateGallery = true,
+                    onExitPrivateGallery = { showPrivateGallery = false }
                 )
             }
         }
@@ -262,4 +348,16 @@ private fun PillTab(
             )
         }
     }
+}
+
+/** Unwraps a Compose Context down to its hosting Activity, for FLAG_SECURE
+ *  — LocalContext.current is sometimes a ContextWrapper (a themed context,
+ *  for instance) rather than the Activity itself. */
+private fun android.content.Context.findActivity(): android.app.Activity? {
+    var context = this
+    while (context is android.content.ContextWrapper) {
+        if (context is android.app.Activity) return context
+        context = context.baseContext
+    }
+    return null
 }

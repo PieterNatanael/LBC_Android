@@ -21,11 +21,13 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -85,9 +87,25 @@ import kotlinx.coroutines.launch
 fun GalleryScreen(
     subscriptionManager: SubscriptionManager,
     onSelectModeChanged: (Boolean) -> Unit = {},
-    galleryViewModel: GalleryViewModel = viewModel()
+    // Which folder this instance shows — Documents-equivalent (filesDir)
+    // normally, or Private Gallery's own subfolder. isPrivateGallery flips
+    // the header text and the dropdown's cross-link direction; the two
+    // callbacks are how this instance asks its caller (AppNavigation) to
+    // either start the PIN flow or close Private and go back, since this
+    // screen has no PIN logic of its own.
+    folder: java.io.File = LocalContext.current.filesDir,
+    isPrivateGallery: Boolean = false,
+    onOpenPrivateGallery: () -> Unit = {},
+    onExitPrivateGallery: () -> Unit = {},
+    // A distinct key is required here: without it, Compose's viewModel()
+    // resolves both the normal and the Private instance of this screen to
+    // the SAME GalleryViewModel (this app has one Activity and no
+    // NavBackStackEntry to scope them apart), and the two would fight over
+    // which folder is currently loaded.
+    galleryViewModel: GalleryViewModel = viewModel(key = if (isPrivateGallery) "private_gallery" else "normal_gallery")
 ) {
     val context = LocalContext.current
+    LaunchedEffect(folder) { galleryViewModel.setFolder(folder) }
     val settingsViewModel: SettingsViewModel = viewModel()
     val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
     val showTimestamp  by settingsViewModel.showGalleryTimestamp.collectAsState()
@@ -115,8 +133,6 @@ fun GalleryScreen(
         onSelectModeChanged(false)
     }
 
-    LaunchedEffect(Unit) { galleryViewModel.loadVideos() }
-
     val bgColor = when (appearanceMode) {
         AppearanceMode.SIMPLE    -> BackgroundDark
         AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
@@ -133,7 +149,15 @@ fun GalleryScreen(
             .background(bgColor)
     ) {
         if (videos.isEmpty()) {
-            EmptyGallery(onHipHopClick = { showReceiveScreen = true })
+            // Private Gallery starts empty and stays that way until
+            // something is moved in — EmptyGallery has to carry its own way
+            // back out, since the header (and its cross-link) below only
+            // renders in the non-empty branch.
+            EmptyGallery(
+                onHipHopClick = { showReceiveScreen = true },
+                isPrivateGallery = isPrivateGallery,
+                onExitPrivateGallery = onExitPrivateGallery
+            )
         } else {
             val totalBytes = remember(videos) { videos.sumOf { it.file.length() } }
             val totalSizeLabel = remember(totalBytes) {
@@ -158,7 +182,7 @@ fun GalleryScreen(
                         modifier = Modifier.clickable { if (!isSelectMode) infoExpanded = !infoExpanded }
                     ) {
                         Text(
-                            text       = "Gallery",
+                            text       = if (isPrivateGallery) "Private" else "Gallery",
                             color      = Color.White,
                             fontSize   = 22.sp,
                             fontWeight = FontWeight.Bold,
@@ -216,18 +240,45 @@ fun GalleryScreen(
                     }
                 }
                 AnimatedVisibility(visible = infoExpanded && !isSelectMode) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
-                            Text("${videos.size} files", color = Color.White.copy(0.65f), fontSize = 11.sp)
+                    Column(modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
+                                Text("${videos.size} files", color = Color.White.copy(0.65f), fontSize = 11.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
+                                Text(totalSizeLabel, color = Color.White.copy(0.65f), fontSize = 11.sp)
+                            }
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
-                            Text(totalSizeLabel, color = Color.White.copy(0.65f), fontSize = 11.sp)
+                        Spacer(Modifier.height(8.dp))
+                        // The cross-link: "Private" from inside the normal
+                        // gallery, "Gallery" from inside Private itself —
+                        // leaving Private never asks for the PIN, only
+                        // entering it does (see onOpenPrivateGallery's caller
+                        // in AppNavigation, which decides setup vs. unlock).
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.clickable {
+                                if (isPrivateGallery) onExitPrivateGallery() else onOpenPrivateGallery()
+                            }
+                        ) {
+                            Icon(
+                                if (isPrivateGallery) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color.White.copy(0.5f),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                if (isPrivateGallery) "GALLERY" else "PRIVATE",
+                                color = Color.White.copy(0.65f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -476,8 +527,26 @@ fun GalleryScreen(
 }
 
 @Composable
-private fun EmptyGallery(onHipHopClick: () -> Unit) {
+private fun EmptyGallery(
+    onHipHopClick: () -> Unit,
+    isPrivateGallery: Boolean = false,
+    onExitPrivateGallery: () -> Unit = {}
+) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (isPrivateGallery) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(16.dp)
+                    .clickable(onClick = onExitPrivateGallery),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White.copy(0.7f), modifier = Modifier.size(16.dp))
+                Text("GALLERY", color = Color.White.copy(0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 Icons.Default.VideoLibrary,
@@ -487,28 +556,32 @@ private fun EmptyGallery(onHipHopClick: () -> Unit) {
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "No recordings yet",
+                text = if (isPrivateGallery) "Nothing here yet" else "No recordings yet",
                 color = TextSecondary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Recordings will appear here",
+                text = if (isPrivateGallery) "Use \"Set as Private\" on a photo or video to move it here"
+                       else "Recordings will appear here",
                 color = TextSecondary.copy(alpha = 0.6f),
-                fontSize = 13.sp
-            )
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "HipHop",
-                color = Color.White,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
-                    .clickable(onClick = onHipHopClick)
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
+            if (!isPrivateGallery) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    "HipHop",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                        .clickable(onClick = onHipHopClick)
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                )
+            }
         }
     }
 }

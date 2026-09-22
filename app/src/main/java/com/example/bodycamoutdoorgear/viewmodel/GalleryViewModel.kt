@@ -33,15 +33,26 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     val thumbnails: SnapshotStateMap<String, Bitmap> = mutableStateMapOf()
     val durations: SnapshotStateMap<String, Long> = mutableStateMapOf()
 
+    // Which folder this instance lists — filesDir itself normally, or
+    // Private Gallery's own subfolder for the instance shown there. Kept as
+    // state on the ViewModel (not passed to loadVideos each call) because
+    // deleteVideo() also calls loadVideos() afterward with no folder of its
+    // own to hand it.
+    private var folder: File = application.filesDir
+
     init {
+        loadVideos()
+    }
+
+    fun setFolder(folder: File) {
+        this.folder = folder
         loadVideos()
     }
 
     fun loadVideos() {
         viewModelScope.launch {
             val list = withContext(Dispatchers.IO) {
-                val dir = getApplication<Application>().filesDir
-                dir.listFiles { f -> f.extension in setOf("mp4", "mov", "jpg", "jpeg", "png") }
+                folder.listFiles { f -> f.extension in setOf("mp4", "mov", "jpg", "jpeg", "png") }
                     ?.sortedByDescending { it.lastModified() }
                     ?.map { VideoItem(it) }
                     ?: emptyList()
