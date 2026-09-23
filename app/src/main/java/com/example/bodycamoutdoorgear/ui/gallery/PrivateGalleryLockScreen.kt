@@ -52,6 +52,13 @@ import kotlinx.coroutines.delay
 
 enum class PrivateGalleryLockMode { SETUP, UNLOCK }
 
+/** Turned off for now so people actually type — and so remember — their
+ *  PIN, rather than leaning on fingerprint/face unlock from the very first
+ *  time and never really learning it. The code underneath is left fully
+ *  intact; flipping this back to true is the only change needed to
+ *  re-enable it later. */
+private const val BIOMETRIC_UNLOCK_ENABLED = false
+
 /**
  * The PIN screen for Private Gallery — both creating a PIN for the first
  * time and entering an existing one, since the two only differ in copy and
@@ -146,7 +153,7 @@ fun PrivateGalleryLockScreen(
     // checked against the device's CURRENT state (biometrics could be
     // freshly disabled or enrolled since this screen last checked).
     fun attemptBiometricUnlock() {
-        if (mode != PrivateGalleryLockMode.UNLOCK) return
+        if (!BIOMETRIC_UNLOCK_ENABLED || mode != PrivateGalleryLockMode.UNLOCK) return
         val activity = context.findActivity() as? FragmentActivity ?: return
         val manager = BiometricManager.from(context)
         if (manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
@@ -176,7 +183,7 @@ fun PrivateGalleryLockScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (mode == PrivateGalleryLockMode.UNLOCK) {
+        if (BIOMETRIC_UNLOCK_ENABLED && mode == PrivateGalleryLockMode.UNLOCK) {
             val activity = context.findActivity() as? FragmentActivity
             val manager = BiometricManager.from(context)
             biometricsAvailable = activity != null &&

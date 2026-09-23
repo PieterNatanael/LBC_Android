@@ -43,6 +43,30 @@ object PrivateGalleryStore {
         return folder(context).listFiles { f -> f.extension.lowercase() in exts }?.toList() ?: emptyList()
     }
 
+    /** Picks a filename that doesn't already exist in `directory`, appending
+     *  a numeric suffix if the original name is taken. Confirmed on the iOS
+     *  side of this app: a file sent out of Private via HipHop, received
+     *  back into the normal gallery under the same name, then Private
+     *  turned off — moveOut's plain same-name destination already existed,
+     *  the move failed, and that failure was going uncaught, either
+     *  crashing deactivateKeepingFiles outright or (once caught) silently
+     *  stranding the file inside Private forever, with no screen left that
+     *  could ever reach it again once Private itself was deactivated. Used
+     *  by both directions now, rather than assuming a same-named collision
+     *  can't happen. */
+    private fun availableDestination(file: File, directory: File): File {
+        var candidate = File(directory, file.name)
+        var suffix = 2
+        while (candidate.exists()) {
+            val ext = file.extension
+            val base = file.nameWithoutExtension
+            val name = if (ext.isEmpty()) "$base $suffix" else "$base $suffix.$ext"
+            candidate = File(directory, name)
+            suffix++
+        }
+        return candidate
+    }
+
     /** Moves a file from the normal gallery into Private. Retries once
      *  after re-creating the folder if the move fails — confirmed on the
      *  iOS side of this app that the very FIRST move (the one call where
@@ -51,7 +75,7 @@ object PrivateGalleryStore {
      *  single-volume internal storage makes the same race less likely. */
     fun moveIn(context: Context, file: File): File {
         ensureFolderExists(context)
-        val destination = File(folder(context), file.name)
+        val destination = availableDestination(file, folder(context))
         if (!file.renameTo(destination)) {
             ensureFolderExists(context)
             if (!file.renameTo(destination)) {
@@ -63,7 +87,7 @@ object PrivateGalleryStore {
 
     /** One-directional counterpart, used by "Show in Gallery". */
     fun moveOut(context: Context, file: File): File {
-        val destination = File(context.filesDir, file.name)
+        val destination = availableDestination(file, context.filesDir)
         if (!file.renameTo(destination)) {
             throw java.io.IOException("Could not move ${file.name} out of Private")
         }
@@ -199,10 +223,29 @@ object PrivateGalleryStore {
     }
 
     /** Turning the feature off with the CORRECT pin — files move back to
-     *  the normal gallery rather than being deleted. */
+     *  the normal gallery rather than being deleted. moveOut throws on
+     *  failure; caught per file (rather than left to crash the whole
+     *  deactivation, which is what an uncaught throw here used to do) so
+     *  one bad file can't block every other file from moving back — the
+     *  same forgiving behavior the iOS build already has here. */
     fun deactivateKeepingFiles(context: Context) {
-        currentFiles(context).forEach { moveOut(context, it) }
+        currentFiles(context).forEach { runCatching { moveOut(context, it) } }
         cryptoPrefs(context).edit().remove(KEY_SALT_AND_HASH).apply()
         resetAttempts(context)
+    }
+
+    /** Self-healing safety net, called once at every launch: if Private
+     *  Gallery is NOT active but its folder still holds files, moves them
+     *  back to the normal gallery. Confirmed on the iOS side of this app
+     *  that a same-name collision in moveOut (see availableDestination, now
+     *  fixed) could leave a file stranded here even after
+     *  deactivateKeepingFiles "succeeded" — and once Private is off, there
+     *  is no UI left that can ever reach that folder again to notice or
+     *  recover it manually. Anyone already affected before this fix existed
+     *  gets their file back automatically the next time they open the app,
+     *  with nothing for them to do. */
+    fun recoverOrphanedFilesIfNeeded(context: Context) {
+        if (isActive(context)) return
+        currentFiles(context).forEach { runCatching { moveOut(context, it) } }
     }
 }

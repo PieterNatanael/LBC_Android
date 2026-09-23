@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
+import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
 import com.example.bodycamoutdoorgear.ui.disclaimer.DisclaimerScreen
 import com.example.bodycamoutdoorgear.ui.navigation.AppNavigation
 import com.example.bodycamoutdoorgear.ui.theme.LBCTheme
@@ -33,6 +34,10 @@ class MainActivity : FragmentActivity() {
 
         subscriptionManager = SubscriptionManager(applicationContext)
         subscriptionManager.start()
+
+        // One-time self-healing sweep — see its own comment for the bug
+        // this recovers from.
+        PrivateGalleryStore.recoverOrphanedFilesIfNeeded(applicationContext)
 
         val prefs = getSharedPreferences("bodycam_prefs", MODE_PRIVATE)
 

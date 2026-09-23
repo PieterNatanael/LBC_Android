@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -271,16 +270,27 @@ fun GalleryScreen(
                                 if (isPrivateGallery) onExitPrivateGallery() else onOpenPrivateGallery()
                             }
                         ) {
-                            Icon(
-                                if (isPrivateGallery) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = Color.White.copy(0.5f),
-                                modifier = Modifier.size(13.dp)
-                            )
+                            // Only .normal gets an icon here — leaving
+                            // Private is meant to read as a plain,
+                            // unremarkable "back to Gallery" label, not
+                            // another call-to-action competing with
+                            // "PRIVATE" above.
+                            if (!isPrivateGallery) {
+                                Icon(
+                                    Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(0.5f),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
                             Text(
                                 if (isPrivateGallery) "GALLERY" else "PRIVATE",
                                 color = Color.White.copy(0.65f),
-                                fontSize = 11.sp,
+                                // Bigger specifically for "GALLERY" — the
+                                // only way back out of Private, so it earns
+                                // being a little more prominent than the
+                                // "PRIVATE" link going the other way.
+                                fontSize = if (isPrivateGallery) 14.sp else 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -617,8 +627,10 @@ private fun EmptyGallery(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White.copy(0.7f), modifier = Modifier.size(16.dp))
-                Text("GALLERY", color = Color.White.copy(0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                // No icon here either, matching the same cross-link in the
+                // dropdown above — a plain, unremarkable "back to Gallery"
+                // label.
+                Text("GALLERY", color = Color.White.copy(0.7f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -643,19 +655,20 @@ private fun EmptyGallery(
                 fontSize = 13.sp,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
-            if (!isPrivateGallery) {
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    "HipHop",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
-                        .clickable(onClick = onHipHopClick)
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                )
-            }
+            // Shown for Private too, not just the normal gallery — reaching
+            // this screen at all already required the PIN, so receiving
+            // straight into an empty Private Gallery needs no extra gate.
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "HipHop",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .clickable(onClick = onHipHopClick)
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            )
         }
     }
 }
