@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -207,7 +208,7 @@ fun PrivateGalleryLockScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, end = 20.dp), horizontalArrangement = Arrangement.End) {
+            Row(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 12.dp, end = 20.dp), horizontalArrangement = Arrangement.End) {
                 Icon(
                     Icons.Default.Close,
                     contentDescription = "Close",

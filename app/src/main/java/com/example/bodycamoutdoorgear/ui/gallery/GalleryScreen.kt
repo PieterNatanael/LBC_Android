@@ -71,7 +71,6 @@ import com.example.bodycamoutdoorgear.ui.player.PhotoViewerScreen
 import com.example.bodycamoutdoorgear.ui.player.VideoPlayerScreen
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
-import com.example.bodycamoutdoorgear.ui.theme.BorderColor
 import com.example.bodycamoutdoorgear.ui.theme.RecordRed
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
@@ -634,16 +633,9 @@ private fun EmptyGallery(
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.VideoLibrary,
-                contentDescription = null,
-                tint = BorderColor,
-                modifier = Modifier.size(64.dp)
-            )
-            Spacer(Modifier.height(16.dp))
             Text(
                 text = if (isPrivateGallery) "Nothing here yet" else "No recordings yet",
-                color = TextSecondary,
+                color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -651,7 +643,7 @@ private fun EmptyGallery(
             Text(
                 text = if (isPrivateGallery) "Use \"Set as Private\" on a photo or video to move it here"
                        else "Recordings will appear here",
-                color = TextSecondary.copy(alpha = 0.6f),
+                color = Color.White.copy(alpha = 0.7f),
                 fontSize = 13.sp,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
