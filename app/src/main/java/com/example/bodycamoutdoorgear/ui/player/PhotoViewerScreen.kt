@@ -2,6 +2,12 @@ package com.example.bodycamoutdoorgear.ui.player
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import androidx.compose.runtime.produceState
+import androidx.exifinterface.media.ExifInterface
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -89,6 +95,13 @@ fun PhotoViewerScreen(
     }
     var showMoveError by remember { mutableStateOf(false) }
     val isUnlocked = subscriptionManager.isUnlocked
+    // `bitmap` is the gallery's small grid thumbnail (about 1000px wide) —
+    // fine as a placeholder but visibly soft when stretched to a full screen,
+    // and useless for pinch-zoom. Load the real photo and swap it in.
+    val fullBitmap by produceState<Bitmap?>(initialValue = null, photo.file) {
+        value = withContext(Dispatchers.IO) { decodeViewerBitmap(photo.file) }
+    }
+    val shownBitmap = fullBitmap ?: bitmap
     val isSaving by playerViewModel.isSaving.collectAsState()
     val saveSuccess by playerViewModel.saveSuccess.collectAsState()
     val saveError by playerViewModel.saveError.collectAsState()
@@ -141,13 +154,13 @@ fun PhotoViewerScreen(
                 .background(BackgroundDark),
             contentAlignment = Alignment.Center
         ) {
-            if (bitmap != null) {
+            if (shownBitmap != null) {
                 var scale by remember(photo.id) { mutableStateOf(1f) }
                 var offset by remember(photo.id) { mutableStateOf(Offset.Zero) }
                 var lastTapTime by remember(photo.id) { mutableStateOf(0L) }
 
                 Image(
-                    bitmap = bitmap.asImageBitmap(),
+                    bitmap = shownBitmap.asImageBitmap(),
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
@@ -355,4 +368,29 @@ private fun PhotoActionButton(
     ) {
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
     }
+}
+
+/** Longest side kept for the viewer. Big enough to zoom into, small enough
+ *  that a few of these in memory at once (the pager keeps neighbours) stay safe. */
+private const val VIEWER_MAX_DIMENSION = 3072
+
+private fun decodeViewerBitmap(file: java.io.File): Bitmap? = try {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.absolutePath, bounds)
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= VIEWER_MAX_DIMENSION) sample *= 2
+    val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+    val decoded = BitmapFactory.decodeFile(file.absolutePath, opts)
+    val rotation = when (ExifInterface(file.absolutePath).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+        ExifInterface.ORIENTATION_ROTATE_90  -> 90f
+        ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+        ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+        else -> 0f
+    }
+    if (decoded != null && rotation != 0f) {
+        Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, Matrix().apply { postRotate(rotation) }, true)
+            .also { decoded.recycle() }
+    } else decoded
+} catch (e: Exception) {
+    null
 }
