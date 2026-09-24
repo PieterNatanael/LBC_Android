@@ -85,7 +85,10 @@ private fun MarsXMark(size: Dp) {
 
 @Composable
 fun MarsShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 70.dp) {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size + 40.dp)) {
+    // Same footprint as the other themes' buttons; the ticks and label
+    // overflow it rather than growing it, which would push the whole
+    // control row up.
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size)) {
         MarsRingTicks(ringSize = size, color = MarsRust)
         Box(
             modifier = Modifier
@@ -109,7 +112,10 @@ fun MarsShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 70.d
 
 @Composable
 fun MarsRecordButton(isRecording: Boolean, onClick: () -> Unit, size: Dp = 70.dp) {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size + 40.dp)) {
+    // Same footprint as the other themes' buttons; the ticks and label
+    // overflow it rather than growing it, which would push the whole
+    // control row up.
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size)) {
         MarsRingTicks(ringSize = size, color = MarsRust)
         Box(
             modifier = Modifier
