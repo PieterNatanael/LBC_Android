@@ -15,6 +15,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -166,9 +167,24 @@ fun PhotoViewerScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(photo.id) {
+                            val bmpW = shownBitmap.width.toFloat()
+                            val bmpH = shownBitmap.height.toFloat()
+                            // How far the zoomed photo can be dragged before its own
+                            // edge reaches the edge of the viewer. Based on the photo as
+                            // drawn (fitted, then scaled), so a photo that still fits
+                            // across the screen has no sideways room and swipes go
+                            // straight to the pager.
+                            fun panLimits(s: Float): Offset {
+                                val fit = minOf(size.width / bmpW, size.height / bmpH)
+                                return Offset(
+                                    (bmpW * fit * s - size.width).coerceAtLeast(0f) / 2f,
+                                    (bmpH * fit * s - size.height).coerceAtLeast(0f) / 2f
+                                )
+                            }
                             awaitEachGesture {
                                 awaitFirstDown(requireUnconsumed = false)
                                 var wasMultiTouch = false
+                                var dragged = false
                                 do {
                                     val event = awaitPointerEvent()
                                     if (event.changes.size >= 2) {
@@ -176,20 +192,38 @@ fun PhotoViewerScreen(
                                         val zoomChange = event.calculateZoom()
                                         val panChange = event.calculatePan()
                                         val newScale = (scale * zoomChange).coerceIn(1f, 5f)
-                                        val maxX = (size.width * (newScale - 1f)).coerceAtLeast(0f) / 2f
-                                        val maxY = (size.height * (newScale - 1f)).coerceAtLeast(0f) / 2f
+                                        val lim = panLimits(newScale)
                                         offset = Offset(
-                                            (offset.x + panChange.x * scale).coerceIn(-maxX, maxX),
-                                            (offset.y + panChange.y * scale).coerceIn(-maxY, maxY)
+                                            (offset.x + panChange.x * scale).coerceIn(-lim.x, lim.x),
+                                            (offset.y + panChange.y * scale).coerceIn(-lim.y, lim.y)
                                         )
                                         scale = newScale
                                         event.changes.forEach { it.consume() }
+                                    } else if (!wasMultiTouch && scale > 1f) {
+                                        // One finger on a zoomed photo pans it, like the
+                                        // native gallery. Only what the photo can absorb is
+                                        // consumed: once it is against an edge the drag is
+                                        // left alone and the pager swipes to the next photo.
+                                        val change = event.changes.first()
+                                        val drag = change.positionChange()
+                                        if (drag != Offset.Zero) {
+                                            val lim = panLimits(scale)
+                                            val newX = (offset.x + drag.x).coerceIn(-lim.x, lim.x)
+                                            val newY = (offset.y + drag.y).coerceIn(-lim.y, lim.y)
+                                            val movedX = newX != offset.x
+                                            val movedY = newY != offset.y
+                                            offset = Offset(newX, newY)
+                                            if (movedX || (movedY && kotlin.math.abs(drag.y) >= kotlin.math.abs(drag.x))) {
+                                                change.consume()
+                                                dragged = true
+                                            }
+                                        }
                                     }
                                 } while (event.changes.any { it.pressed })
 
                                 // Double-tap to toggle zoom, without consuming single-finger
                                 // taps/drags so swiping to the next photo keeps working.
-                                if (!wasMultiTouch) {
+                                if (!wasMultiTouch && !dragged) {
                                     val now = System.currentTimeMillis()
                                     if (now - lastTapTime < 300) {
                                         if (scale > 1f) {
