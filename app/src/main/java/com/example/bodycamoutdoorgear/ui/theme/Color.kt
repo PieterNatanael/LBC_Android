@@ -14,3 +14,7 @@ val SuccessGreen = Color(0xFF34C759)
 val ButtonFace = Color(0xFFE5E5EA)
 val BorderColor = Color(0xFF3A3A3A)
 val OverlayDark = Color(0xCC000000)
+
+// Mars theme: oxidised rust for primary controls, pale regolith dust for secondary ones.
+val MarsRust = Color(0xFFDB5729)
+val MarsDust = Color(0xFFEDC28F)

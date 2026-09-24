@@ -74,6 +74,28 @@ private sealed class Screen(val route: String, val label: String, val icon: Imag
 
 @Composable
 fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> Unit = {}) {
+    val themeViewModel: SettingsViewModel = viewModel()
+    val themeMode by themeViewModel.appearanceMode.collectAsState()
+    val chrome: Color? = when (themeMode) {
+        AppearanceMode.SIMPLE    -> Color(0xFFCC0000)
+        AppearanceMode.TACTICAL  -> Color(0xFF00CC44)
+        AppearanceMode.MATCHA    -> Color(0xFF7BAF52)
+        AppearanceMode.ICE_CREAM -> Color(0xFFFF8FAB)
+        AppearanceMode.TROPICAL  -> Color(0xFFF5F0DD)
+        AppearanceMode.SPIDER    -> Color(0xFFDD2222)
+        AppearanceMode.MARS      -> com.example.bodycamoutdoorgear.ui.theme.MarsRust
+        else                     -> null
+    }
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.example.bodycamoutdoorgear.ui.theme.LocalMarsTheme provides (themeMode == AppearanceMode.MARS),
+        com.example.bodycamoutdoorgear.ui.theme.LocalChromeAccent provides chrome
+    ) {
+        AppNavigationContent(subscriptionManager, onShowIntro)
+    }
+}
+
+@Composable
+private fun AppNavigationContent(subscriptionManager: SubscriptionManager, onShowIntro: () -> Unit) {
     val cameraViewModel: CameraViewModel   = viewModel()
     val photoViewModel: PhotoViewModel     = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
@@ -85,6 +107,7 @@ fun AppNavigation(subscriptionManager: SubscriptionManager, onShowIntro: () -> U
         AppearanceMode.ICE_CREAM -> Color(0xFFFF8FAB)
         AppearanceMode.TROPICAL  -> Color(0xFFA0522D)
         AppearanceMode.SPIDER    -> Color(0xFFBB0000)
+        AppearanceMode.MARS      -> com.example.bodycamoutdoorgear.ui.theme.MarsRust
         else                     -> Color.White
     }
 

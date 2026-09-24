@@ -102,6 +102,7 @@ fun PhotoViewerScreen(
         AppearanceMode.ICE_CREAM -> androidx.compose.ui.graphics.Color(0xFFFF8FAB)
         AppearanceMode.TROPICAL  -> androidx.compose.ui.graphics.Color(0xFFA0522D)
         AppearanceMode.SPIDER    -> androidx.compose.ui.graphics.Color(0xFFBB0000)
+        AppearanceMode.MARS      -> com.example.bodycamoutdoorgear.ui.theme.MarsRust
         else                     -> BackgroundDark
     }
 

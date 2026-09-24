@@ -1,6 +1,9 @@
 package com.example.bodycamoutdoorgear.ui.camera
 
 import android.Manifest
+import com.example.bodycamoutdoorgear.ui.theme.themedShape
+import com.example.bodycamoutdoorgear.ui.theme.sideButtonStyle
+import com.example.bodycamoutdoorgear.ui.theme.chromeAccentOr
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -99,6 +102,7 @@ import androidx.core.content.ContextCompat
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
+import com.example.bodycamoutdoorgear.ui.theme.MarsShutterButton
 import com.example.bodycamoutdoorgear.ui.theme.BorderColor
 import com.example.bodycamoutdoorgear.ui.theme.ButtonFace
 import com.example.bodycamoutdoorgear.ui.theme.CompassGold
@@ -156,8 +160,9 @@ fun PhotoScreen(
     val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
     val isTropical = appearanceMode == AppearanceMode.TROPICAL
     val isSpider   = appearanceMode == AppearanceMode.SPIDER
+    val isMars     = appearanceMode == AppearanceMode.MARS
     val isGradientBtn = isIceCream || isTropical || isSpider
-    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical || isSpider
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical || isSpider || isMars
     val matchaGreen  = Color(0xFF7BAF52)
     val icePink      = Color(0xFFFF8FAB)
     val icePeach     = Color(0xFFFFB347)
@@ -175,6 +180,7 @@ fun PhotoScreen(
         AppearanceMode.ICE_CREAM -> icePink
         AppearanceMode.TROPICAL  -> coconutCream
         AppearanceMode.SPIDER    -> spiderRed
+        AppearanceMode.MARS      -> com.example.bodycamoutdoorgear.ui.theme.MarsRust
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
@@ -570,7 +576,12 @@ fun PhotoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isGradientBtn) {
+                    if (isMars) {
+                        MarsShutterButton(
+                            isCapturing = isCapturing,
+                            onClick = { if (!isCapturing) takePhoto() }
+                        )
+                    } else if (isGradientBtn) {
                         GradientShutterButton(
                             isCapturing = isCapturing,
                             gradientBrush = when {
@@ -604,7 +615,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(SurfaceDark, CircleShape)
+                                .sideButtonStyle(SurfaceDark, accentColor)
                                 .clickable(enabled = !isCapturing) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -618,7 +629,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, CircleShape)
+                                .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -641,7 +652,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(SurfaceDark, CircleShape)
+                                .sideButtonStyle(SurfaceDark, accentColor)
                                 .clickable {
                                     zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio)
                                 },
@@ -658,7 +669,7 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(SurfaceDark, CircleShape)
+                                .sideButtonStyle(SurfaceDark, accentColor)
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -710,7 +721,7 @@ fun PhotoScreen(
             ) {
                 Text(
                     "SETTINGS",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -730,7 +741,7 @@ fun PhotoScreen(
             ) {
 
                 // Appearance
-                Text("APPEARANCE", color = Color.White.copy(0.4f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                Text("APPEARANCE", color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
                 val allModes = AppearanceMode.entries
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(allModes.take(3), allModes.drop(3)).forEach { rowModes ->
@@ -740,14 +751,14 @@ fun PhotoScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                        .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                        .clip(themedShape(6.dp))
+                                        .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                        .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                         .clickable { settingsViewModel.setAppearanceMode(mode) }
                                         .padding(vertical = 10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Text(mode.label, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                 }
                             }
                         }
@@ -757,7 +768,7 @@ fun PhotoScreen(
                 // Display Mode
                 Text(
                     "DISPLAY MODE",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -772,54 +783,54 @@ fun PhotoScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setDisplayMode(mode) }
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(mode.label, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
 
                 // Video Quality
-                Text("VIDEO QUALITY", color = Color.White.copy(0.4f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text("VIDEO QUALITY", color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QualityTier.entries.forEach { tier ->
                         val selected = tier == videoQualityTier
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setVideoQualityTier(tier) }
                                 .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
 
                 // Photo Quality
-                Text("PHOTO QUALITY", color = Color.White.copy(0.4f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text("PHOTO QUALITY", color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QualityTier.entries.forEach { tier ->
                         val selected = tier == qualityTier
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setPhotoQualityTier(tier) }
                                 .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -872,9 +883,9 @@ fun PhotoScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(themedShape(6.dp))
                         .background(Color.White.copy(0.08f))
-                        .border(1.dp, Color.White.copy(0.15f), RoundedCornerShape(6.dp))
+                        .border(1.dp, Color.White.copy(0.15f), themedShape(6.dp))
                         .clickable {
                             settingsViewModel.resetIntro()
                             showSettings = false
@@ -1092,12 +1103,12 @@ private fun PhotoStatusBadge(text: String, color: Color) {
 private fun PhotoPreviewToggleButton(isOn: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(themedShape(6.dp))
             .background(if (isOn) Color.White.copy(0.18f) else Color.White.copy(0.1f))
             .border(
                 1.dp,
                 if (isOn) Color.White.copy(0.45f) else Color.White.copy(0.2f),
-                RoundedCornerShape(6.dp)
+                themedShape(6.dp)
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
@@ -1127,12 +1138,12 @@ private fun PhotoDimScreenButton(isDimmed: Boolean, onToggle: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(themedShape(6.dp))
             .background(if (isDimmed) Color.White.copy(0.04f) else Color.White.copy(0.12f))
             .border(
                 1.dp,
                 if (isDimmed) Color.White.copy(0.15f) else Color.White.copy(0.3f),
-                RoundedCornerShape(6.dp)
+                themedShape(6.dp)
             )
             .clickable(onClick = onToggle)
             .padding(horizontal = 20.dp, vertical = 9.dp),

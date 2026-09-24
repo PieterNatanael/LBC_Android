@@ -1,6 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
 import android.Manifest
+import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -369,7 +370,7 @@ fun RecordShutterSoundDialog(
                             )
                         }
                         Box(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                            modifier = Modifier.fillMaxWidth().clip(themedShape(8.dp))
                                 .background(accent).clickable { save() }.padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -415,7 +416,7 @@ private fun RoundActionButton(accent: Color, isStop: Boolean, onClick: () -> Uni
         modifier = Modifier.size(84.dp).border(3.dp, Color.White, CircleShape).clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        if (isStop) Box(Modifier.size(30.dp).clip(RoundedCornerShape(6.dp)).background(accent))
+        if (isStop) Box(Modifier.size(30.dp).clip(themedShape(6.dp)).background(accent))
         else Box(Modifier.size(66.dp).clip(CircleShape).background(accent))
     }
 }
@@ -424,9 +425,9 @@ private fun RoundActionButton(accent: Color, isStop: Boolean, onClick: () -> Uni
 private fun PillButton(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, onClick: () -> Unit) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(themedShape(6.dp))
             .background(Color.White.copy(0.15f))
-            .border(1.dp, Color.White.copy(0.35f), RoundedCornerShape(6.dp))
+            .border(1.dp, Color.White.copy(0.35f), themedShape(6.dp))
             .clickable { onClick() }
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
@@ -464,7 +465,7 @@ private fun TrimWaveform(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(themedShape(8.dp))
             .background(Color.White.copy(0.08f))
             .onSizeChanged { widthPx = max(1f, it.width.toFloat()) }
             .pointerInput(canDrag, totalSamples) {

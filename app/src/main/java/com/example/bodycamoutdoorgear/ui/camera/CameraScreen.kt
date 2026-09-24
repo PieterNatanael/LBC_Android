@@ -1,6 +1,9 @@
 package com.example.bodycamoutdoorgear.ui.camera
 
 import android.Manifest
+import com.example.bodycamoutdoorgear.ui.theme.themedShape
+import com.example.bodycamoutdoorgear.ui.theme.sideButtonStyle
+import com.example.bodycamoutdoorgear.ui.theme.chromeAccentOr
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -117,6 +120,7 @@ import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
+import com.example.bodycamoutdoorgear.ui.theme.MarsRecordButton
 import com.example.bodycamoutdoorgear.ui.theme.BorderColor
 import com.example.bodycamoutdoorgear.ui.theme.ButtonFace
 import com.example.bodycamoutdoorgear.ui.theme.CompassGold
@@ -170,8 +174,9 @@ fun CameraScreen(
     val isIceCream = appearanceMode == AppearanceMode.ICE_CREAM
     val isTropical = appearanceMode == AppearanceMode.TROPICAL
     val isSpider   = appearanceMode == AppearanceMode.SPIDER
+    val isMars     = appearanceMode == AppearanceMode.MARS
     val isGradientBtn = isIceCream || isTropical || isSpider
-    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical || isSpider
+    val isAlt = isSimple || isTactical || isMatcha || isIceCream || isTropical || isSpider || isMars
     val matchaGreen   = Color(0xFF7BAF52)
     val icePink       = Color(0xFFFF8FAB)
     val icePeach      = Color(0xFFFFB347)
@@ -189,6 +194,7 @@ fun CameraScreen(
         AppearanceMode.ICE_CREAM -> icePink
         AppearanceMode.TROPICAL  -> coconutCream
         AppearanceMode.SPIDER    -> spiderRed
+        AppearanceMode.MARS      -> com.example.bodycamoutdoorgear.ui.theme.MarsRust
         else                     -> Color.White
     }
     val altBackground = if (isTactical) Color(0xFF0A0A0A) else Color.Black
@@ -659,7 +665,7 @@ fun CameraScreen(
                                         fontWeight = FontWeight.Medium,
                                         fontFamily = FontFamily.Monospace,
                                         modifier = Modifier
-                                            .background(Color.Black, RoundedCornerShape(4.dp))
+                                            .background(Color.Black, themedShape(4.dp))
                                             .clickable {
                                                 clipboardManager.getText()?.text?.let {
                                                     settingsViewModel.setYappingScript(it)
@@ -674,7 +680,7 @@ fun CameraScreen(
                                         fontWeight = FontWeight.Medium,
                                         fontFamily = FontFamily.Monospace,
                                         modifier = Modifier
-                                            .background(Color.Black, RoundedCornerShape(4.dp))
+                                            .background(Color.Black, themedShape(4.dp))
                                             .clickable { settingsViewModel.setYappingScript("") }
                                             .padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
@@ -740,7 +746,12 @@ fun CameraScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isGradientBtn) {
+                    if (isMars) {
+                        MarsRecordButton(
+                            isRecording = isRecording,
+                            onClick = { if (isRecording) stopRecording() else startRecording() }
+                        )
+                    } else if (isGradientBtn) {
                         GradientRecordButton(
                             isRecording = isRecording,
                             gradientBrush = when {
@@ -774,7 +785,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(SurfaceDark, CircleShape)
+                                .sideButtonStyle(SurfaceDark, accentColor)
                                 .clickable(enabled = !isRecording) { viewModel.flipCamera() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -788,7 +799,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, CircleShape)
+                                .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
                                 .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -811,7 +822,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(SurfaceDark, CircleShape)
+                                .sideButtonStyle(SurfaceDark, accentColor)
                                 .clickable {
                                     zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio)
                                 },
@@ -828,7 +839,7 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(SurfaceDark, CircleShape)
+                                .sideButtonStyle(SurfaceDark, accentColor)
                                 .clickable { showSettings = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -950,7 +961,7 @@ fun CameraScreen(
                 // Appearance
                 Text(
                     "APPEARANCE",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -965,14 +976,14 @@ fun CameraScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                        .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                        .clip(themedShape(6.dp))
+                                        .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                        .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                         .clickable { settingsViewModel.setAppearanceMode(mode) }
                                         .padding(vertical = 10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Text(mode.label, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                 }
                             }
                         }
@@ -982,7 +993,7 @@ fun CameraScreen(
                 // Display Mode
                 Text(
                     "DISPLAY MODE",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -997,14 +1008,14 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setDisplayMode(mode) }
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(mode.label, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(mode.label, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -1012,7 +1023,7 @@ fun CameraScreen(
                 // Video Quality
                 Text(
                     "VIDEO QUALITY",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -1027,14 +1038,14 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setVideoQualityTier(tier) }
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -1042,7 +1053,7 @@ fun CameraScreen(
                 // Photo Quality
                 Text(
                     "PHOTO QUALITY",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -1057,14 +1068,14 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setPhotoQualityTier(tier) }
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -1114,7 +1125,7 @@ fun CameraScreen(
                 // Gallery columns
                 Text(
                     "GALLERY COLUMNS",
-                    color = Color.White.copy(0.4f),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -1130,14 +1141,14 @@ fun CameraScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
-                                .border(1.dp, if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+                                .clip(themedShape(6.dp))
+                                .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                .border(1.dp, if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
                                 .clickable { settingsViewModel.setGalleryColumns(cols) }
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("$cols", color = if (selected) Color.White else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text("$cols", color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -1148,9 +1159,9 @@ fun CameraScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(themedShape(6.dp))
                         .background(Color.White.copy(0.08f))
-                        .border(1.dp, Color.White.copy(0.15f), RoundedCornerShape(6.dp))
+                        .border(1.dp, Color.White.copy(0.15f), themedShape(6.dp))
                         .clickable {
                             settingsViewModel.resetIntro()
                             showSettings = false
@@ -1173,9 +1184,9 @@ fun CameraScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(themedShape(8.dp))
                         .background(accentColor.copy(0.16f))
-                        .border(1.dp, accentColor.copy(0.45f), RoundedCornerShape(8.dp))
+                        .border(1.dp, accentColor.copy(0.45f), themedShape(8.dp))
                         .clickable {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/")))
                         }
@@ -1315,7 +1326,7 @@ fun KnurledRecordButton(isRecording: Boolean, onClick: () -> Unit, size: Dp = 10
                     Box(
                         Modifier
                             .size(20.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(themedShape(4.dp))
                             .background(Color.White.copy(0.9f))
                     )
                 } else {
@@ -1376,12 +1387,12 @@ fun BauhausRecordButton(isRecording: Boolean, onClick: () -> Unit, accentColor: 
 private fun PreviewToggleButton(isOn: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(themedShape(6.dp))
             .background(if (isOn) Color.White.copy(0.18f) else Color.White.copy(0.1f))
             .border(
                 1.dp,
                 if (isOn) Color.White.copy(0.45f) else Color.White.copy(0.2f),
-                RoundedCornerShape(6.dp)
+                themedShape(6.dp)
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
@@ -1424,7 +1435,7 @@ private fun RecTimerBadge(isRecording: Boolean) {
 
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(themedShape(6.dp))
             .background(RecordRed)
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1448,12 +1459,12 @@ private fun DimScreenButton(isDimmed: Boolean, onToggle: () -> Unit, modifier: M
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(themedShape(6.dp))
             .background(if (isDimmed) Color.White.copy(0.04f) else Color.White.copy(0.12f))
             .border(
                 1.dp,
                 if (isDimmed) Color.White.copy(0.15f) else Color.White.copy(0.3f),
-                RoundedCornerShape(6.dp)
+                themedShape(6.dp)
             )
             .clickable(onClick = onToggle)
             .padding(horizontal = 20.dp, vertical = 9.dp),
@@ -1521,8 +1532,8 @@ private fun DimOverlay(onWake: () -> Unit) {
 internal fun SubtleProChip(onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(5.dp))
-            .border(1.dp, CompassGold.copy(alpha = 0.4f), RoundedCornerShape(5.dp))
+            .clip(themedShape(5.dp))
+            .border(1.dp, CompassGold.copy(alpha = 0.4f), themedShape(5.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,

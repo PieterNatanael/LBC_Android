@@ -1,6 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.gallery
 
 import android.content.Intent
+import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -142,6 +143,7 @@ fun GalleryScreen(
         AppearanceMode.ICE_CREAM -> Color(0xFFFF8FAB)
         AppearanceMode.TROPICAL  -> Color(0xFFA0522D)
         AppearanceMode.SPIDER    -> Color(0xFFBB0000)
+        AppearanceMode.MARS      -> Color.Black
         else                     -> BackgroundDark
     }
 
@@ -209,7 +211,7 @@ fun GalleryScreen(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
-                                .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                .background(Color.Black, themedShape(4.dp))
                                 .clickable { exitSelectMode() }
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         )
@@ -221,7 +223,7 @@ fun GalleryScreen(
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier
-                                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                    .background(Color.Black, themedShape(4.dp))
                                     .clickable { showReceiveScreen = true }
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             )
@@ -231,7 +233,7 @@ fun GalleryScreen(
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier
-                                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                    .background(Color.Black, themedShape(4.dp))
                                     .clickable {
                                         isSelectMode = true
                                         onSelectModeChanged(true)
@@ -657,7 +659,7 @@ private fun EmptyGallery(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
-                    .background(Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .background(Color.Black, themedShape(4.dp))
                     .clickable(onClick = onHipHopClick)
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             )

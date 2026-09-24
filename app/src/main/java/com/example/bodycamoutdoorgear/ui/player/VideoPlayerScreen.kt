@@ -114,6 +114,7 @@ fun VideoPlayerScreen(
         AppearanceMode.ICE_CREAM -> Color(0xFFFF8FAB)
         AppearanceMode.TROPICAL  -> Color(0xFFA0522D)
         AppearanceMode.SPIDER    -> Color(0xFFBB0000)
+        AppearanceMode.MARS      -> com.example.bodycamoutdoorgear.ui.theme.MarsRust
         else                     -> BackgroundDark
     }
 

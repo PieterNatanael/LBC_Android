@@ -1,6 +1,8 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
 import androidx.compose.foundation.background
+import com.example.bodycamoutdoorgear.ui.theme.themedShape
+import com.example.bodycamoutdoorgear.ui.theme.chromeAccentOr
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +66,7 @@ fun ShutterSoundSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             "SHUTTER SOUND",
-            color = Color.White.copy(0.4f),
+            color = chromeAccentOr(Color.White.copy(0.4f)),
             fontSize = 10.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -75,12 +77,12 @@ fun ShutterSoundSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (selected) Color.White.copy(0.25f) else Color.White.copy(0.1f))
+                    .clip(themedShape(6.dp))
+                    .background(if (selected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
                     .border(
                         1.dp,
-                        if (selected) Color.White.copy(0.5f) else Color.White.copy(0.2f),
-                        RoundedCornerShape(6.dp)
+                        if (selected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f),
+                        themedShape(6.dp)
                     )
                     .clickable { onSelect(sound) }
                     .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -91,14 +93,14 @@ fun ShutterSoundSection(
                 Text(
                     sound.name,
                     modifier = Modifier.weight(1f),
-                    color = if (selected) Color.White else Color.White.copy(0.5f),
+                    color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.5f),
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
                 if (selected) {
-                    Icon(Icons.Filled.Check, contentDescription = "Selected", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Check, contentDescription = "Selected", tint = chromeAccentOr(Color.White), modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(12.dp))
                 }
                 Icon(
@@ -143,7 +145,7 @@ fun ShutterSoundSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(themedShape(6.dp))
                     .background(accent)
                     .clickable { onRecord() }
                     .padding(vertical = 12.dp),

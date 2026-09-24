@@ -1,6 +1,8 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
 import androidx.compose.foundation.background
+import com.example.bodycamoutdoorgear.ui.theme.themedShape
+import com.example.bodycamoutdoorgear.ui.theme.chromeAccentOr
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -90,7 +92,7 @@ fun PrivateGallerySettingsSection() {
                 SettingsRowButton("FORGOT PIN? RESET PRIVATE GALLERY", destructive = true) { showResetConfirm = true }
                 HelperText("Permanently deletes every private photo and video. There is no other way to recover a forgotten PIN, by design.")
             } else {
-                HelperText("Not set up. Photos and videos stay in the normal gallery until you create a PIN.")
+                HelperText("Not set up. \"Set as Private\" still works. Set up a PIN to actually open and view what's moved here.")
                 SettingsRowButton("SET UP PRIVATE GALLERY") { flow = PrivateGallerySettingsFlow.SetUp }
             }
         }
@@ -163,7 +165,7 @@ fun PrivateGallerySettingsSection() {
 private fun SectionLabel(text: String) {
     Text(
         text,
-        color = Color.White.copy(0.4f),
+        color = chromeAccentOr(Color.White.copy(0.4f)),
         fontSize = 10.sp,
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
@@ -184,8 +186,8 @@ private fun SettingsRowButton(label: String, destructive: Boolean = false, onCli
     androidx.compose.foundation.layout.Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(0.08f), RoundedCornerShape(6.dp))
-            .border(1.dp, if (destructive) RecordRed.copy(0.4f) else Color.White.copy(0.2f), RoundedCornerShape(6.dp))
+            .background(Color.White.copy(0.08f), themedShape(6.dp))
+            .border(1.dp, if (destructive) RecordRed.copy(0.4f) else Color.White.copy(0.2f), themedShape(6.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp),
         contentAlignment = androidx.compose.ui.Alignment.Center

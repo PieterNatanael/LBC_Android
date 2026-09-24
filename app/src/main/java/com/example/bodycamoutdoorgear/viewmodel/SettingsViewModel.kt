@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
-enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER") }
+enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER"), MARS("MARS") }
 enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE"), YAPPING("YAP") }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,7 +34,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val gridEnabled: StateFlow<Boolean> = _gridEnabled.asStateFlow()
 
     private val _appearanceMode = MutableStateFlow(
-        AppearanceMode.entries[prefs.getInt("appearance_mode", AppearanceMode.TROPICAL.ordinal)]
+        AppearanceMode.entries[prefs.getInt("appearance_mode", AppearanceMode.MARS.ordinal)]
     )
     val appearanceMode: StateFlow<AppearanceMode> = _appearanceMode.asStateFlow()
 
