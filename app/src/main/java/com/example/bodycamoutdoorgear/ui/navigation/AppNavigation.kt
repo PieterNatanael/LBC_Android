@@ -67,9 +67,9 @@ import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import androidx.compose.runtime.collectAsState
 
 private sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    object Video   : Screen("video",   "VIDEO",   Icons.Default.Videocam)
-    object Photo   : Screen("photo",   "PHOTO",   Icons.Default.CameraAlt)
-    object Gallery : Screen("gallery", "LBC",     Icons.Default.VideoLibrary)
+    object Video   : Screen("video",   "Video",   Icons.Default.Videocam)
+    object Photo   : Screen("photo",   "Photo",   Icons.Default.CameraAlt)
+    object Gallery : Screen("gallery", "LBC",     RectangleStackIcon)
 }
 
 @Composable
@@ -362,12 +362,12 @@ private fun PillTab(
             )
             Text(
                 text          = screen.label,
-                fontSize      = 7.sp,
-                lineHeight    = 7.sp,
-                fontWeight    = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                fontFamily    = FontFamily.Monospace,
+                fontSize      = 9.sp,
+                lineHeight    = 9.sp,
+                fontWeight    = FontWeight.Bold,
+                fontFamily    = FontFamily.SansSerif,
                 color         = contentColor,
-                letterSpacing = 0.8.sp,
+                letterSpacing = 0.2.sp,
                 modifier      = Modifier.offset(y = (-2).dp)
             )
         }

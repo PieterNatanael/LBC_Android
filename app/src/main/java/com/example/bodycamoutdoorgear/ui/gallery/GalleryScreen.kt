@@ -614,8 +614,17 @@ private fun SelectActionButton(
             .padding(vertical = 4.dp)
     ) {
         Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(24.dp))
-        Spacer(Modifier.height(4.dp))
-        Text(label, color = tint, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Spacer(Modifier.height(1.dp))
+        Text(
+            label,
+            color = tint,
+            fontSize = 11.sp,
+            lineHeight = 12.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
+            letterSpacing = 0.2.sp,
+            maxLines = 1
+        )
     }
 }
 
