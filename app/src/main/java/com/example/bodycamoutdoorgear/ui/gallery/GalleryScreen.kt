@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -179,7 +181,7 @@ fun GalleryScreen(
             }
             var infoExpanded by remember { mutableStateOf(false) }
 
-            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().navigationBarsPadding().padding(bottom = if (isSelectMode) 96.dp else 72.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().then(if (isSelectMode) Modifier.navigationBarsPadding().padding(bottom = 96.dp) else Modifier)) {
                 // ── Header ────────────────────────────────────────────────────
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 6.dp),
@@ -303,9 +305,17 @@ fun GalleryScreen(
                     }
                 }
             val gridSpacing = if (galleryColumns >= 3) 3.dp else 12.dp
+            // Thumbnails run behind the floating tab pill, so the last row needs extra
+            // room to scroll up clear of it (select mode keeps its own bar padding).
+            val navBottom = androidx.compose.foundation.layout.WindowInsets.navigationBars
+                .asPaddingValues().calculateBottomPadding()
+            val gridBottomExtra = if (isSelectMode) 0.dp else navBottom + 84.dp
             LazyVerticalGrid(
                 columns = GridCells.Fixed(galleryColumns),
-                contentPadding = PaddingValues(gridSpacing),
+                contentPadding = PaddingValues(
+                    start = gridSpacing, top = gridSpacing, end = gridSpacing,
+                    bottom = gridSpacing + gridBottomExtra
+                ),
                 horizontalArrangement = Arrangement.spacedBy(gridSpacing),
                 verticalArrangement = Arrangement.spacedBy(gridSpacing),
                 modifier = Modifier.fillMaxWidth().weight(1f)
@@ -345,6 +355,24 @@ fun GalleryScreen(
                 modifier   = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
             )
             } // end Column
+
+        // ── Bottom fade: thumbnails dissolve into the background behind the tab pill ──
+        if (!isSelectMode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(
+                        androidx.compose.foundation.layout.WindowInsets.navigationBars
+                            .asPaddingValues().calculateBottomPadding() + 140.dp
+                    )
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, bgColor.copy(alpha = 0.85f), bgColor)
+                        )
+                    )
+            )
+        }
 
         // ── Select mode bottom action bar ────────────────────────────────
         if (isSelectMode) {
