@@ -148,23 +148,19 @@ private fun AppNavigationContent(subscriptionManager: SubscriptionManager, onSho
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // FLAG_SECURE for as long as either the PIN screen or Private Gallery
-    // itself is showing — blocks screenshots and screen recording outright,
-    // and blanks the recents-screen thumbnail, while either is on screen.
-    // iOS has no equivalent API; this is genuinely stronger than what that
-    // build could do, so there's no separate "screenshots aren't blocked"
-    // notice needed here at all.
+    // Keeps private photos out of the recents-screen thumbnail while the PIN
+    // screen or Private Gallery is showing. Screenshots and screen recording
+    // are deliberately NOT blocked — once someone is inside Private Gallery,
+    // what they do with it is up to them. Only available from Android 13;
+    // older versions show the normal thumbnail.
     val isPrivateFlowShowing = privateFlowMode != null || showPrivateGallery
     DisposableEffect(isPrivateFlowShowing) {
         val activity = privateContext.findActivity()
-        if (isPrivateFlowShowing) {
-            activity?.window?.setFlags(
-                android.view.WindowManager.LayoutParams.FLAG_SECURE,
-                android.view.WindowManager.LayoutParams.FLAG_SECURE
-            )
+        if (isPrivateFlowShowing && android.os.Build.VERSION.SDK_INT >= 33) {
+            activity?.setRecentsScreenshotEnabled(false)
         }
         onDispose {
-            activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+            if (android.os.Build.VERSION.SDK_INT >= 33) activity?.setRecentsScreenshotEnabled(true)
         }
     }
 

@@ -21,14 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import com.example.bodycamoutdoorgear.privategallery.PrivateGalleryStore
 import com.example.bodycamoutdoorgear.ui.gallery.PrivateGalleryLockMode
 import com.example.bodycamoutdoorgear.ui.gallery.PrivateGalleryLockScreen
@@ -99,7 +97,7 @@ fun PrivateGallerySettingsSection() {
     }
 
     flow?.let { f ->
-        FullScreenSecureDialog(onDismissRequest = { flow = null }) {
+        FullScreenDialog(onDismissRequest = { flow = null }) {
             PrivateGalleryLockScreen(
                 mode = f.lockMode,
                 onUnlocked = {
@@ -127,7 +125,7 @@ fun PrivateGallerySettingsSection() {
         // to PrivateGalleryStore.setPin — nothing further to chain once it
         // succeeds. Already active going in, so isActive has nothing to
         // change here.
-        FullScreenSecureDialog(onDismissRequest = { showNewPinAfterVerify = false }) {
+        FullScreenDialog(onDismissRequest = { showNewPinAfterVerify = false }) {
             PrivateGalleryLockScreen(
                 mode = PrivateGalleryLockMode.SETUP,
                 onUnlocked = { showNewPinAfterVerify = false },
@@ -196,28 +194,13 @@ private fun SettingsRowButton(label: String, destructive: Boolean = false, onCli
     }
 }
 
-/**
- * A Dialog that fills the screen and carries FLAG_SECURE on its OWN window
- * — a Compose Dialog opens a genuinely separate Android Window from the
- * hosting Activity's, so the FLAG_SECURE AppNavigation applies to the
- * Activity's window does not reach a PIN screen presented this way. Without
- * this, entering the PIN from Settings would be unprotected against
- * screenshots/recording while the exact same screen reached from the
- * Gallery tab's dropdown is.
- */
+/** A Dialog that fills the screen, used to present the PIN screen from Settings. */
 @Composable
-private fun FullScreenSecureDialog(onDismissRequest: () -> Unit, content: @Composable () -> Unit) {
+private fun FullScreenDialog(onDismissRequest: () -> Unit, content: @Composable () -> Unit) {
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        val view = LocalView.current
-        androidx.compose.runtime.SideEffect {
-            (view.parent as? DialogWindowProvider)?.window?.setFlags(
-                android.view.WindowManager.LayoutParams.FLAG_SECURE,
-                android.view.WindowManager.LayoutParams.FLAG_SECURE
-            )
-        }
         androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
             content()
         }
