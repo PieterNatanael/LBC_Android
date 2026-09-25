@@ -42,7 +42,7 @@ class ShutterSoundStore private constructor(private val appContext: Context) {
     fun find(id: String?): ShutterSound =
         ShutterSound.builtIn.firstOrNull { it.id == id }
             ?: _custom.value.firstOrNull { it.id == id }
-            ?: ShutterSound.CLASSIC
+            ?: ShutterSound.CAT
 
     fun add(name: String, emoji: String, samples: FloatArray): ShutterSound {
         dir.mkdirs()

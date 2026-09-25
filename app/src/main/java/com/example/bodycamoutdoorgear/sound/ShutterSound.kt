@@ -18,6 +18,6 @@ data class ShutterSound(
 
         val builtIn = listOf(CLASSIC, DUCK, CAT, DOG)
 
-        fun byId(id: String?): ShutterSound = builtIn.firstOrNull { it.id == id } ?: CLASSIC
+        fun byId(id: String?): ShutterSound = builtIn.firstOrNull { it.id == id } ?: CAT
     }
 }

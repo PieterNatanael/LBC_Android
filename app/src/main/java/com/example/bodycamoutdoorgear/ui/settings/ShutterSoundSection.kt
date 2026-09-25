@@ -233,7 +233,7 @@ fun ShutterSoundSettings(settingsViewModel: SettingsViewModel, accent: Color) {
             text = { Text("This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
-                    if (selectedId == sound.id) settingsViewModel.setShutterSound(ShutterSound.CLASSIC.id)
+                    if (selectedId == sound.id) settingsViewModel.setShutterSound(ShutterSound.CAT.id)
                     store.remove(sound)
                     toDelete = null
                 }) { Text("Delete", color = Color.White) }

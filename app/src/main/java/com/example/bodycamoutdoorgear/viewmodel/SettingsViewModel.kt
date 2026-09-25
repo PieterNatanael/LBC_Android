@@ -59,7 +59,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val galleryColumns: StateFlow<Int> = _galleryColumns.asStateFlow()
 
     private val _shutterSoundId = MutableStateFlow(
-        prefs.getString("shutter_sound_id", ShutterSound.CLASSIC.id) ?: ShutterSound.CLASSIC.id
+        prefs.getString("shutter_sound_id", ShutterSound.CAT.id) ?: ShutterSound.CAT.id
     )
     val shutterSoundId: StateFlow<String> = _shutterSoundId.asStateFlow()
 
