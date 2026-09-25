@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -82,6 +83,10 @@ import com.example.bodycamoutdoorgear.ui.transfer.SendScreen
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import androidx.compose.material.icons.filled.Wifi
 import kotlinx.coroutines.launch
+
+// The "photos and videos may be lost" footer is hidden for now, since the same
+// warning is already shown once at first launch. Flip to true to bring it back.
+private const val SHOW_DATA_LOSS_FOOTER = false
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,7 +179,7 @@ fun GalleryScreen(
             }
             var infoExpanded by remember { mutableStateOf(false) }
 
-            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().navigationBarsPadding().padding(bottom = if (isSelectMode) 80.dp else 72.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().navigationBarsPadding().padding(bottom = if (isSelectMode) 96.dp else 72.dp)) {
                 // ── Header ────────────────────────────────────────────────────
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 6.dp),
@@ -331,7 +336,7 @@ fun GalleryScreen(
             } // end LazyVerticalGrid
 
             // Disclaimer
-            Text(
+            if (SHOW_DATA_LOSS_FOOTER) Text(
                 text       = "Photos and videos may be lost due to bugs or device issues.\nBack up important footage.",
                 color      = Color.White.copy(alpha = 0.8f),
                 fontSize   = 7.7.sp,
@@ -347,127 +352,79 @@ fun GalleryScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .background(
+                        Color.Black.copy(alpha = 0.75f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                    )
                     .navigationBarsPadding()
-                    .padding(bottom = 24.dp),
+                    .padding(top = 16.dp, bottom = 24.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            if (selectedPaths.isNotEmpty()) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.07f),
-                            androidx.compose.foundation.shape.CircleShape
-                        )
-                        .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
-                        .clickable(enabled = selectedPaths.isNotEmpty()) {
-                            if (!isUnlocked) {
-                                showPaywall = true
-                            } else {
-                                val uris = ArrayList<Uri>(selectedPaths.map { path ->
-                                    val file = java.io.File(path)
-                                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                                })
-                                val mime = if (selectedPaths.all { it.endsWith(".jpg") }) "image/*"
-                                           else if (selectedPaths.all { it.endsWith(".mp4") }) "video/*"
-                                           else "*/*"
-                                val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                                    type = mime
-                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                context.startActivity(Intent.createChooser(intent, "Share"))
+                SelectActionButton(
+                    icon = Icons.Default.IosShare,
+                    label = "Share",
+                    enabled = selectedPaths.isNotEmpty(),
+                    onClick = {
+                        if (!isUnlocked) {
+                            showPaywall = true
+                        } else {
+                            val uris = ArrayList<Uri>(selectedPaths.map { path ->
+                                val file = java.io.File(path)
+                                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                            })
+                            val mime = if (selectedPaths.all { it.endsWith(".jpg") }) "image/*"
+                                       else if (selectedPaths.all { it.endsWith(".mp4") }) "video/*"
+                                       else "*/*"
+                            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                type = mime
+                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.IosShare,
-                        contentDescription = "Share",
-                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            if (selectedPaths.isNotEmpty()) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.07f),
-                            androidx.compose.foundation.shape.CircleShape
-                        )
-                        .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
-                        .clickable(enabled = selectedPaths.isNotEmpty()) {
-                            showSendScreen = true
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "HipHop",
-                        color = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.sp
-                    )
-                }
+                            context.startActivity(Intent.createChooser(intent, "Share"))
+                        }
+                    }
+                )
+                SelectActionButton(
+                    icon = Icons.Default.Wifi,
+                    label = "HipHop",
+                    enabled = selectedPaths.isNotEmpty(),
+                    onClick = { showSendScreen = true }
+                )
                 // Bulk counterpart of each file's own Set as Private/Show in
                 // Gallery button — same underlying moves, same lack of a PIN
                 // check going in (adding to Private has never required
                 // proving the PIN, only opening Private to look at it does).
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            if (selectedPaths.isNotEmpty()) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.07f),
-                            androidx.compose.foundation.shape.CircleShape
-                        )
-                        .border(1.dp, Color.White.copy(alpha = if (selectedPaths.isNotEmpty()) 0.4f else 0.15f), androidx.compose.foundation.shape.CircleShape)
-                        .clickable(enabled = selectedPaths.isNotEmpty()) {
-                            var failures = 0
-                            selectedPaths.toList().forEach { path ->
-                                try {
-                                    val file = java.io.File(path)
-                                    if (isPrivateGallery) PrivateGalleryStore.moveOut(context, file)
-                                    else PrivateGalleryStore.moveIn(context, file)
-                                } catch (e: Exception) {
-                                    failures++
-                                }
+                SelectActionButton(
+                    icon = if (isPrivateGallery) Icons.Default.LockOpen else Icons.Default.Lock,
+                    label = if (isPrivateGallery) "Gallery" else "Private",
+                    enabled = selectedPaths.isNotEmpty(),
+                    onClick = {
+                        var failures = 0
+                        selectedPaths.toList().forEach { path ->
+                            try {
+                                val file = java.io.File(path)
+                                if (isPrivateGallery) PrivateGalleryStore.moveOut(context, file)
+                                else PrivateGalleryStore.moveIn(context, file)
+                            } catch (e: Exception) {
+                                failures++
                             }
-                            galleryViewModel.loadVideos()
-                            exitSelectMode()
-                            if (failures > 0) {
-                                bulkMoveFailureCount = failures
-                                showBulkMoveError = true
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        if (isPrivateGallery) Icons.Default.LockOpen else Icons.Default.Lock,
-                        contentDescription = if (isPrivateGallery) "Move to Gallery" else "Add to Private",
-                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            if (selectedPaths.isNotEmpty()) RecordRed.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.07f),
-                            androidx.compose.foundation.shape.CircleShape
-                        )
-                        .border(1.dp, if (selectedPaths.isNotEmpty()) RecordRed else Color.White.copy(alpha = 0.15f), androidx.compose.foundation.shape.CircleShape)
-                        .clickable(enabled = selectedPaths.isNotEmpty()) {
-                            showDeleteConfirm = true
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = if (selectedPaths.isNotEmpty()) Color.White else Color.White.copy(0.3f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                        }
+                        galleryViewModel.loadVideos()
+                        exitSelectMode()
+                        if (failures > 0) {
+                            bulkMoveFailureCount = failures
+                            showBulkMoveError = true
+                        }
+                    }
+                )
+                SelectActionButton(
+                    icon = Icons.Default.Delete,
+                    label = "Delete",
+                    enabled = selectedPaths.isNotEmpty(),
+                    activeColor = RecordRed,
+                    onClick = { showDeleteConfirm = true }
+                )
             }
         }
         }
@@ -608,6 +565,29 @@ fun GalleryScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SelectActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    activeColor: Color = Color.White
+) {
+    val tint = if (enabled) activeColor else Color.White.copy(alpha = 0.3f)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(72.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 4.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(label, color = tint, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
     }
 }
 
