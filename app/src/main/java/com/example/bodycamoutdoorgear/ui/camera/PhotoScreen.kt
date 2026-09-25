@@ -215,6 +215,9 @@ fun PhotoScreen(
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showFlash    by remember { mutableStateOf(false) }
+    // Flash ring button: 0 = off, 1 = on, 2 = auto. Front camera uses a white screen flash.
+    var flashMode    by remember { mutableStateOf(0) }
+    var screenFlashActive by remember { mutableStateOf(false) }
     val scope        = rememberCoroutineScope()
 
     // Glow positioning — updated by onGloballyPositioned on the preview box
@@ -263,6 +266,15 @@ fun PhotoScreen(
         }
         listener.enable()
         onDispose { listener.disable() }
+    }
+
+    LaunchedEffect(flashMode, imageCapture, isFrontCamera) {
+        // Front camera: flash is our own white-screen flash (see takePhoto), not CameraX's.
+        imageCapture?.flashMode = if (isFrontCamera) ImageCapture.FLASH_MODE_OFF else when (flashMode) {
+            1 -> ImageCapture.FLASH_MODE_ON
+            2 -> ImageCapture.FLASH_MODE_AUTO
+            else -> ImageCapture.FLASH_MODE_OFF
+        }
     }
 
     LaunchedEffect(targetRotation, imageCapture) {
@@ -345,8 +357,7 @@ fun PhotoScreen(
         }
     }
 
-    fun takePhoto() {
-        val ic = imageCapture ?: return
+    fun capturePhotoNow(ic: ImageCapture) {
         // Flash + tone then immediately re-enable the button — image saves in background
         scope.launch {
             viewModel.setCapturing(true)
@@ -382,6 +393,38 @@ fun PhotoScreen(
                 }
             }
         )
+    }
+
+    fun takePhoto() {
+        val ic = imageCapture ?: return
+        if (isFrontCamera && flashMode != 0) {
+            // No flash unit up front: light the whole screen white at full
+            // brightness, let the exposure settle, then fire, then hold a beat.
+            if (isCapturing || screenFlashActive) return
+            scope.launch {
+                viewModel.setCapturing(true)
+                screenFlashActive = true
+                val window = (context as? Activity)?.window
+                window?.let { w ->
+                    val p = w.attributes
+                    p.screenBrightness = 1f
+                    w.attributes = p
+                }
+                delay(600)
+                viewModel.setCapturing(false)
+                capturePhotoNow(ic)
+                delay(500)
+                screenFlashActive = false
+                window?.let { w ->
+                    val p = w.attributes
+                    p.screenBrightness =
+                        if (isScreenDimmed) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                    w.attributes = p
+                }
+            }
+            return
+        }
+        capturePhotoNow(ic)
     }
 
     // Volume button hardware trigger
@@ -604,40 +647,51 @@ fun PhotoScreen(
                             onClick = { if (!isCapturing) takePhoto() }
                         )
                     }
-                    // Left: flip + dim buttons
-                    Row(
+                    // Left: revolver of flip / dim / flash — two visible, swipe to rotate
+                    ButtonRing(
+                        count = 3,
+                        accentColor = accentColor,
+                        isAlt = isAlt,
                         modifier = Modifier
                             .align(Alignment.CenterStart)
                             .padding(start = 32.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .sideButtonStyle(SurfaceDark, accentColor)
-                                .clickable(enabled = !isCapturing) { viewModel.flipCamera() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Cameraswitch,
-                                contentDescription = "Flip camera",
-                                tint = if (isCapturing) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
-                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
-                                .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.DarkMode,
-                                contentDescription = "Dim screen",
-                                tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
-                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
+                    ) { index, ringEnabled ->
+                        when (index) {
+                            0 -> Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .sideButtonStyle(SurfaceDark, accentColor)
+                                    .clickable(enabled = ringEnabled && !isCapturing) { viewModel.flipCamera() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Cameraswitch,
+                                    contentDescription = "Flip camera",
+                                    tint = if (isCapturing) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
+                                    modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
+                                )
+                            }
+                            1 -> Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
+                                    .clickable(enabled = ringEnabled) { viewModel.setScreenDimmed(!isScreenDimmed) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.DarkMode,
+                                    contentDescription = "Dim screen",
+                                    tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
+                                    modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
+                                )
+                            }
+                            else -> FlashRingButton(
+                                mode = flashMode,
+                                allowsAuto = true,
+                                accentColor = accentColor,
+                                isAlt = isAlt,
+                                enabled = ringEnabled,
+                                onModeChange = { flashMode = it },
                             )
                         }
                     }
@@ -692,6 +746,11 @@ fun PhotoScreen(
                     PhotoDimOverlay(onWake = { viewModel.setScreenDimmed(false) })
                 }
             } // end content Box
+        }
+
+        // Front-camera screen flash: covers the whole window, edge to edge.
+        if (screenFlashActive) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.White))
         }
     }
 

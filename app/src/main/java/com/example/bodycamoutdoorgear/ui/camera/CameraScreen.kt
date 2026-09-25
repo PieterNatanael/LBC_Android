@@ -254,6 +254,8 @@ fun CameraScreen(
     val previewRef      = remember { arrayOfNulls<Preview>(1) }
     var videoCapture    by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     var cameraControl   by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
+    // Flash ring button: 0 = off, 1 = on (continuous torch).
+    var flashMode       by remember { mutableStateOf(0) }
     var cameraInfo      by remember { mutableStateOf<androidx.camera.core.CameraInfo?>(null) }
     var focusPoint      by remember { mutableStateOf<Offset?>(null) }
     var zoomRatio       by remember { mutableStateOf(1f) }
@@ -330,6 +332,13 @@ fun CameraScreen(
     }
 
     // Rebind camera on quality, facing, permission, or active-tab change
+    // Torch belongs to one camera and one binding: re-apply after every
+    // rebind, and drop it on flip (front has none) or when the tab is left.
+    LaunchedEffect(flashMode, cameraControl) {
+        try { cameraControl?.enableTorch(flashMode != 0) } catch (_: Exception) {}
+    }
+    LaunchedEffect(isFrontCamera, isActive) { flashMode = 0 }
+
     LaunchedEffect(qualityTier, isFrontCamera, permsGranted, isActive) {
         zoomGlider.cancel()  // tab left, camera flipped or rebound: drop any running glide
         if (!permsGranted || !isActive) {
@@ -774,40 +783,51 @@ fun CameraScreen(
                             onClick = { if (isRecording) stopRecording() else startRecording() }
                         )
                     }
-                    // Left: flip + dim buttons
-                    Row(
+                    // Left: revolver of flip / dim / flash — two visible, swipe to rotate
+                    ButtonRing(
+                        count = 3,
+                        accentColor = accentColor,
+                        isAlt = isAlt,
                         modifier = Modifier
                             .align(Alignment.CenterStart)
                             .padding(start = 32.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .sideButtonStyle(SurfaceDark, accentColor)
-                                .clickable(enabled = !isRecording) { viewModel.flipCamera() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Cameraswitch,
-                                contentDescription = "Flip camera",
-                                tint = if (isRecording) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
-                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
-                                .clickable { viewModel.setScreenDimmed(!isScreenDimmed) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.DarkMode,
-                                contentDescription = "Dim screen",
-                                tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
-                                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
+                    ) { index, ringEnabled ->
+                        when (index) {
+                            0 -> Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .sideButtonStyle(SurfaceDark, accentColor)
+                                    .clickable(enabled = ringEnabled && !isRecording) { viewModel.flipCamera() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Cameraswitch,
+                                    contentDescription = "Flip camera",
+                                    tint = if (isRecording) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
+                                    modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
+                                )
+                            }
+                            1 -> Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
+                                    .clickable(enabled = ringEnabled) { viewModel.setScreenDimmed(!isScreenDimmed) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.DarkMode,
+                                    contentDescription = "Dim screen",
+                                    tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
+                                    modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
+                                )
+                            }
+                            else -> FlashRingButton(
+                                mode = flashMode,
+                                allowsAuto = false,
+                                accentColor = accentColor,
+                                isAlt = isAlt,
+                                enabled = ringEnabled,
+                                onModeChange = { flashMode = it },
                             )
                         }
                     }

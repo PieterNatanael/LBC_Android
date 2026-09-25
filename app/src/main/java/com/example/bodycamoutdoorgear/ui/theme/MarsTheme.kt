@@ -54,15 +54,6 @@ val MarsChamferShape: Shape = object : Shape {
 
 @Composable
 private fun MarsRingTicks(ringSize: Dp, color: Color) {
-    listOf(0f, 90f, 270f).forEach { angle ->
-        Box(
-            Modifier
-                .rotate(angle)
-                .offset(y = -(ringSize / 2 + 8.dp))
-                .size(width = 3.dp, height = 8.dp)
-                .background(color)
-        )
-    }
     Text(
         "M-28",
         color = color,
