@@ -160,7 +160,7 @@ fun PrivateGallerySettingsSection() {
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+internal fun SectionLabel(text: String) {
     Text(
         text,
         color = chromeAccentOr(Color.White.copy(0.4f)),
@@ -172,14 +172,14 @@ private fun SectionLabel(text: String) {
 }
 
 @Composable
-private fun HelperText(text: String) {
+internal fun HelperText(text: String) {
     Text(text, color = Color.White.copy(0.5f), fontSize = 11.sp)
 }
 
 /** Change PIN/Turn Off/Set Up all share this rather than each hand-rolling
  *  the same button chrome. */
 @Composable
-private fun SettingsRowButton(label: String, destructive: Boolean = false, onClick: () -> Unit) {
+internal fun SettingsRowButton(label: String, destructive: Boolean = false, onClick: () -> Unit) {
     val tint = if (destructive) RecordRed else Color.White
     androidx.compose.foundation.layout.Box(
         modifier = Modifier

@@ -116,6 +116,7 @@ import com.example.bodycamoutdoorgear.viewmodel.DisplayMode
 import com.example.bodycamoutdoorgear.viewmodel.QualityTier
 import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import com.example.bodycamoutdoorgear.ui.settings.PrivateGallerySettingsSection
+import com.example.bodycamoutdoorgear.ui.settings.AppUpdateSection
 import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
@@ -1174,6 +1175,8 @@ fun CameraScreen(
                 }
 
                 PrivateGallerySettingsSection()
+
+                AppUpdateSection()
 
                 // View Intro Again
                 Box(

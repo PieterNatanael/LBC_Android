@@ -119,6 +119,8 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     // Google Play Billing
     implementation(libs.billing.ktx)
+    // In-app update check (Settings)
+    implementation(libs.play.app.update.ktx)
     // Location
     implementation(libs.play.services.location)
     // Coroutines
