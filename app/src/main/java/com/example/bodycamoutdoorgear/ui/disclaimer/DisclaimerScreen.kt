@@ -42,7 +42,7 @@ private data class DisclaimerItem(val icon: ImageVector, val body: String)
 
 private val ITEMS = listOf(
     DisclaimerItem(Icons.Default.Warning,
-        "We do not guarantee recordings will be saved. Data loss can occur due to bugs, crashes, or device issues."),
+        "We do not guarantee photos and videos will be saved. Data loss can occur due to bugs, crashes, or device issues."),
     DisclaimerItem(Icons.Default.Warning,
         "App updates may cause unexpected behaviour that could affect recording reliability."),
     DisclaimerItem(Icons.Default.Warning,
