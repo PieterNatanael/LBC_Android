@@ -118,6 +118,7 @@ import com.example.bodycamoutdoorgear.viewmodel.SettingsViewModel
 import com.example.bodycamoutdoorgear.ui.settings.PrivateGallerySettingsSection
 import com.example.bodycamoutdoorgear.ui.settings.AppUpdateSection
 import com.example.bodycamoutdoorgear.ui.settings.TurnOffLightSection
+import com.example.bodycamoutdoorgear.ui.settings.MoreButtonsSection
 import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import com.example.bodycamoutdoorgear.manager.SubscriptionManager
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
@@ -1179,6 +1180,8 @@ fun CameraScreen(
                 }
 
                 TurnOffLightSection()
+
+                MoreButtonsSection()
 
                 PrivateGallerySettingsSection()
 

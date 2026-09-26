@@ -122,6 +122,7 @@ import com.example.bodycamoutdoorgear.sound.ShutterSoundStore
 import com.example.bodycamoutdoorgear.ui.settings.PrivateGallerySettingsSection
 import com.example.bodycamoutdoorgear.ui.settings.AppUpdateSection
 import com.example.bodycamoutdoorgear.ui.settings.TurnOffLightSection
+import com.example.bodycamoutdoorgear.ui.settings.MoreButtonsSection
 import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
@@ -998,6 +999,8 @@ fun PhotoScreen(
                 }
 
                 TurnOffLightSection()
+
+                MoreButtonsSection()
 
                 PrivateGallerySettingsSection()
 
