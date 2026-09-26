@@ -121,6 +121,7 @@ import com.example.bodycamoutdoorgear.sound.ShutterSoundPlayer
 import com.example.bodycamoutdoorgear.sound.ShutterSoundStore
 import com.example.bodycamoutdoorgear.ui.settings.PrivateGallerySettingsSection
 import com.example.bodycamoutdoorgear.ui.settings.AppUpdateSection
+import com.example.bodycamoutdoorgear.ui.settings.TurnOffLightSection
 import com.example.bodycamoutdoorgear.ui.settings.ShutterSoundSettings
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
@@ -219,6 +220,11 @@ fun PhotoScreen(
     // Flash ring button: 0 = off, 1 = on, 2 = auto. Front camera uses a white screen flash.
     var flashMode    by remember { mutableStateOf(0) }
     var screenFlashActive by remember { mutableStateOf(false) }
+    // Self-timer: 0 = off, 3, 10. `countdown` is the live number while one runs.
+    var timerSeconds by remember { mutableStateOf(0) }
+    var countdown by remember { mutableStateOf<Int?>(null) }
+    var countdownJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val scope        = rememberCoroutineScope()
 
     // Glow positioning — updated by onGloballyPositioned on the preview box
@@ -270,7 +276,13 @@ fun PhotoScreen(
     }
 
     // Flash is a per-visit choice: leaving the tab puts it back to off.
-    LaunchedEffect(isActive) { if (!isActive) flashMode = 0 }
+    LaunchedEffect(isActive) {
+        if (!isActive) {
+            flashMode = 0
+            timerSeconds = 0
+            countdownJob?.cancel(); countdownJob = null; countdown = null
+        }
+    }
 
     LaunchedEffect(flashMode, imageCapture, isFrontCamera) {
         // Front camera: flash is our own white-screen flash (see takePhoto), not CameraX's.
@@ -431,10 +443,34 @@ fun PhotoScreen(
         capturePhotoNow(ic)
     }
 
+    // Shutter entry point: honours the self-timer, and a press mid-countdown cancels it.
+    fun requestPhoto() {
+        if (countdown != null) {
+            countdownJob?.cancel(); countdownJob = null; countdown = null
+            return
+        }
+        if (isCapturing) return
+        if (timerSeconds > 0) {
+            val total = timerSeconds
+            countdownJob = scope.launch {
+                for (remaining in total downTo 1) {
+                    countdown = remaining
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    delay(1000)
+                }
+                countdown = null
+                countdownJob = null
+                takePhoto()
+            }
+            return
+        }
+        takePhoto()
+    }
+
     // Volume button hardware trigger
     LaunchedEffect(Unit) {
         viewModel.hardwareButtonEvent.collect {
-            if (!isCapturing) takePhoto()
+            requestPhoto()
         }
     }
 
@@ -626,7 +662,7 @@ fun PhotoScreen(
                     if (isMars) {
                         MarsShutterButton(
                             isCapturing = isCapturing,
-                            onClick = { if (!isCapturing) takePhoto() }
+                            onClick = { requestPhoto() }
                         )
                     } else if (isGradientBtn) {
                         GradientShutterButton(
@@ -636,24 +672,24 @@ fun PhotoScreen(
                                 isSpider   -> spiderBrush
                                 else       -> iceBrush
                             },
-                            onClick = { if (!isCapturing) takePhoto() }
+                            onClick = { requestPhoto() }
                         )
                     } else if (isAlt) {
                         BauhausShutterButton(
                             isCapturing = isCapturing,
                             accentColor = accentColor,
                             innerRatio = if (isMatcha) 0.75f else 0.6f,
-                            onClick = { if (!isCapturing) takePhoto() }
+                            onClick = { requestPhoto() }
                         )
                     } else {
                         KnurledShutterButton(
                             isCapturing = isCapturing,
-                            onClick = { if (!isCapturing) takePhoto() }
+                            onClick = { requestPhoto() }
                         )
                     }
                     // Left: revolver of flip / dim / flash — two visible, swipe to rotate
                     ButtonRing(
-                        count = 3,
+                        count = 4,
                         accentColor = accentColor,
                         isAlt = isAlt,
                         modifier = Modifier
@@ -689,6 +725,13 @@ fun PhotoScreen(
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
                             }
+                            3 -> TimerRingButton(
+                                seconds = timerSeconds,
+                                accentColor = accentColor,
+                                isAlt = isAlt,
+                                enabled = ringEnabled,
+                                onSecondsChange = { timerSeconds = it },
+                            )
                             else -> FlashRingButton(
                                 mode = flashMode,
                                 allowsAuto = true,
@@ -750,6 +793,17 @@ fun PhotoScreen(
                     PhotoDimOverlay(onWake = { viewModel.setScreenDimmed(false) })
                 }
             } // end content Box
+        }
+
+        countdown?.let { n ->
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "$n",
+                    color = Color.White,
+                    fontSize = 120.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            }
         }
 
         // Front-camera screen flash: covers the whole window, edge to edge.
@@ -939,6 +993,8 @@ fun PhotoScreen(
                         onCheckedChange = { settingsViewModel.toggleGalleryTimestamp() }
                     )
                 }
+
+                TurnOffLightSection()
 
                 PrivateGallerySettingsSection()
 

@@ -14,6 +14,11 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FlashAuto
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -150,5 +155,43 @@ fun FlashRingButton(
             tint = if (lit) Color(0xFFFFD966) else if (isAlt) accentColor else Color.White,
             modifier = Modifier.size(if (isAlt) 26.dp else 22.dp),
         )
+    }
+}
+
+/** Self-timer button for the ring. [seconds]: 0 = off, 3, 10. */
+@Composable
+fun TimerRingButton(
+    seconds: Int,
+    accentColor: Color,
+    isAlt: Boolean,
+    enabled: Boolean,
+    onSecondsChange: (Int) -> Unit,
+) {
+    val lit = seconds != 0
+    Box(
+        modifier = Modifier
+            .size(RingButtonSize)
+            .sideButtonStyle(if (lit) Color(0xFF3A3320) else com.example.bodycamoutdoorgear.ui.theme.SurfaceDark, accentColor)
+            .clickable(enabled = enabled) {
+                onSecondsChange(if (seconds == 0) 3 else if (seconds == 3) 10 else 0)
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (lit) {
+            Text(
+                text = "${seconds}s",
+                color = Color(0xFFFFD966),
+                fontSize = 14.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.ExtraBold,
+            )
+        } else {
+            Icon(
+                Icons.Default.Timer,
+                contentDescription = "Timer",
+                tint = if (isAlt) accentColor else Color.White,
+                modifier = Modifier.size(if (isAlt) 26.dp else 22.dp),
+            )
+        }
     }
 }
