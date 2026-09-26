@@ -3,7 +3,8 @@ package com.example.bodycamoutdoorgear.ui.camera
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -30,7 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
@@ -80,15 +83,28 @@ fun ButtonRing(
         modifier = modifier
             .width(stride * 2 + RingChevronWidth - RingSpacing)
             .height(RingButtonSize)
+            // Watched in the Initial pass, before the buttons see the touch, so a
+            // swipe that starts ON a button still turns the ring — and once it
+            // moves past the touch slop the move is consumed, which cancels the
+            // button's tap. Plain taps (little movement) still reach the buttons.
             .pointerInput(Unit) {
-                var total = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { total = 0f },
-                    onDragEnd = {
-                        if (total < -thresholdPx) rotate(+1) else if (total > thresholdPx) rotate(-1)
-                    },
-                    onHorizontalDrag = { _, dx -> total += dx },
-                )
+                val slop = viewConfiguration.touchSlop
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    var total = 0f
+                    var swiping = false
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        total += change.positionChange().x
+                        if (!swiping && kotlin.math.abs(total) > slop) swiping = true
+                        if (swiping) change.consume()
+                    }
+                    if (swiping) {
+                        if (total < -thresholdPx / 2) rotate(+1) else if (total > thresholdPx / 2) rotate(-1)
+                    }
+                }
             },
         contentAlignment = Alignment.CenterStart,
     ) {
