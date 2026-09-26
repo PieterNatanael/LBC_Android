@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -83,6 +84,7 @@ fun ButtonRing(
         modifier = modifier
             .width(stride * 2 + RingChevronWidth - RingSpacing)
             .height(RingButtonSize)
+            .clipToBounds()
             // Watched in the Initial pass, before the buttons see the touch, so a
             // swipe that starts ON a button still turns the ring — and once it
             // moves past the touch slop the move is consumed, which cancels the
@@ -118,12 +120,17 @@ fun ButtonRing(
                 v <= 1f -> 1f
                 else -> ((2f - v)).coerceIn(0f, 1f)
             }
-            Box(
-                modifier = Modifier
-                    .offset { androidx.compose.ui.unit.IntOffset((v * stridePx).roundToInt(), 0) }
-                    .size(RingButtonSize)
-                    .alpha(alpha),
-            ) { button(i, alpha > 0.6f) }
+            // A fully faded button is not composed at all. Left in place at alpha 0
+            // it still sits over the neighbouring shutter (the parked slot ends up
+            // beside it) and swallows taps on the shutter's left side.
+            if (alpha > 0.02f) {
+                Box(
+                    modifier = Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset((v * stridePx).roundToInt(), 0) }
+                        .size(RingButtonSize)
+                        .alpha(alpha),
+                ) { button(i, alpha > 0.6f) }
+            }
         }
         Box(
             modifier = Modifier

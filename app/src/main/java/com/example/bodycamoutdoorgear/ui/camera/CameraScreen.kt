@@ -792,7 +792,10 @@ fun CameraScreen(
                         isAlt = isAlt,
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .padding(start = 32.dp),
+                            // Keep the ring (and its chevron tap area) clear of the
+                            // centred shutter on narrow screens, where 32dp of
+                            // padding would let the chevron overlap it.
+                            .padding(start = (LocalConfiguration.current.screenWidthDp / 2 - 41 - 124).coerceIn(8, 32).dp),
                     ) { index, ringEnabled ->
                         when (index) {
                             0 -> Box(
