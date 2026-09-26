@@ -269,6 +269,9 @@ fun PhotoScreen(
         onDispose { listener.disable() }
     }
 
+    // Flash is a per-visit choice: leaving the tab puts it back to off.
+    LaunchedEffect(isActive) { if (!isActive) flashMode = 0 }
+
     LaunchedEffect(flashMode, imageCapture, isFrontCamera) {
         // Front camera: flash is our own white-screen flash (see takePhoto), not CameraX's.
         imageCapture?.flashMode = if (isFrontCamera) ImageCapture.FLASH_MODE_OFF else when (flashMode) {
