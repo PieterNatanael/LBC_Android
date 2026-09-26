@@ -119,6 +119,9 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     // Google Play Billing
     implementation(libs.billing.ktx)
+    // Newer than the 1.2.5 a transitive library brings in, which crashes the
+    // permission request when paired with activity 1.10 ("lower 16 bits").
+    implementation(libs.androidx.fragment)
     // In-app update check (Settings)
     implementation(libs.play.app.update.ktx)
     // Location
