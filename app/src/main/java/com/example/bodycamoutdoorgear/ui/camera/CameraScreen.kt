@@ -291,7 +291,7 @@ fun CameraScreen(
         ).also { effect ->
             val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.WHITE
-                typeface = android.graphics.Typeface.MONOSPACE
+                typeface = StampStyle.typeface(context)
                 textAlign = android.graphics.Paint.Align.RIGHT
             }
             effect.setOnDrawListener { frame ->
@@ -303,12 +303,14 @@ fun CameraScreen(
 
                 val bw = canvas.width.toFloat()
                 val bh = canvas.height.toFloat()
-                val label = "$text · LBC"
                 val textSize = (minOf(bw, bh) * 0.026f).coerceIn(12f, 34f)
                 paint.textSize = textSize
                 paint.setShadowLayer(textSize * 0.25f, 3f, 3f, 0x99000000.toInt())
                 val margin = textSize * 0.6f
-                canvas.drawText(label, bw - margin, bh - margin, paint)
+                // One line if it fits the frame, otherwise date over tagline,
+                // so a narrow (low quality) frame never clips the stamp.
+                val lines = StampStyle.lines(paint, bw - margin * 2, text)
+                StampStyle.draw(canvas, paint, lines, bw - margin, bh - margin)
                 true
             }
         }
@@ -492,9 +494,8 @@ fun CameraScreen(
     LaunchedEffect(isRecording, stampTimestamp) {
         if (isRecording && stampTimestamp) {
             videoStampLockedSizeRef.set(null)  // fresh recording — re-lock to its first buffer
-            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
             while (true) {
-                videoStampTextRef.set(dateFormat.format(java.util.Date()))
+                videoStampTextRef.set(StampStyle.dateText())
                 delay(1000)
             }
         } else {

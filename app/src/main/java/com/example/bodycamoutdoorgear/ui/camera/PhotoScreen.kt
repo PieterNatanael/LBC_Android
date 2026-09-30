@@ -394,7 +394,7 @@ fun PhotoScreen(
                     viewModel.setCaptureStatus(null)
                     if (shouldStamp) {
                         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            bakeTimestampOnPhoto(photoFile)
+                            bakeTimestampOnPhoto(context, photoFile)
                             MediaScannerConnection.scanFile(
                                 context, arrayOf(photoFile.absolutePath), arrayOf("image/jpeg"), null
                             )
@@ -1350,7 +1350,7 @@ private fun PhotoPermissionRequest(onRequest: () -> Unit) {
     }
 }
 
-private fun bakeTimestampOnPhoto(file: java.io.File) {
+private fun bakeTimestampOnPhoto(context: android.content.Context, file: java.io.File) {
     // Read EXIF rotation so we can produce an upright image before stamping
     val exif = androidx.exifinterface.media.ExifInterface(file.absolutePath)
     val orientation = exif.getAttributeInt(
@@ -1378,18 +1378,19 @@ private fun bakeTimestampOnPhoto(file: java.io.File) {
     upright.recycle()
 
     val canvas = android.graphics.Canvas(bitmap)
-    val label = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-        .format(java.util.Date()) + " · LBC"
-    val textSize = (bitmap.width * 0.032f).coerceIn(28f, 96f)
+    // Sized so the one-line stamp is well under the frame width; StampStyle
+    // falls back to two lines if a narrow photo still can't fit it.
+    val textSize = (bitmap.width * 0.026f).coerceIn(24f, 96f)
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         this.textSize = textSize
-        typeface = android.graphics.Typeface.MONOSPACE
+        typeface = StampStyle.typeface(context)
         setShadowLayer(textSize * 0.25f, 4f, 4f, android.graphics.Color.parseColor("#99000000"))
         textAlign = android.graphics.Paint.Align.RIGHT
     }
     val margin = textSize * 1.4f
-    canvas.drawText(label, bitmap.width - margin, bitmap.height - margin, paint)
+    val lines = StampStyle.lines(paint, bitmap.width - margin * 2, StampStyle.dateText())
+    StampStyle.draw(canvas, paint, lines, bitmap.width - margin, bitmap.height - margin)
 
     java.io.FileOutputStream(file).use { out ->
         bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
