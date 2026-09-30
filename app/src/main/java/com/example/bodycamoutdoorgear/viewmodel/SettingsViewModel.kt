@@ -14,6 +14,17 @@ enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("H
 enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER"), MARS("MARS") }
 enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE"), YAPPING("YAP") }
 
+/**
+ * How the gallery grid is ordered. Recently added is the default: it puts
+ * whatever was just recorded, received or imported on top. Date taken is the
+ * file's own date (what every thumbnail shows). The two only differ for
+ * imports — see AddedDateStore.
+ */
+enum class GallerySort(val label: String) {
+    RECENTLY_ADDED("Recently added"),
+    DATE_TAKEN("Date taken")
+}
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences("bodycam_settings", Context.MODE_PRIVATE)
@@ -57,6 +68,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         prefs.getInt("gallery_columns", 3)
     )
     val galleryColumns: StateFlow<Int> = _galleryColumns.asStateFlow()
+
+    // One setting shared by Gallery and Private, so the two can't disagree.
+    // Stored by name, not ordinal, so reordering the enum can't change it.
+    private val _gallerySort = MutableStateFlow(
+        GallerySort.entries.firstOrNull { it.name == prefs.getString("gallery_sort", null) }
+            ?: GallerySort.RECENTLY_ADDED
+    )
+    val gallerySort: StateFlow<GallerySort> = _gallerySort.asStateFlow()
 
     private val _shutterSoundId = MutableStateFlow(
         prefs.getString("shutter_sound_id", ShutterSound.CAT.id) ?: ShutterSound.CAT.id
@@ -127,6 +146,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setGalleryColumns(columns: Int) {
         _galleryColumns.value = columns
         prefs.edit().putInt("gallery_columns", columns).apply()
+    }
+
+    fun setGallerySort(sort: GallerySort) {
+        _gallerySort.value = sort
+        prefs.edit().putString("gallery_sort", sort.name).apply()
     }
 
     fun setShutterSound(id: String) {

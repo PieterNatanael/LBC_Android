@@ -5,11 +5,14 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bodycamoutdoorgear.data.AddedDateStore
+import com.example.bodycamoutdoorgear.data.MediaImporter
 import com.example.bodycamoutdoorgear.data.VideoItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +43,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     // own to hand it.
     private var folder: File = application.filesDir
 
+    // Declared before init on purpose: init's first loadVideos() reads it.
+    // Set from the screen once it has read the shared setting.
+    private var sort: GallerySort = GallerySort.RECENTLY_ADDED
+
     init {
         loadVideos()
     }
@@ -49,11 +56,59 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         loadVideos()
     }
 
+    fun setSort(sort: GallerySort) {
+        if (this.sort == sort) return
+        this.sort = sort
+        loadVideos()
+    }
+
+    // (current, total) while a photo import is copying files; null otherwise.
+    private val _importProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+    val importProgress: StateFlow<Pair<Int, Int>?> = _importProgress.asStateFlow()
+
+    // Set only when something didn't make it; a clean import needs no
+    // confirmation beyond the new items appearing in the grid.
+    private val _importProblems = MutableStateFlow<MediaImporter.Result?>(null)
+    val importProblems: StateFlow<MediaImporter.Result?> = _importProblems.asStateFlow()
+
+    /** Copies the picked items into THIS gallery's folder, so choosing Import
+     *  while inside Private lands the files in Private. Runs on the
+     *  ViewModel's scope so leaving the screen mid-copy doesn't cancel it. */
+    fun importMedia(uris: List<Uri>) {
+        if (uris.isEmpty() || _importProgress.value != null) return
+        val target = folder
+        viewModelScope.launch {
+            _importProgress.value = 0 to uris.size
+            val result = MediaImporter.import(getApplication(), uris, target) { current, total ->
+                _importProgress.value = current to total
+            }
+            _importProgress.value = null
+            loadVideos()
+            if (result.failed > 0 || result.noSpace > 0) _importProblems.value = result
+        }
+    }
+
+    fun dismissImportProblems() {
+        _importProblems.value = null
+    }
+
     fun loadVideos() {
+        // Read now, on the calling thread, so the listing below sorts by the
+        // choice that was current when it was asked for.
+        val sort = sort
         viewModelScope.launch {
             val list = withContext(Dispatchers.IO) {
+                // Only imports have an entry here; everything else falls back
+                // to its own date, which for them IS the added date.
+                val added = if (sort == GallerySort.RECENTLY_ADDED)
+                    AddedDateStore.all(getApplication()) else emptyMap()
                 folder.listFiles { f -> f.extension in setOf("mp4", "mov", "jpg", "jpeg", "png") }
-                    ?.sortedByDescending { it.lastModified() }
+                    ?.sortedWith(
+                        // The name breaks ties so equal timestamps can't
+                        // shuffle the grid between reloads.
+                        compareByDescending<File> { added[it.name] ?: it.lastModified() }
+                            .thenByDescending { it.name }
+                    )
                     ?.map { VideoItem(it) }
                     ?: emptyList()
             }
@@ -127,7 +182,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     fun deleteVideo(video: VideoItem) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { video.file.delete() }
+            withContext(Dispatchers.IO) {
+                video.file.delete()
+                AddedDateStore.remove(getApplication(), video.file.name)
+            }
             thumbnails.remove(video.file.absolutePath)
             loadVideos()
         }

@@ -84,6 +84,19 @@ import com.example.bodycamoutdoorgear.ui.transfer.ReceiveScreen
 import com.example.bodycamoutdoorgear.ui.transfer.SendScreen
 import com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.SwapVert
+import com.example.bodycamoutdoorgear.viewmodel.GallerySort
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
 
 // The "photos and videos may be lost" footer is hidden for now, since the same
@@ -105,6 +118,11 @@ fun GalleryScreen(
     isPrivateGallery: Boolean = false,
     onOpenPrivateGallery: () -> Unit = {},
     onExitPrivateGallery: () -> Unit = {},
+    // Bumped by the caller whenever this list may have changed behind its
+    // back. The normal Gallery stays composed underneath Private, so its
+    // LaunchedEffect never re-runs on its own when Private closes — a file
+    // moved out of Private was missing here until something else reloaded.
+    refreshKey: Int = 0,
     // A distinct key is required here: without it, Compose's viewModel()
     // resolves both the normal and the Private instance of this screen to
     // the SAME GalleryViewModel (this app has one Activity and no
@@ -113,11 +131,15 @@ fun GalleryScreen(
     galleryViewModel: GalleryViewModel = viewModel(key = if (isPrivateGallery) "private_gallery" else "normal_gallery")
 ) {
     val context = LocalContext.current
-    LaunchedEffect(folder) { galleryViewModel.setFolder(folder) }
+    LaunchedEffect(folder, refreshKey) { galleryViewModel.setFolder(folder) }
     val settingsViewModel: SettingsViewModel = viewModel()
     val appearanceMode by settingsViewModel.appearanceMode.collectAsState()
     val showTimestamp  by settingsViewModel.showGalleryTimestamp.collectAsState()
     val galleryColumns by settingsViewModel.galleryColumns.collectAsState()
+    val gallerySort    by settingsViewModel.gallerySort.collectAsState()
+    // The setting is shared, but each screen's ViewModel does its own
+    // listing, so each is told when the choice changes.
+    LaunchedEffect(gallerySort) { galleryViewModel.setSort(gallerySort) }
     val isAlt = appearanceMode != AppearanceMode.NORMAL
 
     val videos by galleryViewModel.videos.collectAsState()
@@ -134,6 +156,18 @@ fun GalleryScreen(
     var bulkMoveFailureCount by remember { mutableStateOf(0) }
     var showSendScreen by remember { mutableStateOf(false) }
     var showReceiveScreen by remember { mutableStateOf(false) }
+    val importProgress by galleryViewModel.importProgress.collectAsState()
+    val importProblems by galleryViewModel.importProblems.collectAsState()
+    // The system photo picker, which needs no storage permission: it hands
+    // over only the items the user selects.
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris -> galleryViewModel.importMedia(uris) }
+    val importFromPhotos = {
+        photoPicker.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+        )
+    }
     val isUnlocked = subscriptionManager.isUnlocked
     var showPaywall by remember { mutableStateOf(false) }
 
@@ -165,6 +199,7 @@ fun GalleryScreen(
             // back out, since the header (and its cross-link) below only
             // renders in the non-empty branch.
             EmptyGallery(
+                onFromPhotos = importFromPhotos,
                 onHipHopClick = { showReceiveScreen = true },
                 isPrivateGallery = isPrivateGallery,
                 onExitPrivateGallery = onExitPrivateGallery
@@ -224,15 +259,11 @@ fun GalleryScreen(
                         )
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "HipHop",
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier
-                                    .background(Color.Black, themedShape(4.dp))
-                                    .clickable { showReceiveScreen = true }
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ImportMenuChip(
+                                onFromPhotos = importFromPhotos,
+                                onHipHop = { showReceiveScreen = true },
+                                horizontalPadding = 10.dp,
+                                verticalPadding = 4.dp
                             )
                             Text(
                                 "Select",
@@ -265,6 +296,11 @@ fun GalleryScreen(
                                 Text(totalSizeLabel, color = Color.White.copy(0.65f), fontSize = 11.sp)
                             }
                         }
+                        Spacer(Modifier.height(8.dp))
+                        SortRow(
+                            selected = gallerySort,
+                            onSelect = { settingsViewModel.setGallerySort(it) }
+                        )
                         Spacer(Modifier.height(8.dp))
                         // The cross-link: "Private" from inside the normal
                         // gallery, "Gallery" from inside Private itself —
@@ -494,6 +530,56 @@ fun GalleryScreen(
         )
     }
 
+    // A modal card, so nothing here can be tapped while files are still being
+    // copied. Not dismissable: the copy can't be cancelled part way.
+    importProgress?.let { (current, total) ->
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .background(SurfaceDark, themedShape(12.dp))
+                    .padding(horizontal = 32.dp, vertical = 24.dp)
+            ) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Importing $current of $total",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+
+    // Only speaks up when something didn't make it.
+    importProblems?.let { result ->
+        AlertDialog(
+            onDismissRequest = { galleryViewModel.dismissImportProblems() },
+            title = {
+                Text(if (result.noSpace > 0) "Not Enough Storage" else "Import", color = TextPrimary)
+            },
+            text = {
+                Text(
+                    if (result.noSpace > 0)
+                        "${result.imported} imported. The rest need more free space. Free up storage and try again."
+                    else
+                        "${result.imported} imported, ${result.failed} couldn't be imported.",
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { galleryViewModel.dismissImportProblems() }) {
+                    Text("OK", color = TextPrimary)
+                }
+            },
+            containerColor = SurfaceDark
+        )
+    }
+
     // WiFi transfer overlays
     if (showSendScreen) {
         val filesToSend = remember(selectedPaths.toList()) {
@@ -628,8 +714,82 @@ private fun SelectActionButton(
     }
 }
 
+/** The dropdown's sort choice, styled like the file count and size beside it. */
+@Composable
+private fun SortRow(selected: GallerySort, onSelect: (GallerySort) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.clickable { expanded = true }
+        ) {
+            Icon(Icons.Default.SwapVert, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
+            Text(selected.label, color = Color.White.copy(0.65f), fontSize = 11.sp)
+            Icon(Icons.Default.ExpandMore, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            GallerySort.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    // The checkmark only marks the current choice.
+                    trailingIcon = {
+                        if (option == selected) Icon(Icons.Default.Check, contentDescription = null)
+                    },
+                    onClick = { expanded = false; onSelect(option) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One "Import" chip instead of a bare "HipHop": that name means nothing to
+ * someone who hasn't used it yet, while "Import" says what the button is for.
+ * HipHop keeps its name as a row inside the menu.
+ */
+@Composable
+private fun ImportMenuChip(
+    onFromPhotos: () -> Unit,
+    onHipHop: () -> Unit,
+    horizontalPadding: Dp,
+    verticalPadding: Dp
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .background(Color.Black, themedShape(4.dp))
+                .clickable { expanded = true }
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
+        ) {
+            Text("Import", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("From Photos") },
+                leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                onClick = { expanded = false; onFromPhotos() }
+            )
+            DropdownMenuItem(
+                text = { Text("HipHop") },
+                leadingIcon = { Icon(Icons.Default.Wifi, contentDescription = null) },
+                onClick = { expanded = false; onHipHop() }
+            )
+        }
+    }
+}
+
 @Composable
 private fun EmptyGallery(
+    onFromPhotos: () -> Unit,
     onHipHopClick: () -> Unit,
     isPrivateGallery: Boolean = false,
     onExitPrivateGallery: () -> Unit = {}
@@ -670,15 +830,11 @@ private fun EmptyGallery(
             // this screen at all already required the PIN, so receiving
             // straight into an empty Private Gallery needs no extra gate.
             Spacer(Modifier.height(20.dp))
-            Text(
-                "HipHop",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .background(Color.Black, themedShape(4.dp))
-                    .clickable(onClick = onHipHopClick)
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ImportMenuChip(
+                onFromPhotos = onFromPhotos,
+                onHipHop = onHipHopClick,
+                horizontalPadding = 14.dp,
+                verticalPadding = 6.dp
             )
         }
     }

@@ -131,6 +131,17 @@ private fun AppNavigationContent(subscriptionManager: SubscriptionManager, onSho
     var showPrivateGallery by androidx.compose.runtime.remember { mutableStateOf(false) }
     val privateContext = LocalContext.current
 
+    // The normal Gallery stays composed underneath Private, so it never
+    // reloads on its own when Private closes. Files can move in either
+    // direction while Private is open, and a file moved back out was missing
+    // from the normal list until something else forced a reload. Counting
+    // each close hands the normal Gallery a reason to reload — this also
+    // covers the auto-lock on backgrounding, which closes Private the same way.
+    var galleryRefreshKey by androidx.compose.runtime.remember { mutableStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(showPrivateGallery) {
+        if (!showPrivateGallery) galleryRefreshKey++
+    }
+
     // Relocks on every backgrounding, not just while Private happens to be
     // open — cheap either way, and this is the one place that can't miss it
     // the way a per-screen effect could if Private wasn't the active screen
@@ -227,6 +238,7 @@ private fun AppNavigationContent(subscriptionManager: SubscriptionManager, onSho
             Box(modifier = Modifier.fillMaxSize().zIndex(2f)) {
                 GalleryScreen(
                     subscriptionManager = subscriptionManager,
+                    refreshKey = galleryRefreshKey,
                     onSelectModeChanged = { isGallerySelectMode = it },
                     onOpenPrivateGallery = {
                         privateFlowMode = if (PrivateGalleryStore.isActive(privateContext))
