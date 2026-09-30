@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.disclaimer
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +17,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -25,10 +31,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.bodycamoutdoorgear.R
 import com.example.bodycamoutdoorgear.ui.theme.BackgroundDark
 import com.example.bodycamoutdoorgear.ui.theme.BorderColor
 import com.example.bodycamoutdoorgear.ui.theme.ButtonFace
@@ -39,6 +51,23 @@ import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 
 private data class DisclaimerItem(val icon: ImageVector, val body: String)
+
+private data class PermissionItem(val icon: ImageVector, val title: String, val detail: String)
+
+// What the app needs and why — the same structure as the iOS intro, but only
+// what Android actually involves: no notifications row, since Android has no
+// alarm or reminder feature.
+private val PERMISSIONS = listOf(
+    PermissionItem(Icons.Default.CameraAlt, "CAMERA",
+        "To record video and take photos. The app cannot work without this."),
+    PermissionItem(Icons.Default.Mic, "MICROPHONE",
+        "To record sound along with your videos."),
+    PermissionItem(Icons.Default.PhotoLibrary, "PHOTOS",
+        "Only used when you choose to save a photo or video to your gallery. " +
+            "Importing uses the system picker, so LBC sees only what you select."),
+    PermissionItem(Icons.Default.Wifi, "WI-FI",
+        "Only used to send files between your devices with HipHop.")
+)
 
 private val ITEMS = listOf(
     DisclaimerItem(Icons.Default.Warning,
@@ -68,34 +97,78 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
             ) {
                 Spacer(Modifier.height(40.dp))
 
-                Icon(
-                    imageVector = Icons.Default.Warning,
+                // The real app icon, so the first thing someone sees matches
+                // the icon they just tapped on the home screen. A copy of the
+                // iOS icon artwork in drawable-nodpi (a launcher icon is an
+                // adaptive icon and can't be drawn directly), so it needs
+                // refreshing whenever the app icon changes.
+                Image(
+                    painter = painterResource(R.drawable.lbc_logo),
                     contentDescription = null,
-                    tint = CompassGold,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .border(1.dp, Color(0xFF595959), RoundedCornerShape(18.dp))
                 )
 
                 Spacer(Modifier.height(14.dp))
 
                 Text(
-                    text = "Low Battery Camera",
+                    text = "LBC",
                     color = TextPrimary,
-                    fontSize = 22.sp,
+                    fontSize = 30.sp,
+                    fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    letterSpacing = 4.sp
                 )
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
 
                 Text(
-                    text = "IMPORTANT NOTICE",
+                    text = "WELCOME",
                     color = TextSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+                    letterSpacing = 4.sp
+                )
+
+                Spacer(Modifier.height(18.dp))
+
+                Text(
+                    text = "Here is what the app needs, and why.",
+                    color = TextSecondary,
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(28.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                    PERMISSIONS.forEach { PermissionRow(it) }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text = "Everything you record stays on your device. We do not collect it, upload it, or share it with anyone.",
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 20.sp,
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(Modifier.height(32.dp))
+
+                Text(
+                    text = "BEFORE YOU START",
+                    color = TextSecondary.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+
+                Spacer(Modifier.height(16.dp))
 
                 ITEMS.forEachIndexed { index, item ->
                     DisclaimerRow(item)
@@ -126,6 +199,38 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                     letterSpacing = 1.sp
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun PermissionRow(item: PermissionItem) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            imageVector = item.icon,
+            contentDescription = null,
+            tint = CompassGold,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = item.title,
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+            Text(
+                text = item.detail,
+                color = TextSecondary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
         }
     }
 }
