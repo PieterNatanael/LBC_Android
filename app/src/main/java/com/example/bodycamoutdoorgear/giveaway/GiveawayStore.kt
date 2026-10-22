@@ -39,4 +39,15 @@ object GiveawayStore {
         } catch (_: Exception) {
         }
     }
+
+    /** Saves (or replaces) the card video in the gallery, the same way as [saveCardImage]. */
+    fun saveCardVideo(context: Context, video: File, token: String): Boolean = try {
+        val part = File(context.filesDir, "giveaway_$token.mp4.part")
+        val final = File(context.filesDir, "giveaway_$token.mp4")
+        video.copyTo(part, overwrite = true)
+        if (final.exists()) final.delete()
+        part.renameTo(final)
+    } catch (_: Exception) {
+        false
+    }
 }

@@ -156,7 +156,8 @@ fun CameraScreen(
     subscriptionManager: SubscriptionManager,
     onRequestPermissions: () -> Unit,
     onShowIntro: () -> Unit = {},
-    isActive: Boolean = true
+    isActive: Boolean = true,
+    onOpenGallery: () -> Unit = {}
 ) {
     val context        = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -171,6 +172,9 @@ fun CameraScreen(
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
     val isCircle         = displayMode == DisplayMode.CIRCLE
     val isYapping        = displayMode == DisplayMode.YAPPING
+    val isGiveaway       = displayMode == DisplayMode.GIVEAWAY
+    // The recording waiting to be made into a Giveaway card, while its sheet is open.
+    var giveawayVideoPath by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
@@ -456,6 +460,7 @@ fun CameraScreen(
             viewModel.setError("Not enough storage. Free up space and try again.")
             return
         }
+        val giveawayShot = isGiveaway
         val tmp  = File(context.cacheDir, "lb_tmp_${System.currentTimeMillis()}.mp4")
         val opts = FileOutputOptions.Builder(tmp).build()
         val rec  = vc.output.prepareRecording(context, opts)
@@ -466,7 +471,15 @@ fun CameraScreen(
                     is VideoRecordEvent.Finalize -> {
                         viewModel.setRecording(false)
                         if (!event.hasError()) {
-                            tmp.renameTo(File(context.filesDir, "LBC_${System.currentTimeMillis()}.mp4"))
+                            if (giveawayShot) {
+                                // Giveaway: the clip waits in a temporary folder until it is made into a card.
+                                val clip = File(com.example.bodycamoutdoorgear.giveaway.GiveawayStore.originalsDir(context), "LBC_${System.currentTimeMillis()}.mp4")
+                                if (tmp.renameTo(clip) || runCatching { tmp.copyTo(clip, overwrite = true); tmp.delete() }.isSuccess) {
+                                    giveawayVideoPath = clip.absolutePath
+                                }
+                            } else {
+                                tmp.renameTo(File(context.filesDir, "LBC_${System.currentTimeMillis()}.mp4"))
+                            }
                         } else {
                             tmp.delete()
                             viewModel.setError("Recording failed (error ${event.error})")
@@ -483,6 +496,14 @@ fun CameraScreen(
         viewModel.activeRecording = null
     }
 
+    // Giveaway cards hold a short clip, so recording stops by itself.
+    LaunchedEffect(isRecording, isGiveaway) {
+        if (isRecording && isGiveaway) {
+            delay(com.example.bodycamoutdoorgear.giveaway.GiveawayVideoExporter.MAX_SECONDS * 1000L)
+            stopRecording()
+        }
+    }
+
     // Volume button hardware trigger
     LaunchedEffect(Unit) {
         viewModel.hardwareButtonEvent.collect {
@@ -491,8 +512,9 @@ fun CameraScreen(
     }
 
     // Drives the video overlay while recording, using the same TIMESTAMP toggle as photos.
-    LaunchedEffect(isRecording, stampTimestamp) {
-        if (isRecording && stampTimestamp) {
+    // Not in Giveaway mode: the card prints the date itself.
+    LaunchedEffect(isRecording, stampTimestamp, isGiveaway) {
+        if (isRecording && stampTimestamp && !isGiveaway) {
             videoStampLockedSizeRef.set(null)  // fresh recording — re-lock to its first buffer
             while (true) {
                 videoStampTextRef.set(StampStyle.dateText())
@@ -930,6 +952,16 @@ fun CameraScreen(
     }
 
     // Error dialog
+    giveawayVideoPath?.let { path ->
+        com.example.bodycamoutdoorgear.giveaway.GiveawayCardSheet(
+            photoFile = File(path),
+            onClose = { giveawayVideoPath = null },
+            onOpenGallery = onOpenGallery,
+            isPremium = subscriptionManager.isUnlocked,
+            isVideo = true,
+        )
+    }
+
     if (recordingError != null) {
         AlertDialog(
             onDismissRequest = viewModel::clearError,

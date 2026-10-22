@@ -2,6 +2,7 @@ package com.example.bodycamoutdoorgear.giveaway
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -101,16 +102,18 @@ object GiveawayAIService {
         return UUID.randomUUID().toString().also { p.edit().putString("install_id", it).apply() }
     }
 
-    suspend fun fill(context: Context, photoFile: File, premium: Boolean): Result<GiveawayAIOutcome> =
+    /** [pictures] are small JPEGs: one for a photo, three frames for a video. */
+    suspend fun fill(context: Context, pictures: List<ByteArray>, premium: Boolean): Result<GiveawayAIOutcome> =
         withContext(Dispatchers.IO) {
-            val picture = GiveawayImagePrep.jpeg(photoFile)
-                ?: return@withContext Result.failure(AIException(GiveawayAIError.UNAVAILABLE))
+            if (pictures.isEmpty()) return@withContext Result.failure(AIException(GiveawayAIError.UNAVAILABLE))
             val body = JSONObject()
                 .put("install_id", installId(context))
                 .put("premium", premium)
-                .put("images", JSONArray().put(JSONObject()
-                    .put("media_type", "image/jpeg")
-                    .put("data", Base64.encodeToString(picture, Base64.NO_WRAP))))
+                .put("images", JSONArray().apply {
+                    pictures.forEach {
+                        put(JSONObject().put("media_type", "image/jpeg").put("data", Base64.encodeToString(it, Base64.NO_WRAP)))
+                    }
+                })
                 .toString().toByteArray()
 
             var connection: HttpURLConnection? = null
@@ -178,17 +181,35 @@ object GiveawayImagePrep {
     private const val MAX_SIDE = 1000
     private const val QUALITY = 70
 
-    fun jpeg(file: File): ByteArray? {
-        val upright = GiveawayCardRenderer.loadPhoto(file, MAX_SIDE) ?: return null
-        val longSide = max(upright.width, upright.height)
+    fun jpeg(file: File): ByteArray? = GiveawayCardRenderer.loadPhoto(file, MAX_SIDE)?.let { encode(it) }
+
+    /** Three frames, early, middle and late, so the AI sees the item from the whole clip. */
+    fun videoFrames(file: File): List<ByteArray> {
+        val r = MediaMetadataRetriever()
+        return try {
+            r.setDataSource(file.absolutePath)
+            val durationUs = (r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: return emptyList()) * 1000
+            listOf(0.15, 0.5, 0.85).mapNotNull { f ->
+                val frame = r.getFrameAtTime((durationUs * f).toLong(), MediaMetadataRetriever.OPTION_CLOSEST_SYNC) ?: return@mapNotNull null
+                encode(frame)
+            }
+        } catch (_: Exception) {
+            emptyList()
+        } finally {
+            r.release()
+        }
+    }
+
+    private fun encode(bitmap: Bitmap): ByteArray {
+        val longSide = max(bitmap.width, bitmap.height)
         val scaled = if (longSide > MAX_SIDE) {
             val f = MAX_SIDE.toFloat() / longSide
-            Bitmap.createScaledBitmap(upright, (upright.width * f).toInt().coerceAtLeast(1), (upright.height * f).toInt().coerceAtLeast(1), true)
-        } else upright
+            Bitmap.createScaledBitmap(bitmap, (bitmap.width * f).toInt().coerceAtLeast(1), (bitmap.height * f).toInt().coerceAtLeast(1), true)
+        } else bitmap
         val out = ByteArrayOutputStream()
         scaled.compress(Bitmap.CompressFormat.JPEG, QUALITY, out)
-        if (scaled !== upright) scaled.recycle()
-        upright.recycle()
+        if (scaled !== bitmap) scaled.recycle()
+        bitmap.recycle()
         return out.toByteArray()
     }
 }

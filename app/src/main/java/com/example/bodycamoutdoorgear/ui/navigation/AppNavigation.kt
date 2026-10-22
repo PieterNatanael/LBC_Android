@@ -203,7 +203,8 @@ private fun AppNavigationContent(subscriptionManager: SubscriptionManager, onSho
                     )
                 },
                 onShowIntro = onShowIntro,
-                isActive    = currentTab == Screen.Video.route
+                isActive    = currentTab == Screen.Video.route,
+                onOpenGallery = { currentTab = Screen.Gallery.route }
             )
         }
 

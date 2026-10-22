@@ -117,6 +117,8 @@ dependencies {
     // Media3 / ExoPlayer
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
     // Google Play Billing
     implementation(libs.billing.ktx)
     // Newer than the 1.2.5 a transitive library brings in, which crashes the

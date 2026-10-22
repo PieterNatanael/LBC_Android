@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,6 +72,8 @@ fun GiveawayCardSheet(
     onClose: () -> Unit,
     onOpenGallery: () -> Unit,
     isPremium: Boolean = false,
+    /** [photoFile] is a recording rather than a photo: the card is a short video. */
+    isVideo: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -97,12 +100,18 @@ fun GiveawayCardSheet(
     var dirtySinceSave by remember { mutableStateOf(false) }
     var showCloseConfirm by remember { mutableStateOf(false) }
     var firstRender by remember { mutableStateOf(true) }
+    // Video cards: the exported clip, whether it has sound, and whether making it failed.
+    var cardVideo by remember { mutableStateOf<File?>(null) }
+    var includeSound by remember { mutableStateOf(true) }
+    var exportFailed by remember { mutableStateOf(false) }
+    val ready = if (isVideo) cardVideo != null else card != null
 
     /** Saved, and nothing changed since. */
     val allSaved = savedToGallery && !dirtySinceSave
 
     // Draw the card now, and again shortly after the last edit.
     LaunchedEffect(content) {
+        if (isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
         val cleaned = content.cleaned()
@@ -116,8 +125,34 @@ fun GiveawayCardSheet(
         if (savedToGallery) dirtySinceSave = true
     }
 
+    // Video cards are made by the exporter, again shortly after the last edit or sound change.
+    // Each export gets its own file so the preview never plays one that is being rewritten.
+    LaunchedEffect(content, includeSound) {
+        if (!isVideo) return@LaunchedEffect
+        if (!firstRender) delay(400)
+        firstRender = false
+        val out = File(GiveawayStore.originalsDir(context), "card_${token}_${System.nanoTime()}.mp4")
+        val ok = GiveawayVideoExporter.export(context, photoFile, content.cleaned(), includeSound, out)
+        if (ok) {
+            val old = cardVideo
+            cardVideo = out
+            exportFailed = false
+            old?.delete()
+            if (savedToGallery) dirtySinceSave = true
+        } else {
+            exportFailed = true
+        }
+    }
+
     /** Writes the card to the gallery. Saving again replaces the same file. */
     fun saveNow(): Boolean {
+        if (isVideo) {
+            val video = cardVideo ?: return false
+            if (!GiveawayStore.saveCardVideo(context, video, token)) return false
+            savedToGallery = true
+            dirtySinceSave = false
+            return true
+        }
         val bytes = cardJpeg ?: return false
         if (!GiveawayStore.saveCardImage(context, bytes, token)) return false
         savedToGallery = true
@@ -127,6 +162,7 @@ fun GiveawayCardSheet(
 
     /** Leaves the sheet. The original photo is only thrown away once a card made from it is saved, or on purpose. */
     fun finish(discard: Boolean) {
+        cardVideo?.delete()
         if (discard || savedToGallery) photoFile.delete() else GiveawayStore.rescueOriginal(context, photoFile)
         onClose()
     }
@@ -137,7 +173,10 @@ fun GiveawayCardSheet(
         aiMessage = null
         aiInfo = null
         scope.launch {
-            val result = GiveawayAIService.fill(context, photoFile, isPremium)
+            val pictures = withContext(Dispatchers.Default) {
+                if (isVideo) GiveawayImagePrep.videoFrames(photoFile) else listOfNotNull(GiveawayImagePrep.jpeg(photoFile))
+            }
+            val result = GiveawayAIService.fill(context, pictures, isPremium)
             working = false
             result.onSuccess { outcome ->
                 when (outcome) {
@@ -180,7 +219,17 @@ fun GiveawayCardSheet(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     val shown = card
-                    if (shown != null) {
+                    if (isVideo) {
+                        val video = cardVideo
+                        if (video != null) {
+                            GiveawayVideoPreview(video, includeSound, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)))
+                        } else {
+                            Box(Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
+                                if (exportFailed) Text("Couldn't make the video card.", color = Color(0xFFFF9980), fontFamily = FontFamily.Monospace, fontSize = 13.sp)
+                                else CircularProgressIndicator(color = Color.White)
+                            }
+                        }
+                    } else if (shown != null) {
                         Image(
                             bitmap = shown,
                             contentDescription = "Giveaway card preview",
@@ -189,6 +238,11 @@ fun GiveawayCardSheet(
                     } else {
                         Box(Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = Color.White)
+                        }
+                    }
+                    if (isVideo) {
+                        SheetButton(if (includeSound) "Sound: on" else "Sound: off", SheetGrey, Color.White, Modifier.fillMaxWidth()) {
+                            includeSound = !includeSound
                         }
                     }
                     if (showEditor) GiveawayTextEditor(content) { content = it }
@@ -218,7 +272,7 @@ fun GiveawayCardSheet(
                     )
                     if (allSaved) {
                         Caption("Saved to your Gallery", Color.White.copy(alpha = 0.6f))
-                    } else if (card != null) {
+                    } else if (ready) {
                         Caption("Not saved yet", SheetYellow.copy(alpha = 0.85f))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
@@ -236,7 +290,7 @@ fun GiveawayCardSheet(
                         } else {
                             SheetButton(
                                 if (savedToGallery) "Save changes" else "Save",
-                                SheetYellow, Color.Black, Modifier.weight(1f), enabled = card != null,
+                                SheetYellow, Color.Black, Modifier.weight(1f), enabled = ready,
                             ) { saveNow() }
                         }
                     }
@@ -346,4 +400,33 @@ private fun EditorField(label: String, value: String, limit: Int, onChange: (Str
             modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).background(SheetGrey).padding(10.dp),
         )
     }
+}
+
+/** Plays the card video in a loop, without controls. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@Composable
+private fun GiveawayVideoPreview(file: File, sound: Boolean, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val player = remember {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
+            playWhenReady = true
+        }
+    }
+    DisposableEffect(Unit) { onDispose { player.release() } }
+    LaunchedEffect(file) {
+        player.setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.fromFile(file)))
+        player.prepare()
+    }
+    LaunchedEffect(sound) { player.volume = if (sound) 1f else 0f }
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { c ->
+            androidx.media3.ui.PlayerView(c).apply {
+                useController = false
+                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                this.player = player
+            }
+        },
+        modifier = modifier,
+    )
 }
