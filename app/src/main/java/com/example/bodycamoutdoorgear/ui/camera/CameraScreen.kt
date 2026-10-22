@@ -1026,11 +1026,26 @@ fun CameraScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp
                 )
+                // Giveaway sits on top, full width, with a line saying what it does.
+                val giveawaySelected = displayMode == DisplayMode.GIVEAWAY
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(themedShape(6.dp))
+                        .background(if (giveawaySelected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                        .border(1.dp, if (giveawaySelected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
+                        .clickable { settingsViewModel.setDisplayMode(DisplayMode.GIVEAWAY) }
+                        .padding(vertical = 10.dp, horizontal = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(DisplayMode.GIVEAWAY.label, color = if (giveawaySelected) chromeAccentOr(Color.White) else Color.White.copy(0.5f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text("Photo of something you don't need, as a ready-to-share card", color = Color.White.copy(0.4f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    DisplayMode.entries.forEach { mode ->
+                    DisplayMode.entries.filter { it != DisplayMode.GIVEAWAY }.forEach { mode ->
                         val selected = mode == displayMode
                         Box(
                             modifier = Modifier

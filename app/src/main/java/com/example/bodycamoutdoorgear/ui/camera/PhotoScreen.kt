@@ -141,7 +141,9 @@ fun PhotoScreen(
     subscriptionManager: SubscriptionManager,
     onRequestPermissions: () -> Unit,
     onShowIntro: () -> Unit = {},
-    isActive: Boolean = true
+    isActive: Boolean = true,
+    /** Giveaway's "Gallery" button: switch to the Gallery tab. */
+    onOpenGallery: () -> Unit = {}
 ) {
     val context        = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -157,6 +159,9 @@ fun PhotoScreen(
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
     val isCircle         = displayMode == DisplayMode.CIRCLE
+    val isGiveaway       = displayMode == DisplayMode.GIVEAWAY
+    // The photo just taken in Giveaway mode, waiting to be made into a card.
+    var giveawayPhotoPath by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
     val isTactical = appearanceMode == AppearanceMode.TACTICAL
     val isMatcha   = appearanceMode == AppearanceMode.MATCHA
@@ -385,14 +390,24 @@ fun PhotoScreen(
         }
         soundPlayer.play(soundStore.find(settingsViewModel.shutterSoundId.value))
 
-        val photoFile = File(context.filesDir, "LBC_${System.currentTimeMillis()}.jpg")
+        // Giveaway mode writes to a temporary folder instead: only the card made
+        // from the photo is kept in the gallery.
+        val giveawayShot = isGiveaway
+        val photoFile = File(
+            if (giveawayShot) com.example.bodycamoutdoorgear.giveaway.GiveawayStore.originalsDir(context) else context.filesDir,
+            "LBC_${System.currentTimeMillis()}.jpg"
+        )
         val opts = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-        val shouldStamp = stampTimestamp
+        val shouldStamp = stampTimestamp && !giveawayShot  // the card prints the date itself
         ic.takePicture(opts, ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     viewModel.setCaptureStatus(null)
                     onDone()
+                    if (giveawayShot) {
+                        giveawayPhotoPath = photoFile.absolutePath
+                        return
+                    }
                     if (shouldStamp) {
                         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                             bakeTimestampOnPhoto(context, photoFile)
@@ -832,6 +847,14 @@ fun PhotoScreen(
         )
     }
 
+    giveawayPhotoPath?.let { path ->
+        com.example.bodycamoutdoorgear.giveaway.GiveawayCardSheet(
+            photoFile = File(path),
+            onClose = { giveawayPhotoPath = null },
+            onOpenGallery = onOpenGallery
+        )
+    }
+
     if (showSettings) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
@@ -904,11 +927,26 @@ fun PhotoScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 3.sp
                 )
+                // Giveaway sits on top, full width, with a line saying what it does.
+                val giveawaySelected = displayMode == DisplayMode.GIVEAWAY
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(themedShape(6.dp))
+                        .background(if (giveawaySelected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                        .border(1.dp, if (giveawaySelected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
+                        .clickable { settingsViewModel.setDisplayMode(DisplayMode.GIVEAWAY) }
+                        .padding(vertical = 10.dp, horizontal = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(DisplayMode.GIVEAWAY.label, color = if (giveawaySelected) chromeAccentOr(Color.White) else Color.White.copy(0.5f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text("Photo of something you don't need, as a ready-to-share card", color = Color.White.copy(0.4f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    DisplayMode.entries.forEach { mode ->
+                    DisplayMode.entries.filter { it != DisplayMode.GIVEAWAY }.forEach { mode ->
                         val selected = mode == displayMode
                         Box(
                             modifier = Modifier

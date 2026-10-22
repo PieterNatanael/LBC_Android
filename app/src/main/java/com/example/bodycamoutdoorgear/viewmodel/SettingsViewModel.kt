@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class QualityTier(val shortLabel: String) { LOW("LOW"), MED("MED"), HIGH("HIGH") }
 enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"), TACTICAL("TACTICAL"), MATCHA("MATCHA"), ICE_CREAM("ICE CR."), TROPICAL("TROPICAL"), SPIDER("SPIDER"), MARS("MARS") }
-enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE"), YAPPING("YAP") }
+// Stored by position (see SettingsViewModel), so new modes go at the END. GIVEAWAY
+// is shown first in the pickers, but must not come first here: that would shift
+// every existing user's saved mode onto a different one.
+enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE"), YAPPING("YAP"), GIVEAWAY("GIVEAWAY") }
 
 /**
  * How the gallery grid is ordered. Recently added is the default: it puts

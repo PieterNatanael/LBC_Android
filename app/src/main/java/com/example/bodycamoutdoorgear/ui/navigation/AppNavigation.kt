@@ -229,7 +229,8 @@ private fun AppNavigationContent(subscriptionManager: SubscriptionManager, onSho
                     permissionsLauncher.launch(arrayOf(Manifest.permission.CAMERA))
                 },
                 onShowIntro = onShowIntro,
-                isActive    = currentTab == Screen.Photo.route
+                isActive    = currentTab == Screen.Photo.route,
+                onOpenGallery = { currentTab = Screen.Gallery.route }
             )
         }
 
