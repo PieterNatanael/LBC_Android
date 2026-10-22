@@ -374,7 +374,7 @@ fun PhotoScreen(
         }
     }
 
-    fun capturePhotoNow(ic: ImageCapture) {
+    fun capturePhotoNow(ic: ImageCapture, onDone: () -> Unit = {}) {
         // Flash + tone then immediately re-enable the button — image saves in background
         scope.launch {
             viewModel.setCapturing(true)
@@ -392,6 +392,7 @@ fun PhotoScreen(
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     viewModel.setCaptureStatus(null)
+                    onDone()
                     if (shouldStamp) {
                         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                             bakeTimestampOnPhoto(context, photoFile)
@@ -407,6 +408,7 @@ fun PhotoScreen(
                 }
                 override fun onError(e: ImageCaptureException) {
                     viewModel.setCaptureStatus(null)
+                    onDone()
                 }
             }
         )
@@ -417,6 +419,13 @@ fun PhotoScreen(
         if (isFrontCamera && flashMode != 0) {
             // No flash unit up front: light the whole screen white at full
             // brightness, let the exposure settle, then fire, then hold a beat.
+            // capturePhotoNow() only starts the capture — ic.takePicture() is
+            // async and the real shutter moment happens later, whenever CameraX's
+            // pipeline gets to it. The screen used to come back down on a blind
+            // delay(500) after calling it, not on the capture actually finishing,
+            // so on a slower capture the screen had already gone dark again
+            // before the sensor read the frame. Now it waits for onDone()
+            // (the real onImageSaved/onError callback) before restoring.
             if (isCapturing || screenFlashActive) return
             scope.launch {
                 viewModel.setCapturing(true)
@@ -427,16 +436,16 @@ fun PhotoScreen(
                     p.screenBrightness = 1f
                     w.attributes = p
                 }
-                delay(600)
+                delay(1000)
                 viewModel.setCapturing(false)
-                capturePhotoNow(ic)
-                delay(500)
-                screenFlashActive = false
-                window?.let { w ->
-                    val p = w.attributes
-                    p.screenBrightness =
-                        if (isScreenDimmed) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                    w.attributes = p
+                capturePhotoNow(ic) {
+                    screenFlashActive = false
+                    window?.let { w ->
+                        val p = w.attributes
+                        p.screenBrightness =
+                            if (isScreenDimmed) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                        w.attributes = p
+                    }
                 }
             }
             return
