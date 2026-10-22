@@ -28,6 +28,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +49,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -67,8 +70,21 @@ fun GiveawayCardSheet(
     photoFile: File,
     onClose: () -> Unit,
     onOpenGallery: () -> Unit,
+    isPremium: Boolean = false,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var agreed by rememberSaveable { mutableStateOf(!GiveawayAgreement.needed(context)) }
+
+    // Fill with AI. [before] holds the words from before the FIRST fill, so Revert
+    // always goes back to what the user had, even after retries.
+    var working by remember { mutableStateOf(false) }
+    var before by remember { mutableStateOf<GiveawayCardContent?>(null) }
+    var aiMessage by remember { mutableStateOf<String?>(null) }
+    var aiInfo by remember { mutableStateOf<String?>(null) }
+    var showAiConsent by remember { mutableStateOf(false) }
+    var remaining by remember { mutableStateOf(GiveawayAIUsage.remaining(context, isPremium)) }
 
     var content by remember { mutableStateOf(GiveawayCardContent.fallback()) }
     val token = remember { System.currentTimeMillis().toString() }
@@ -115,6 +131,38 @@ fun GiveawayCardSheet(
         onClose()
     }
 
+    fun runFill() {
+        if (remaining <= 0) { aiMessage = GiveawayAIError.MONTHLY_LIMIT.message; return }
+        working = true
+        aiMessage = null
+        aiInfo = null
+        scope.launch {
+            val result = GiveawayAIService.fill(context, photoFile, isPremium)
+            working = false
+            result.onSuccess { outcome ->
+                when (outcome) {
+                    is GiveawayAIOutcome.Filled -> {
+                        if (before == null) before = content
+                        content = outcome.content.copy(dateMillis = content.dateMillis)
+                        aiInfo = outcome.privacyNote
+                        if (outcome.remaining != null) GiveawayAIUsage.setRemaining(context, outcome.remaining, isPremium)
+                        else GiveawayAIUsage.recordUse(context)
+                    }
+                    is GiveawayAIOutcome.Refused -> {
+                        // The card stays as it is; only a message is shown.
+                        aiMessage = outcome.message
+                        if (outcome.remaining != null) GiveawayAIUsage.setRemaining(context, outcome.remaining, isPremium)
+                    }
+                }
+                remaining = GiveawayAIUsage.remaining(context, isPremium)
+            }.onFailure { e ->
+                val error = (e as? GiveawayAIService.AIException)?.error ?: GiveawayAIError.UNAVAILABLE
+                aiMessage = error.message
+                if (error == GiveawayAIError.MONTHLY_LIMIT) remaining = 0
+            }
+        }
+    }
+
     fun requestClose() {
         if (allSaved) finish(discard = false) else showCloseConfirm = true
     }
@@ -150,6 +198,24 @@ fun GiveawayCardSheet(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                        SheetButton(
+                            if (working) "Writing…" else if (before == null) "Fill with AI" else "Try again",
+                            SheetYellow, Color.Black, Modifier.weight(1f), enabled = !working,
+                        ) {
+                            if (GiveawayAgreement.aiConsented(context)) runFill() else showAiConsent = true
+                        }
+                        if (before != null && !working) {
+                            SheetButton("Revert", SheetGrey, Color.White) {
+                                before?.let { content = it }
+                                before = null; aiMessage = null; aiInfo = null
+                            }
+                        }
+                    }
+                    Caption(
+                        aiMessage ?: aiInfo ?: "$remaining AI ${if (remaining == 1) "card" else "cards"} left this month",
+                        if (aiMessage != null) Color(0xFFFF9980) else if (aiInfo != null) SheetYellow else Color.White.copy(alpha = 0.5f),
+                    )
                     if (allSaved) {
                         Caption("Saved to your Gallery", Color.White.copy(alpha = 0.6f))
                     } else if (card != null) {
@@ -174,9 +240,30 @@ fun GiveawayCardSheet(
                             ) { saveNow() }
                         }
                     }
+                    GiveawayResponsibilityLine()
                 }
             }
         }
+    }
+
+    if (!agreed) {
+        GiveawayAgreementDialog(
+            onAgree = { GiveawayAgreement.accept(context); agreed = true },
+            // Declining keeps the photo: it goes to the gallery as a normal photo.
+            onDecline = { finish(discard = false) },
+        )
+    }
+
+    if (showAiConsent) {
+        AlertDialog(
+            onDismissRequest = { showAiConsent = false },
+            title = { Text("Fill with AI") },
+            text = { Text("This sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it.") },
+            confirmButton = {
+                TextButton(onClick = { showAiConsent = false; GiveawayAgreement.acceptAI(context); runFill() }) { Text("Continue") }
+            },
+            dismissButton = { TextButton(onClick = { showAiConsent = false }) { Text("Cancel") } },
+        )
     }
 
     if (showCloseConfirm) {
@@ -212,7 +299,7 @@ private fun SheetButton(
             .clip(RoundedCornerShape(10.dp))
             .background(fill.copy(alpha = if (enabled) 1f else 0.4f))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 14.dp),
+            .padding(vertical = 14.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

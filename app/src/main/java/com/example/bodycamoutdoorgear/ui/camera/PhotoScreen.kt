@@ -851,7 +851,8 @@ fun PhotoScreen(
         com.example.bodycamoutdoorgear.giveaway.GiveawayCardSheet(
             photoFile = File(path),
             onClose = { giveawayPhotoPath = null },
-            onOpenGallery = onOpenGallery
+            onOpenGallery = onOpenGallery,
+            isPremium = isUnlocked
         )
     }
 
