@@ -37,39 +37,34 @@ sealed class GiveawayAIOutcome {
 }
 
 /**
- * How many AI fills are left this month. This only drives what the button shows;
- * the real limit is enforced on the server.
+ * How many AI fills the server says are left this month. The app has no limit of
+ * its own: the server enforces it (and can change it without an app update), so
+ * the count is only what the server last reported. It is unknown until the first
+ * fill of the month, and starts over when the month or the Pro status changes.
  */
 object GiveawayAIUsage {
-    const val FREE_LIMIT = 10
-    const val PREMIUM_LIMIT = 100
-
     private fun prefs(context: Context) = context.getSharedPreferences("giveaway", Context.MODE_PRIVATE)
 
     private fun thisMonth(): String = SimpleDateFormat("yyyy-MM", Locale.US).format(Date())
 
-    fun limit(premium: Boolean) = if (premium) PREMIUM_LIMIT else FREE_LIMIT
-
-    private fun used(context: Context): Int {
+    /** Fills left according to the server's last reply, or null when this month's count isn't known yet. */
+    fun remaining(context: Context, premium: Boolean): Int? {
         val p = prefs(context)
-        return if (p.getString("usage_month", null) == thisMonth()) p.getInt("usage_count", 0) else 0
+        val known = p.getString("server_month", null) == thisMonth() && p.getBoolean("server_premium", false) == premium
+        return if (known) p.getInt("server_remaining", 0) else null
     }
 
-    fun remaining(context: Context, premium: Boolean): Int = max(0, limit(premium) - used(context))
-
-    /** Trusts the server's count: it is the one that enforces the limit. */
     fun setRemaining(context: Context, remaining: Int, premium: Boolean) {
         prefs(context).edit()
-            .putString("usage_month", thisMonth())
-            .putInt("usage_count", max(0, limit(premium) - max(0, remaining)))
+            .putString("server_month", thisMonth())
+            .putBoolean("server_premium", premium)
+            .putInt("server_remaining", max(0, remaining))
             .apply()
     }
 
-    fun recordUse(context: Context) {
-        prefs(context).edit()
-            .putString("usage_month", thisMonth())
-            .putInt("usage_count", used(context) + 1)
-            .apply()
+    /** The server didn't say how many are left: count this fill down from what was known. */
+    fun recordUse(context: Context, premium: Boolean) {
+        remaining(context, premium)?.let { setRemaining(context, it - 1, premium) }
     }
 }
 

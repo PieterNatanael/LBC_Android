@@ -87,7 +87,7 @@ fun GiveawayCardSheet(
     var aiMessage by remember { mutableStateOf<String?>(null) }
     var aiInfo by remember { mutableStateOf<String?>(null) }
     var showAiConsent by remember { mutableStateOf(false) }
-    var remaining by remember { mutableStateOf(GiveawayAIUsage.remaining(context, isPremium)) }
+    var remaining by remember { mutableStateOf(GiveawayAIUsage.remaining(context, isPremium)) }  // null: not known yet
 
     var content by remember { mutableStateOf(GiveawayCardContent.fallback()) }
     val token = remember { System.currentTimeMillis().toString() }
@@ -168,7 +168,7 @@ fun GiveawayCardSheet(
     }
 
     fun runFill() {
-        if (remaining <= 0) { aiMessage = GiveawayAIError.MONTHLY_LIMIT.message; return }
+        // No check against a count here: the server decides, so a raised limit works at once.
         working = true
         aiMessage = null
         aiInfo = null
@@ -185,7 +185,7 @@ fun GiveawayCardSheet(
                         content = outcome.content.copy(dateMillis = content.dateMillis)
                         aiInfo = outcome.privacyNote
                         if (outcome.remaining != null) GiveawayAIUsage.setRemaining(context, outcome.remaining, isPremium)
-                        else GiveawayAIUsage.recordUse(context)
+                        else GiveawayAIUsage.recordUse(context, isPremium)
                     }
                     is GiveawayAIOutcome.Refused -> {
                         // The card stays as it is; only a message is shown.
@@ -267,7 +267,7 @@ fun GiveawayCardSheet(
                         }
                     }
                     Caption(
-                        aiMessage ?: aiInfo ?: "$remaining AI ${if (remaining == 1) "card" else "cards"} left this month",
+                        aiMessage ?: aiInfo ?: remaining?.let { "$it AI ${if (it == 1) "card" else "cards"} left this month" } ?: "AI cards are limited each month",
                         if (aiMessage != null) Color(0xFFFF9980) else if (aiInfo != null) SheetYellow else Color.White.copy(alpha = 0.5f),
                     )
                     if (allSaved) {
