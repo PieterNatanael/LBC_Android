@@ -39,6 +39,8 @@ object GiveawayCardRenderer {
     private val YELLOW = Color.rgb(255, 216, 77)   // #FFD84D
     private val INK = Color.rgb(27, 26, 23)        // #1B1A17
     private val RED = Color.rgb(232, 72, 59)       // #E8483B
+    private val SALE_BLUE = Color.rgb(59, 130, 246)    // #3B82F6, easy to tell from the yellow giveaway card in every kind of colour blindness
+    private val SALE_LIGHT = Color.rgb(207, 227, 255)  // #CFE3FF
 
     private val HEAVY: Typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
     private val BOLD: Typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -56,17 +58,22 @@ object GiveawayCardRenderer {
         content: GiveawayCardContent,
         photoFile: File?,
         transparentWindow: Boolean = false,
+        cardStyle: CardStyle = CardStyle.Giveaway,
     ): Bitmap {
         val strings = GiveawayCardStrings.current
+        val sale = cardStyle as? CardStyle.Sale
+        val isSale = sale != null
+        val background = if (isSale) SALE_BLUE else YELLOW
+        val accent = if (isSale) SALE_LIGHT else YELLOW
         val bmp = Bitmap.createBitmap(SIDE, SIDE, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
-        c.drawColor(YELLOW)
+        c.drawColor(background)
 
         val size = SIDE.toFloat()
         val margin = 48f
 
         // Header
-        drawFitted(c, strings.header, RectF(margin, 36f, margin + 700f, 136f),
+        drawFitted(c, if (isSale) strings.saleHeader else strings.header, RectF(margin, 36f, margin + 700f, 136f),
             maxSize = 96f, minSize = 60f, typeface = HEAVY, color = INK, kern = 4f, maxLines = 1)
 
         // LBC logo, top right. The date and time sit under it and the item name
@@ -123,7 +130,8 @@ object GiveawayCardRenderer {
         })
 
         // FREE stamp, overlapping the frame's top-right corner
-        drawStamp(c, strings.free, frame.right - 105f, frame.top + 78f)
+        if (sale != null) drawPriceTag(c, sale.price ?: strings.priceDefault, frame.right - 150f, frame.top + 78f)
+        else drawStamp(c, strings.free, frame.right - 105f, frame.top + 78f)
 
         // Right column
         val colX = frame.right + 40f
@@ -175,9 +183,9 @@ object GiveawayCardRenderer {
         // Bottom bar
         val bar = RectF(margin, 924f, size - margin, 1032f)
         c.drawRoundRect(bar, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = INK })
-        drawFitted(c, strings.contact,
+        drawFitted(c, if (isSale) strings.saleContact else strings.contact,
             RectF(bar.left + 34f, bar.top + 10f, bar.left + 34f + 560f, bar.bottom - 10f),
-            maxSize = 50f, minSize = 30f, typeface = HEAVY, color = YELLOW, kern = -0.5f, maxLines = 1,
+            maxSize = 50f, minSize = 30f, typeface = HEAVY, color = accent, kern = -0.5f, maxLines = 1,
             centerVertically = true)
         val battery = RectF(bar.left + 612f, bar.centerY() - 14f, bar.left + 612f + 54f, bar.centerY() + 14f)
         drawBatteryLogo(c, battery)
@@ -294,6 +302,22 @@ object GiveawayCardRenderer {
         val inner = RectF(rect.left + 10f, rect.top + 6f, rect.right - 10f, rect.bottom - 6f)
         drawFitted(c, text, inner, maxSize = 64f, minSize = 28f, typeface = HEAVY, color = Color.WHITE,
             kern = 2f, maxLines = 1, centerVertically = true)
+        c.restore()
+    }
+
+    /** The sale card's price tag: dark with a white edge, wide enough for a price such as "Rp 15.000.000". */
+    private fun drawPriceTag(c: Canvas, text: String, cx: Float, cy: Float) {
+        val rect = RectF(-150f, -48f, 150f, 48f)
+        c.save()
+        c.translate(cx, cy)
+        c.rotate(-4f)
+        c.drawRoundRect(rect, 18f, 18f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = INK })
+        c.drawRoundRect(rect, 18f, 18f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = 6f; color = Color.WHITE
+        })
+        val inner = RectF(rect.left + 14f, rect.top + 8f, rect.right - 14f, rect.bottom - 8f)
+        drawFitted(c, text, inner, maxSize = 56f, minSize = 26f, typeface = HEAVY, color = Color.WHITE,
+            kern = 0f, maxLines = 2, centerVertically = true, centerHorizontally = true)
         c.restore()
     }
 

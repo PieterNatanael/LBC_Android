@@ -176,7 +176,7 @@ fun CameraScreen(
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
     val isCircle         = displayMode == DisplayMode.CIRCLE
     val isYapping        = displayMode == DisplayMode.YAPPING
-    val isGiveaway       = displayMode == DisplayMode.GIVEAWAY
+    val isGiveaway       = displayMode.makesCard   // Giveaway or For Sale: the clip becomes a card
     // The recording waiting to be made into a Giveaway card, while its sheet is open.
     var giveawayVideoPath by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
@@ -959,6 +959,7 @@ fun CameraScreen(
     giveawayVideoPath?.let { path ->
         com.example.bodycamoutdoorgear.giveaway.GiveawayCardSheet(
             photoFile = File(path),
+            mode = displayMode.cardMode ?: com.example.bodycamoutdoorgear.giveaway.CardMode.GIVEAWAY,
             onClose = { giveawayVideoPath = null },
             onOpenGallery = onOpenGallery,
             isPremium = subscriptionManager.isUnlocked,

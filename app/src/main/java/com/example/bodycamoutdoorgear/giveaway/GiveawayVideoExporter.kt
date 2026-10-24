@@ -47,10 +47,11 @@ object GiveawayVideoExporter {
         content: GiveawayCardContent,
         includeSound: Boolean,
         out: File,
+        style: CardStyle = CardStyle.Giveaway,
     ): Boolean {
         val (videoW, videoH) = displaySize(source) ?: return false
         val overlayBitmap = withContext(Dispatchers.Default) {
-            GiveawayCardRenderer.render(context, content, null, transparentWindow = true)
+            GiveawayCardRenderer.render(context, content, null, transparentWindow = true, cardStyle = style)
         }
         return withContext(Dispatchers.Main) {
             suspendCancellableCoroutine { cont ->

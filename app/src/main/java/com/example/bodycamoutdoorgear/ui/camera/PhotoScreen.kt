@@ -162,7 +162,7 @@ fun PhotoScreen(
     val displayMode      by settingsViewModel.displayMode.collectAsState()
     val isSaveBattery    = displayMode == DisplayMode.SAVE_BATTERY
     val isCircle         = displayMode == DisplayMode.CIRCLE
-    val isGiveaway       = displayMode == DisplayMode.GIVEAWAY
+    val isGiveaway       = displayMode.makesCard   // Giveaway or For Sale: the photo becomes a card
     // The photo just taken in Giveaway mode, waiting to be made into a card.
     var giveawayPhotoPath by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     val isSimple   = appearanceMode == AppearanceMode.SIMPLE
@@ -853,6 +853,7 @@ fun PhotoScreen(
     giveawayPhotoPath?.let { path ->
         com.example.bodycamoutdoorgear.giveaway.GiveawayCardSheet(
             photoFile = File(path),
+            mode = displayMode.cardMode ?: com.example.bodycamoutdoorgear.giveaway.CardMode.GIVEAWAY,
             onClose = { giveawayPhotoPath = null },
             onOpenGallery = onOpenGallery,
             isPremium = isUnlocked

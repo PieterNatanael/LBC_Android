@@ -50,6 +50,19 @@ private val NOT_ALLOWED = listOf(
     "Anything showing documents, addresses or other private information",
 )
 
+private val SELLING_NOT_ALLOWED = listOf(
+    "Tickets, vouchers, gift cards or accounts",
+    "Anything that is illegal to sell where you live",
+    "Services, or anything that is not a physical item you own",
+)
+
+private val SELLER_TIPS = listOf(
+    "Never send the item, or share bank details or one-time codes, before you have been paid.",
+    "Be careful if a buyer offers more than your price and asks you to send back the difference. This is a common scam.",
+    "Check that the payment is in your own account before you hand over the item.",
+    "Follow the rules where you live, including those on taxes and consumer rights.",
+)
+
 private val TIPS = listOf(
     "Check the background of your photo for faces, papers and screens before you share.",
     "Meet in a public place, and tell someone where you are going.",
@@ -59,7 +72,7 @@ private val TIPS = listOf(
 
 /** Shown over the card sheet the first time, before any card is made or saved. */
 @Composable
-fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
+fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit, mode: CardMode = CardMode.GIVEAWAY) {
     var showRules by remember { mutableStateOf(false) }
     Dialog(
         onDismissRequest = onDecline,
@@ -67,13 +80,20 @@ fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
     ) {
         Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text(tr("Before you give something away"), color = Color.White, fontSize = 22.sp,
+                Text(if (mode == CardMode.SALE) tr("Before you sell something") else tr("Before you give something away"), color = Color.White, fontSize = 22.sp,
                     fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold)
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Point("•", tr("You are responsible for what you give away, and for following the laws where you live."))
-                    Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
-                    Point("•", tr("LBC only makes the card. We don't check items, and we aren't part of any handover."))
-                    Point("•", tr("Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it."))
+                    if (mode == CardMode.SALE) {
+                        Point("•", tr("You are responsible for what you sell, for the price and words on your card, and for following the laws where you live, including taxes and licenses."))
+                        Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
+                        Point("•", tr("LBC only makes the card. We don't take payments, hold money, check items or buyers, or take part in any sale or handover."))
+                        Point("•", tr("Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it. It never sets a price."))
+                    } else {
+                        Point("•", tr("You are responsible for what you give away, and for following the laws where you live."))
+                        Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
+                        Point("•", tr("LBC only makes the card. We don't check items, and we aren't part of any handover."))
+                        Point("•", tr("Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it."))
+                    }
                     Text(tr("See everything that's not allowed"), color = LegalYellow, fontSize = 14.sp,
                         fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
                         textDecoration = TextDecoration.Underline,
@@ -86,12 +106,12 @@ fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
             }
         }
     }
-    if (showRules) GiveawayRulesDialog { showRules = false }
+    if (showRules) GiveawayRulesDialog(mode) { showRules = false }
 }
 
 /** The full "What's not allowed" page. */
 @Composable
-fun GiveawayRulesDialog(onClose: () -> Unit) {
+fun GiveawayRulesDialog(mode: CardMode = CardMode.GIVEAWAY, onClose: () -> Unit) {
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -105,10 +125,20 @@ fun GiveawayRulesDialog(onClose: () -> Unit) {
                     Text(tr("What's not allowed"), color = Color.White, fontSize = 22.sp,
                         fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold)
                     NOT_ALLOWED.forEach { Point("✕", tr(it)) }
+                    if (mode == CardMode.SALE) {
+                        Text(tr("Also not allowed when selling"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
+                        SELLING_NOT_ALLOWED.forEach { Point("✕", tr(it)) }
+                    }
                     Text(tr("Good to know"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
                     TIPS.forEach { Point("•", tr(it)) }
-                    Text(tr("LBC makes the card only. You are responsible for what you give away."),
+                    if (mode == CardMode.SALE) {
+                        Text(tr("Tips for sellers"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
+                        SELLER_TIPS.forEach { Point("•", tr(it)) }
+                    }
+                    Text(if (mode == CardMode.SALE) tr("LBC makes the card only. You are responsible for what you sell.") else tr("LBC makes the card only. You are responsible for what you give away."),
                         color = Color(0xFF8C8C8C), fontSize = 13.sp, fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(top = 10.dp))
                 }
@@ -122,16 +152,16 @@ fun GiveawayRulesDialog(onClose: () -> Unit) {
 
 /** The always-visible reminder under the card, with a link to the full list. */
 @Composable
-fun GiveawayResponsibilityLine() {
+fun GiveawayResponsibilityLine(mode: CardMode = CardMode.GIVEAWAY) {
     var open by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(tr("You're responsible for what you give away."), color = Color(0xFF808080), fontSize = 11.sp,
+        Text(if (mode == CardMode.SALE) tr("You're responsible for what you sell.") else tr("You're responsible for what you give away."), color = Color(0xFF808080), fontSize = 11.sp,
             fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center)
         Text(tr("What's not allowed"), color = Color(0xFFBFBFBF), fontSize = 11.sp, fontFamily = FontFamily.Monospace,
             textDecoration = TextDecoration.Underline,
             modifier = Modifier.clickable { open = true }.padding(vertical = 2.dp))
     }
-    if (open) GiveawayRulesDialog { open = false }
+    if (open) GiveawayRulesDialog(mode) { open = false }
 }
 
 @Composable

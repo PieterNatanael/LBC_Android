@@ -20,11 +20,23 @@ enum class DisplayMode(val label: String, val title: String, val subtitle: Strin
     NORMAL("NORMAL", "NORMAL", "Full screen preview, uses more battery"),
     CIRCLE("CIRCLE", "CIRCLE", "Compact round preview, lower power use"),
     YAPPING("YAP", "YAPPING", "Script on screen, preview shrinks to a movable corner"),
-    GIVEAWAY("GIVEAWAY", "GIVEAWAY", "Photo of something you don't need, as a shareable card");
+    GIVEAWAY("GIVEAWAY", "GIVEAWAY", "Photo of something you don't need, as a shareable card"),
+    SALE("SALE", "FOR SALE", "Photo of something you want to sell, with its price");
+
+    /** Giveaway and For Sale both turn what is shot into a card. */
+    val makesCard: Boolean get() = this == GIVEAWAY || this == SALE
+
+    /** Which card this mode makes; null for the modes that just save the photo or video. */
+    val cardMode: com.example.bodycamoutdoorgear.giveaway.CardMode?
+        get() = when (this) {
+            GIVEAWAY -> com.example.bodycamoutdoorgear.giveaway.CardMode.GIVEAWAY
+            SALE -> com.example.bodycamoutdoorgear.giveaway.CardMode.SALE
+            else -> null
+        }
 
     companion object {
-        /** The order the settings list shows them in: Giveaway first. */
-        val pickerOrder: List<DisplayMode> = listOf(GIVEAWAY) + entries.filter { it != GIVEAWAY }
+        /** The order the settings list shows them in: the card modes first. */
+        val pickerOrder: List<DisplayMode> = listOf(GIVEAWAY, SALE) + entries.filter { !it.makesCard }
     }
 }
 

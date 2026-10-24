@@ -75,11 +75,16 @@ fun GiveawayCardSheet(
     isPremium: Boolean = false,
     /** [photoFile] is a recording rather than a photo: the card is a short video. */
     isVideo: Boolean = false,
+    /** A giveaway card (yellow) or a sale card (blue, with a price). */
+    mode: CardMode = CardMode.GIVEAWAY,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val sale = mode == CardMode.SALE
+    // Save buttons are yellow for a giveaway and light blue for a sale.
+    val accent = if (sale) Color(0xFFCFE3FF) else SheetYellow
 
-    var agreed by rememberSaveable { mutableStateOf(!GiveawayAgreement.needed(context)) }
+    var agreed by rememberSaveable { mutableStateOf(!(if (sale) SaleAgreement.needed(context) else GiveawayAgreement.needed(context))) }
 
     // Fill with AI. [before] holds the words from before the FIRST fill, so Revert
     // always goes back to what the user had, even after retries.
@@ -90,7 +95,10 @@ fun GiveawayCardSheet(
     var showAiConsent by remember { mutableStateOf(false) }
     var remaining by remember { mutableStateOf(GiveawayAIUsage.remaining(context, isPremium)) }  // null: not known yet
 
-    var content by remember { mutableStateOf(GiveawayCardContent.fallback()) }
+    var content by remember { mutableStateOf(GiveawayCardContent.fallback(mode)) }
+    var priceAmount by rememberSaveable { mutableStateOf("") }
+    var currencyCode by remember { mutableStateOf(SaleCurrency.savedCode(context)) }
+    val style: CardStyle = if (sale) CardStyle.Sale(SalePrice.format(priceAmount, currencyCode)) else CardStyle.Giveaway
     val token = remember { System.currentTimeMillis().toString() }
     var card by remember { mutableStateOf<ImageBitmap?>(null) }
     var cardJpeg by remember { mutableStateOf<ByteArray?>(null) }
@@ -111,12 +119,12 @@ fun GiveawayCardSheet(
     val allSaved = savedToGallery && !dirtySinceSave
 
     // Draw the card now, and again shortly after the last edit.
-    LaunchedEffect(content) {
+    LaunchedEffect(content, priceAmount, currencyCode) {
         if (isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
         val cleaned = content.cleaned()
-        val bmp = withContext(Dispatchers.Default) { GiveawayCardRenderer.render(context, cleaned, photoFile) }
+        val bmp = withContext(Dispatchers.Default) { GiveawayCardRenderer.render(context, cleaned, photoFile, cardStyle = style) }
         val bytes = withContext(Dispatchers.Default) {
             ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) }.toByteArray()
         }
@@ -128,12 +136,12 @@ fun GiveawayCardSheet(
 
     // Video cards are made by the exporter, again shortly after the last edit or sound change.
     // Each export gets its own file so the preview never plays one that is being rewritten.
-    LaunchedEffect(content, includeSound) {
+    LaunchedEffect(content, includeSound, priceAmount, currencyCode) {
         if (!isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
         val out = File(GiveawayStore.originalsDir(context), "card_${token}_${System.nanoTime()}.mp4")
-        val ok = GiveawayVideoExporter.export(context, photoFile, content.cleaned(), includeSound, out)
+        val ok = GiveawayVideoExporter.export(context, photoFile, content.cleaned(), includeSound, out, style)
         if (ok) {
             val old = cardVideo
             cardVideo = out
@@ -177,7 +185,7 @@ fun GiveawayCardSheet(
             val pictures = withContext(Dispatchers.Default) {
                 if (isVideo) GiveawayImagePrep.videoFrames(photoFile) else listOfNotNull(GiveawayImagePrep.jpeg(photoFile))
             }
-            val result = GiveawayAIService.fill(context, pictures, isPremium)
+            val result = GiveawayAIService.fill(context, pictures, isPremium, mode)
             working = false
             result.onSuccess { outcome ->
                 when (outcome) {
@@ -246,6 +254,13 @@ fun GiveawayCardSheet(
                             includeSound = !includeSound
                         }
                     }
+                    if (sale) {
+                        SalePriceField(
+                            amount = priceAmount, onAmount = { priceAmount = it },
+                            currencyCode = currencyCode,
+                            onCurrency = { currencyCode = it; SaleCurrency.remember(context, it) },
+                        )
+                    }
                     if (showEditor) GiveawayTextEditor(content) { content = it }
                 }
 
@@ -256,7 +271,7 @@ fun GiveawayCardSheet(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         SheetButton(
                             if (working) tr("Writing…") else if (before == null) tr("Fill with AI") else tr("Try again"),
-                            SheetYellow, Color.Black, Modifier.weight(1f), enabled = !working,
+                            accent, Color.Black, Modifier.weight(1f), enabled = !working,
                         ) {
                             if (GiveawayAgreement.aiConsented(context)) runFill() else showAiConsent = true
                         }
@@ -271,12 +286,12 @@ fun GiveawayCardSheet(
                     // month, the line says so. The button stays tappable: the server decides, so a raised limit works at once.
                     val limitText = if (remaining == 0) GiveawayAIError.MONTHLY_LIMIT.message else null
                     (aiMessage ?: aiInfo ?: limitText)?.let { line ->
-                        Caption(line, if (aiInfo != null && aiMessage == null) SheetYellow else Color(0xFFFF9980))
+                        Caption(line, if (aiInfo != null && aiMessage == null) accent else Color(0xFFFF9980))
                     }
                     if (allSaved) {
                         Caption(tr("Saved to your Gallery"), Color.White.copy(alpha = 0.6f))
                     } else if (ready) {
-                        Caption(tr("Not saved yet"), SheetYellow.copy(alpha = 0.85f))
+                        Caption(tr("Not saved yet"), accent.copy(alpha = 0.85f))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         SheetButton(tr("Close"), SheetGrey, Color.White, Modifier.weight(1f)) { requestClose() }
@@ -284,7 +299,7 @@ fun GiveawayCardSheet(
                             showEditor = !showEditor
                         }
                         if (allSaved) {
-                            SheetButton(tr("Gallery"), SheetYellow, Color.Black, Modifier.weight(1f)) {
+                            SheetButton(tr("Gallery"), accent, Color.Black, Modifier.weight(1f)) {
                                 finish(discard = false)
                                 // Cards are saved and shared outside LBC from the
                                 // Gallery tab, so this leads there.
@@ -293,11 +308,11 @@ fun GiveawayCardSheet(
                         } else {
                             SheetButton(
                                 if (savedToGallery) tr("Save changes") else tr("Save"),
-                                SheetYellow, Color.Black, Modifier.weight(1f), enabled = ready,
+                                accent, Color.Black, Modifier.weight(1f), enabled = ready,
                             ) { saveNow() }
                         }
                     }
-                    GiveawayResponsibilityLine()
+                    GiveawayResponsibilityLine(mode)
                 }
             }
         }
@@ -305,7 +320,8 @@ fun GiveawayCardSheet(
 
     if (!agreed) {
         GiveawayAgreementDialog(
-            onAgree = { GiveawayAgreement.accept(context); agreed = true },
+            mode = mode,
+            onAgree = { if (sale) SaleAgreement.accept(context) else GiveawayAgreement.accept(context); agreed = true },
             // Declining keeps the photo: it goes to the gallery as a normal photo.
             onDecline = { finish(discard = false) },
         )
