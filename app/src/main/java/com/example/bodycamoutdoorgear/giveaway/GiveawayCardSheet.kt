@@ -266,10 +266,12 @@ fun GiveawayCardSheet(
                             }
                         }
                     }
-                    Caption(
-                        aiMessage ?: aiInfo ?: remaining?.let { "$it AI ${if (it == 1) "card" else "cards"} left this month" } ?: "AI cards are limited each month",
-                        if (aiMessage != null) Color(0xFFFF9980) else if (aiInfo != null) SheetYellow else Color.White.copy(alpha = 0.5f),
-                    )
+                    // No count is shown while there are cards left. Once the server has said there are none this
+                    // month, the line says so. The button stays tappable: the server decides, so a raised limit works at once.
+                    val limitText = if (remaining == 0) GiveawayAIError.MONTHLY_LIMIT.message else null
+                    (aiMessage ?: aiInfo ?: limitText)?.let { line ->
+                        Caption(line, if (aiInfo != null && aiMessage == null) SheetYellow else Color(0xFFFF9980))
+                    }
                     if (allSaved) {
                         Caption("Saved to your Gallery", Color.White.copy(alpha = 0.6f))
                     } else if (ready) {
