@@ -108,6 +108,7 @@ object GiveawayAIService {
             val body = JSONObject()
                 .put("install_id", installId(context))
                 .put("premium", premium)
+                .put("language", com.example.bodycamoutdoorgear.i18n.Tr.code)
                 .put("images", JSONArray().apply {
                     pictures.forEach {
                         put(JSONObject().put("media_type", "image/jpeg").put("data", Base64.encodeToString(it, Base64.NO_WRAP)))

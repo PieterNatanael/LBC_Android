@@ -57,6 +57,7 @@ object GiveawayCardRenderer {
         photoFile: File?,
         transparentWindow: Boolean = false,
     ): Bitmap {
+        val strings = GiveawayCardStrings.current
         val bmp = Bitmap.createBitmap(SIDE, SIDE, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         c.drawColor(YELLOW)
@@ -65,7 +66,7 @@ object GiveawayCardRenderer {
         val margin = 48f
 
         // Header
-        drawFitted(c, GiveawayCardStrings.HEADER, RectF(margin, 36f, margin + 700f, 136f),
+        drawFitted(c, strings.header, RectF(margin, 36f, margin + 700f, 136f),
             maxSize = 96f, minSize = 60f, typeface = HEAVY, color = INK, kern = 4f, maxLines = 1)
 
         // LBC logo, top right. The date and time sit under it and the item name
@@ -92,7 +93,7 @@ object GiveawayCardRenderer {
             color = Color.argb(153, Color.red(INK), Color.green(INK), Color.blue(INK))
             textAlign = Paint.Align.RIGHT
         }
-        val stampLines = listOf(StampStyle.dateText(Date(content.dateMillis)), GiveawayCardStrings.SHOT_LIVE)
+        val stampLines = listOf(StampStyle.dateText(Date(content.dateMillis)), strings.shotLive)
         stampLines.forEachIndexed { i, line ->
             val top = stampTop + i * 28f
             c.drawText(line, size - margin, top - stampPaint.fontMetrics.ascent, stampPaint)
@@ -122,7 +123,7 @@ object GiveawayCardRenderer {
         })
 
         // FREE stamp, overlapping the frame's top-right corner
-        drawStamp(c, GiveawayCardStrings.FREE, frame.right - 105f, frame.top + 78f)
+        drawStamp(c, strings.free, frame.right - 105f, frame.top + 78f)
 
         // Right column
         val colX = frame.right + 40f
@@ -166,7 +167,7 @@ object GiveawayCardRenderer {
         val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = HEAVY; textSize = 19f; color = INK; letterSpacing = 3f / 19f
         }
-        c.drawText(GiveawayCardStrings.SAYS, inner.left, inner.top - labelPaint.fontMetrics.ascent, labelPaint)
+        c.drawText(strings.says, inner.left, inner.top - labelPaint.fontMetrics.ascent, labelPaint)
         drawFitted(c, "“${content.comment}”",
             RectF(inner.left, inner.top + 34f, inner.right, inner.bottom),
             maxSize = 30f, minSize = 18f, typeface = BOLD, color = INK, kern = 0f, maxLines = 5)
@@ -174,7 +175,7 @@ object GiveawayCardRenderer {
         // Bottom bar
         val bar = RectF(margin, 924f, size - margin, 1032f)
         c.drawRoundRect(bar, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = INK })
-        drawFitted(c, GiveawayCardStrings.CONTACT,
+        drawFitted(c, strings.contact,
             RectF(bar.left + 34f, bar.top + 10f, bar.left + 34f + 560f, bar.bottom - 10f),
             maxSize = 50f, minSize = 30f, typeface = HEAVY, color = YELLOW, kern = -0.5f, maxLines = 1,
             centerVertically = true)
@@ -183,15 +184,15 @@ object GiveawayCardRenderer {
         val textX = battery.right + 16f
         val textR = bar.right - 24f
         val light = Color.rgb(217, 217, 217)
-        drawFitted(c, GiveawayCardStrings.MADE_BY, RectF(textX, bar.top + 16f, textR, bar.top + 48f),
+        drawFitted(c, strings.madeBy, RectF(textX, bar.top + 16f, textR, bar.top + 48f),
             maxSize = 28f, minSize = 20f, typeface = HEAVY, color = Color.WHITE, kern = 0f, maxLines = 1)
-        drawFitted(c, GiveawayCardStrings.FOOTER_1, RectF(textX, bar.top + 50f, textR, bar.top + 74f),
+        drawFitted(c, strings.footer1, RectF(textX, bar.top + 50f, textR, bar.top + 74f),
             maxSize = 19f, minSize = 12f, typeface = MEDIUM, color = light, kern = 0f, maxLines = 1)
-        drawFitted(c, GiveawayCardStrings.FOOTER_2, RectF(textX, bar.top + 73f, textR, bar.top + 97f),
+        drawFitted(c, strings.footer2, RectF(textX, bar.top + 73f, textR, bar.top + 97f),
             maxSize = 19f, minSize = 12f, typeface = MEDIUM, color = light, kern = 0f, maxLines = 1)
 
         // Learn-more line in the margin under the bar
-        drawFitted(c, "${GiveawayCardStrings.LEARN_MORE} ${GiveawayCardStrings.WEBSITE}",
+        drawFitted(c, "${strings.learnMore} ${GiveawayCardStrings.WEBSITE}",
             RectF(margin, bar.bottom + 8f, bar.right, bar.bottom + 38f),
             maxSize = 21f, minSize = 13f, typeface = BOLD,
             color = Color.argb(191, Color.red(INK), Color.green(INK), Color.blue(INK)),
@@ -291,7 +292,7 @@ object GiveawayCardRenderer {
             style = Paint.Style.STROKE; strokeWidth = 6f; color = INK
         })
         val inner = RectF(rect.left + 10f, rect.top + 6f, rect.right - 10f, rect.bottom - 6f)
-        drawFitted(c, text, inner, maxSize = 64f, minSize = 40f, typeface = HEAVY, color = Color.WHITE,
+        drawFitted(c, text, inner, maxSize = 64f, minSize = 28f, typeface = HEAVY, color = Color.WHITE,
             kern = 2f, maxLines = 1, centerVertically = true)
         c.restore()
     }
