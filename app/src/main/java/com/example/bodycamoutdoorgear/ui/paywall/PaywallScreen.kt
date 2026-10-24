@@ -70,8 +70,6 @@ private val FEATURES = listOf(
     "Every future update included"
 )
 
-private const val PRIVACY_URL = "https://gogoodmood.com/apps/en/bodycamz/privacy/"
-private const val TERMS_URL   = "https://gogoodmood.com/apps/en/bodycamz/terms/"
 
 private data class PlanLabel(val billing: String, val badge: String?)
 
@@ -253,13 +251,13 @@ fun PaywallScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(com.example.bodycamoutdoorgear.i18n.Tr.privacyUrl)))
                     }) {
                         Text(tr("Privacy Policy"), color = TextSecondary, fontSize = 11.sp)
                     }
                     Text("·", color = BorderColor)
                     TextButton(onClick = {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(TERMS_URL)))
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(com.example.bodycamoutdoorgear.i18n.Tr.termsUrl)))
                     }) {
                         Text(tr("Terms of Use"), color = TextSecondary, fontSize = 11.sp)
                     }

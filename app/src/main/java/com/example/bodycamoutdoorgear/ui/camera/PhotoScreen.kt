@@ -1127,7 +1127,7 @@ fun PhotoScreen(
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.clickable {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/en/bodycamz/privacy/")))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(com.example.bodycamoutdoorgear.i18n.Tr.privacyUrl)))
                         }
                     )
                     Text("  ·  ", color = Color.White.copy(0.25f), fontSize = 11.sp)
@@ -1137,7 +1137,7 @@ fun PhotoScreen(
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.clickable {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/apps/en/bodycamz/terms/")))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(com.example.bodycamoutdoorgear.i18n.Tr.termsUrl)))
                         }
                     )
                 }

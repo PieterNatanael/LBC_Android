@@ -56,6 +56,20 @@ object Tr {
 
     val locale: Locale get() = Locale.forLanguageTag(code)
 
+    /**
+     * The language of the website pages to open: the website has English, Japanese,
+     * German, French, Korean and (simplified) Chinese. Traditional Chinese opens the
+     * Chinese pages and Indonesian opens the English ones.
+     */
+    private val siteLanguage: String get() = when (code) {
+        "zh-Hans", "zh-Hant" -> "zh"
+        "id" -> "en"
+        else -> code
+    }
+
+    val privacyUrl: String get() = "https://gogoodmood.com/apps/$siteLanguage/bodycamz/privacy/"
+    val termsUrl: String get() = "https://gogoodmood.com/apps/$siteLanguage/bodycamz/terms/"
+
     /** Call once at startup, before any text is shown. */
     fun init(context: Context) {
         if (appContext != null) return
