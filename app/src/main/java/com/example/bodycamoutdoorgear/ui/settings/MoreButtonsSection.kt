@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +38,7 @@ import com.example.bodycamoutdoorgear.ui.theme.themedShape
 fun MoreButtonsSection() {
     val accent = chromeAccentOr(Color(0xFFFFD966))
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        SectionLabel("MORE BUTTONS, JUST SWIPE")
+        SectionLabel(tr("MORE BUTTONS, JUST SWIPE"))
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -51,11 +52,11 @@ fun MoreButtonsSection() {
                     .forEach { SampleButton(it, accent) }
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(20.dp))
             }
-            Body("Next to the shutter you'll see two buttons and a small arrow. There are more hiding behind them. Swipe left or right across the buttons, or tap the arrow, and the row turns like a revolver barrel, bringing the next button in and keeping two in view. Keep swiping to go around again.")
+            Body(tr("Next to the shutter you'll see two buttons and a small arrow. There are more hiding behind them. Swipe left or right across the buttons, or tap the arrow, and the row turns like a revolver barrel, bringing the next button in and keeping two in view. Keep swiping to go around again."))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Body("Flash: tap to cycle off, on, auto. On the Video tab it works as a torch that stays lit while you record.")
-                Body("Timer (Photo tab): tap to choose 3 or 10 seconds, then press the shutter and a countdown runs before the photo. Press the shutter again to cancel.")
-                Body("Both go back to off when you leave the tab.")
+                Body(tr("Flash: tap to cycle off, on, auto. On the Video tab it works as a torch that stays lit while you record."))
+                Body(tr("Timer (Photo tab): tap to choose 3 or 10 seconds, then press the shutter and a countdown runs before the photo. Press the shutter again to cancel."))
+                Body(tr("Both go back to off when you leave the tab."))
             }
         }
     }

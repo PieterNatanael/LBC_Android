@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.giveaway
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -225,14 +226,14 @@ fun GiveawayCardSheet(
                             GiveawayVideoPreview(video, includeSound, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)))
                         } else {
                             Box(Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
-                                if (exportFailed) Text("Couldn't make the video card.", color = Color(0xFFFF9980), fontFamily = FontFamily.Monospace, fontSize = 13.sp)
+                                if (exportFailed) Text(tr("Couldn't make the video card."), color = Color(0xFFFF9980), fontFamily = FontFamily.Monospace, fontSize = 13.sp)
                                 else CircularProgressIndicator(color = Color.White)
                             }
                         }
                     } else if (shown != null) {
                         Image(
                             bitmap = shown,
-                            contentDescription = "Giveaway card preview",
+                            contentDescription = tr("Giveaway card preview"),
                             modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
                         )
                     } else {
@@ -241,7 +242,7 @@ fun GiveawayCardSheet(
                         }
                     }
                     if (isVideo) {
-                        SheetButton(if (includeSound) "Sound: on" else "Sound: off", SheetGrey, Color.White, Modifier.fillMaxWidth()) {
+                        SheetButton(if (includeSound) tr("Sound: on") else tr("Sound: off"), SheetGrey, Color.White, Modifier.fillMaxWidth()) {
                             includeSound = !includeSound
                         }
                     }
@@ -254,13 +255,13 @@ fun GiveawayCardSheet(
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         SheetButton(
-                            if (working) "Writing…" else if (before == null) "Fill with AI" else "Try again",
+                            if (working) "Writing…" else if (before == null) tr("Fill with AI") else tr("Try again"),
                             SheetYellow, Color.Black, Modifier.weight(1f), enabled = !working,
                         ) {
                             if (GiveawayAgreement.aiConsented(context)) runFill() else showAiConsent = true
                         }
                         if (before != null && !working) {
-                            SheetButton("Revert", SheetGrey, Color.White) {
+                            SheetButton(tr("Revert"), SheetGrey, Color.White) {
                                 before?.let { content = it }
                                 before = null; aiMessage = null; aiInfo = null
                             }
@@ -273,17 +274,17 @@ fun GiveawayCardSheet(
                         Caption(line, if (aiInfo != null && aiMessage == null) SheetYellow else Color(0xFFFF9980))
                     }
                     if (allSaved) {
-                        Caption("Saved to your Gallery", Color.White.copy(alpha = 0.6f))
+                        Caption(tr("Saved to your Gallery"), Color.White.copy(alpha = 0.6f))
                     } else if (ready) {
-                        Caption("Not saved yet", SheetYellow.copy(alpha = 0.85f))
+                        Caption(tr("Not saved yet"), SheetYellow.copy(alpha = 0.85f))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        SheetButton("Close", SheetGrey, Color.White, Modifier.weight(1f)) { requestClose() }
-                        SheetButton(if (showEditor) "Hide text" else "Edit text", SheetGrey, Color.White, Modifier.weight(1f)) {
+                        SheetButton(tr("Close"), SheetGrey, Color.White, Modifier.weight(1f)) { requestClose() }
+                        SheetButton(if (showEditor) tr("Hide text") else tr("Edit text"), SheetGrey, Color.White, Modifier.weight(1f)) {
                             showEditor = !showEditor
                         }
                         if (allSaved) {
-                            SheetButton("Gallery", SheetYellow, Color.Black, Modifier.weight(1f)) {
+                            SheetButton(tr("Gallery"), SheetYellow, Color.Black, Modifier.weight(1f)) {
                                 finish(discard = false)
                                 // Cards are saved and shared outside LBC from the
                                 // Gallery tab, so this leads there.
@@ -291,7 +292,7 @@ fun GiveawayCardSheet(
                             }
                         } else {
                             SheetButton(
-                                if (savedToGallery) "Save changes" else "Save",
+                                if (savedToGallery) tr("Save changes") else "Save",
                                 SheetYellow, Color.Black, Modifier.weight(1f), enabled = ready,
                             ) { saveNow() }
                         }
@@ -313,26 +314,26 @@ fun GiveawayCardSheet(
     if (showAiConsent) {
         AlertDialog(
             onDismissRequest = { showAiConsent = false },
-            title = { Text("Fill with AI") },
-            text = { Text("This sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it.") },
+            title = { Text(tr("Fill with AI")) },
+            text = { Text(tr("This sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it.")) },
             confirmButton = {
-                TextButton(onClick = { showAiConsent = false; GiveawayAgreement.acceptAI(context); runFill() }) { Text("Continue") }
+                TextButton(onClick = { showAiConsent = false; GiveawayAgreement.acceptAI(context); runFill() }) { Text(tr("Continue")) }
             },
-            dismissButton = { TextButton(onClick = { showAiConsent = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showAiConsent = false }) { Text(tr("Cancel")) } },
         )
     }
 
     if (showCloseConfirm) {
         AlertDialog(
             onDismissRequest = { showCloseConfirm = false },
-            title = { Text("Close without saving?") },
-            text = { Text("This card won't be kept.") },
+            title = { Text(tr("Close without saving?")) },
+            text = { Text(tr("This card won't be kept.")) },
             confirmButton = {
                 TextButton(onClick = { showCloseConfirm = false; finish(discard = true) }) {
-                    Text("Close anyway", color = Color(0xFFE8483B))
+                    Text(tr("Close anyway"), color = Color(0xFFE8483B))
                 }
             },
-            dismissButton = { TextButton(onClick = { showCloseConfirm = false }) { Text("Keep editing") } },
+            dismissButton = { TextButton(onClick = { showCloseConfirm = false }) { Text(tr("Keep editing")) } },
         )
     }
 }
@@ -372,17 +373,17 @@ private fun GiveawayTextEditor(content: GiveawayCardContent, onChange: (Giveaway
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF1A1A1A)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        EditorField("Item", content.itemName, GiveawayCardContent.MAX_NAME) { onChange(content.copy(itemName = it)) }
+        EditorField(tr("Item"), content.itemName, GiveawayCardContent.MAX_NAME) { onChange(content.copy(itemName = it)) }
         for (i in 0 until GiveawayCardContent.MAX_FACTS) {
-            EditorField(if (i == 0) "Facts" else "", content.facts.getOrElse(i) { "" }, GiveawayCardContent.MAX_FACT) { value ->
+            EditorField(if (i == 0) tr("Facts") else "", content.facts.getOrElse(i) { "" }, GiveawayCardContent.MAX_FACT) { value ->
                 val list = content.facts.toMutableList()
                 while (list.size <= i) list.add("")
                 list[i] = value
                 onChange(content.copy(facts = list))
             }
         }
-        EditorField("Comment", content.comment, GiveawayCardContent.MAX_COMMENT) { onChange(content.copy(comment = it)) }
-        EditorField("Note", content.note, GiveawayCardContent.MAX_NOTE) { onChange(content.copy(note = it)) }
+        EditorField(tr("Comment"), content.comment, GiveawayCardContent.MAX_COMMENT) { onChange(content.copy(comment = it)) }
+        EditorField(tr("Note"), content.note, GiveawayCardContent.MAX_NOTE) { onChange(content.copy(note = it)) }
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.giveaway
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,21 +67,21 @@ fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
     ) {
         Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text("Before you give something away", color = Color.White, fontSize = 22.sp,
+                Text(tr("Before you give something away"), color = Color.White, fontSize = 22.sp,
                     fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold)
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Point("•", "You are responsible for what you give away, and for following the laws where you live.")
-                    Point("•", "Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals.")
-                    Point("•", "LBC only makes the card. We don't check items, and we aren't part of any handover.")
-                    Point("•", "Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it.")
-                    Text("See everything that's not allowed", color = LegalYellow, fontSize = 14.sp,
+                    Point("•", tr("You are responsible for what you give away, and for following the laws where you live."))
+                    Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
+                    Point("•", tr("LBC only makes the card. We don't check items, and we aren't part of any handover."))
+                    Point("•", tr("Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it."))
+                    Text(tr("See everything that's not allowed"), color = LegalYellow, fontSize = 14.sp,
                         fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
                         textDecoration = TextDecoration.Underline,
                         modifier = Modifier.clickable { showRules = true })
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LegalButton("I agree", LegalYellow, Color.Black, onAgree)
-                    LegalButton("Not now", LegalGrey, Color.White, onDecline)
+                    LegalButton(tr("I agree"), LegalYellow, Color.Black, onAgree)
+                    LegalButton(tr("Not now"), LegalGrey, Color.White, onDecline)
                 }
             }
         }
@@ -101,18 +102,18 @@ fun GiveawayRulesDialog(onClose: () -> Unit) {
                     Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text("What's not allowed", color = Color.White, fontSize = 22.sp,
+                    Text(tr("What's not allowed"), color = Color.White, fontSize = 22.sp,
                         fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold)
-                    NOT_ALLOWED.forEach { Point("✕", it) }
-                    Text("Good to know", color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
+                    NOT_ALLOWED.forEach { Point("✕", tr(it)) }
+                    Text(tr("Good to know"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
-                    TIPS.forEach { Point("•", it) }
-                    Text("LBC makes the card only. You are responsible for what you give away.",
+                    TIPS.forEach { Point("•", tr(it)) }
+                    Text(tr("LBC makes the card only. You are responsible for what you give away."),
                         color = Color(0xFF8C8C8C), fontSize = 13.sp, fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(top = 10.dp))
                 }
                 Box(Modifier.padding(horizontal = 24.dp).padding(bottom = 16.dp)) {
-                    LegalButton("Close", LegalYellow, Color.Black, onClose)
+                    LegalButton(tr("Close"), LegalYellow, Color.Black, onClose)
                 }
             }
         }
@@ -124,9 +125,9 @@ fun GiveawayRulesDialog(onClose: () -> Unit) {
 fun GiveawayResponsibilityLine() {
     var open by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("You're responsible for what you give away.", color = Color(0xFF808080), fontSize = 11.sp,
+        Text(tr("You're responsible for what you give away."), color = Color(0xFF808080), fontSize = 11.sp,
             fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center)
-        Text("What's not allowed", color = Color(0xFFBFBFBF), fontSize = 11.sp, fontFamily = FontFamily.Monospace,
+        Text(tr("What's not allowed"), color = Color(0xFFBFBFBF), fontSize = 11.sp, fontFamily = FontFamily.Monospace,
             textDecoration = TextDecoration.Underline,
             modifier = Modifier.clickable { open = true }.padding(vertical = 2.dp))
     }

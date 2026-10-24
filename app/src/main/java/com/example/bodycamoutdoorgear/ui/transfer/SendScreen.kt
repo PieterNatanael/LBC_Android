@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.transfer
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
@@ -87,19 +89,19 @@ fun SendScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.hiphop),
-                contentDescription = "HipHop",
+                contentDescription = tr("HipHop"),
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(16.dp))
             )
             Text(
-                "HipHop",
+                tr("HipHop"),
                 color = TextPrimary,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "HipHop transfers files directly between your devices. No internet needed, just WiFi.\nMake sure both devices are on the same WiFi network.\nOn the other device, open LBC, tap HipHop, then scan this code.",
+                tr("HipHop transfers files directly between your devices. No internet needed, just WiFi.\nMake sure both devices are on the same WiFi network.\nOn the other device, open LBC, tap HipHop, then scan this code."),
                 color = TextSecondary,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -117,11 +119,11 @@ fun SendScreen(
             if (showNetworkTip) {
                 AlertDialog(
                     onDismissRequest = { showNetworkTip = false },
-                    title = { Text("Network Tips", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
-                    text = { Text("Home WiFi and personal hotspot work best.\nSome public networks block device-to-device connections. If that happens, use your personal hotspot.", color = TextSecondary, lineHeight = 20.sp) },
+                    title = { Text(tr("Network Tips"), color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+                    text = { Text(tr("Home WiFi and personal hotspot work best.\nSome public networks block device-to-device connections. If that happens, use your personal hotspot."), color = TextSecondary, lineHeight = 20.sp) },
                     confirmButton = {
                         TextButton(onClick = { showNetworkTip = false }) {
-                            Text("Got it", color = TextPrimary)
+                            Text(tr("Got it"), color = TextPrimary)
                         }
                     },
                     containerColor = SurfaceDark
@@ -137,7 +139,7 @@ fun SendScreen(
                 ) {
                     Image(
                         bitmap = qrBitmap.asImageBitmap(),
-                        contentDescription = "QR code",
+                        contentDescription = tr("QR code"),
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -148,13 +150,13 @@ fun SendScreen(
                         .background(SurfaceDark, RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No WiFi network detected", color = TextSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+                    Text(tr("No WiFi network detected"), color = TextSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
                 }
             }
 
             if (ip != null) {
                 Text(
-                    "Your IP: $ip",
+                    trf("Your IP: %s", ip),
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
@@ -162,7 +164,11 @@ fun SendScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "${files.size} ${if (soundMeta.isEmpty()) "file" else "sound"}${if (files.size != 1) "s" else ""} ready to send",
+                    trf(
+                        if (soundMeta.isEmpty()) { if (files.size != 1) "%d files ready to send" else "%d file ready to send" }
+                        else { if (files.size != 1) "%d sounds ready to send" else "%d sound ready to send" },
+                        files.size,
+                    ),
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -170,7 +176,7 @@ fun SendScreen(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                "Waiting for receiver to connect...",
+                tr("Waiting for receiver to connect..."),
                 color = Color.White.copy(0.5f),
                 fontSize = 12.sp
             )
@@ -182,7 +188,7 @@ fun SendScreen(
             onClick = onDismiss,
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = Color.White)
         }
     }
 }

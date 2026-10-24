@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.player
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -137,13 +138,13 @@ fun PhotoViewerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = SimpleDateFormat("MMM d, yyyy  h:mm a", Locale.getDefault()).format(photo.createdAt),
+                text = SimpleDateFormat("MMM d, yyyy  h:mm a", com.example.bodycamoutdoorgear.i18n.Tr.locale).format(photo.createdAt),
                 color = TextSecondary,
                 fontSize = 12.sp,
                 letterSpacing = 0.5.sp
             )
             IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = TextSecondary)
             }
         }
 
@@ -263,7 +264,7 @@ fun PhotoViewerScreen(
             )
         } else if (saveSuccess) {
             Text(
-                text = "Saved to Gallery",
+                text = tr("Saved to Gallery"),
                 color = SuccessGreen,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -304,7 +305,7 @@ fun PhotoViewerScreen(
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(Intent.createChooser(intent, "Share Photo"))
+                        context.startActivity(Intent.createChooser(intent, tr("Share Photo")))
                     }
                 }
             )
@@ -337,16 +338,16 @@ fun PhotoViewerScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Photo?", color = TextPrimary) },
-            text = { Text("This photo will be permanently deleted.", color = TextSecondary) },
+            title = { Text(tr("Delete Photo?"), color = TextPrimary) },
+            text = { Text(tr("This photo will be permanently deleted."), color = TextSecondary) },
             confirmButton = {
                 TextButton(onClick = { showDeleteConfirm = false; onDeleted() }) {
-                    Text("Delete", color = RecordRed)
+                    Text(tr("Delete"), color = RecordRed)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(tr("Cancel"), color = TextSecondary)
                 }
             },
             containerColor = SurfaceDark
@@ -356,10 +357,10 @@ fun PhotoViewerScreen(
     if (showMoveError) {
         AlertDialog(
             onDismissRequest = { showMoveError = false },
-            title = { Text("Couldn't move this photo", color = TextPrimary) },
-            text = { Text("Please try again.", color = TextSecondary) },
+            title = { Text(tr("Couldn't move this photo"), color = TextPrimary) },
+            text = { Text(tr("Please try again."), color = TextSecondary) },
             confirmButton = {
-                Button(onClick = { showMoveError = false }) { Text("OK") }
+                Button(onClick = { showMoveError = false }) { Text(tr("OK")) }
             },
             containerColor = SurfaceDark
         )
@@ -368,10 +369,10 @@ fun PhotoViewerScreen(
     if (saveError != null) {
         AlertDialog(
             onDismissRequest = playerViewModel::clearSaveError,
-            title = { Text("Save Failed", color = TextPrimary) },
+            title = { Text(tr("Save Failed"), color = TextPrimary) },
             text = { Text(saveError ?: "", color = TextSecondary) },
             confirmButton = {
-                Button(onClick = playerViewModel::clearSaveError) { Text("OK") }
+                Button(onClick = playerViewModel::clearSaveError) { Text(tr("OK")) }
             },
             containerColor = SurfaceDark
         )

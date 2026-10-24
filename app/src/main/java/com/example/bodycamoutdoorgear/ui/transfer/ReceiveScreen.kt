@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.transfer
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -83,7 +85,7 @@ fun ReceiveScreen(
     val scope = rememberCoroutineScope()
 
     var hostIp by remember { mutableStateOf<String?>(null) }
-    var status by remember { mutableStateOf("Scan the QR code on the sender's device") }
+    var status by remember { mutableStateOf(tr("Scan the QR code on the sender's device")) }
     var isDownloading by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0f) }
     val receivedFiles = remember { mutableStateListOf<String>() }
@@ -101,18 +103,18 @@ fun ReceiveScreen(
 
     fun connectToIp(ip: String) {
         hostIp = ip
-        status = "Connected to $ip. Ready to receive."
+        status = trf("Connected to %s. Ready to receive.", ip)
         scope.launch {
             isDownloading = true
-            status = "Fetching file list..."
+            status = tr("Fetching file list...")
             val files = TransferClient.listFiles(ip, TRANSFER_PORT)
             if (files.isEmpty()) {
-                status = "No files found. Error: ${TransferClient.lastError.ifEmpty { "empty list" }}"
+                status = trf("No files found. Error: %s", TransferClient.lastError.ifEmpty { tr("empty list") })
                 isDownloading = false
                 return@launch
             }
             val allSounds = files.all { it.isSound }
-            status = if (allSounds) "Adding ${files.size} sound(s)..." else "Downloading ${files.size} file(s)..."
+            status = if (allSounds) trf("Adding %d sound(s)...", files.size) else trf("Downloading %d file(s)...", files.size)
             var done = 0
             var soundsAdded = 0
             files.forEachIndexed { index, file ->
@@ -125,9 +127,9 @@ fun ReceiveScreen(
                     receivedFiles.add(
                         when (result) {
                             ShutterSoundStore.ImportResult.ADDED -> label
-                            ShutterSoundStore.ImportResult.DUPLICATE -> "$label (already added)"
-                            ShutterSoundStore.ImportResult.FULL -> "$label (sound list is full)"
-                            ShutterSoundStore.ImportResult.FAILED -> "$label (failed)"
+                            ShutterSoundStore.ImportResult.DUPLICATE -> trf("%s (already added)", label)
+                            ShutterSoundStore.ImportResult.FULL -> trf("%s (sound list is full)", label)
+                            ShutterSoundStore.ImportResult.FAILED -> trf("%s (failed)", label)
                         }
                     )
                     if (result == ShutterSoundStore.ImportResult.ADDED) soundsAdded++
@@ -149,8 +151,8 @@ fun ReceiveScreen(
             }
             progress = 1f
             isDownloading = false
-            status = if (allSounds) "Done. $soundsAdded sound(s) added. Find them in Settings under Shutter Sound."
-                     else "Done. $done file(s) saved to gallery."
+            status = if (allSounds) trf("Done. %d sound(s) added. Find them in Settings under Shutter Sound.", soundsAdded)
+                     else trf("Done. %d file(s) saved to gallery.", done)
             if (done > 0) onFilesReceived()
         }
     }
@@ -189,21 +191,21 @@ fun ReceiveScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.hiphop),
-                contentDescription = "HipHop",
+                contentDescription = tr("HipHop"),
                 modifier = Modifier
                     .size(120.dp)
                     .clip(RoundedCornerShape(24.dp))
             )
 
             Text(
-                "HipHop",
+                tr("HipHop"),
                 color = TextPrimary,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                "HipHop transfers files directly between your devices. No internet needed, just WiFi.\nMake sure both devices are on the same WiFi network.\nOn the sender's device, open LBC and tap HipHop to show their code, then scan it here.",
+                tr("HipHop transfers files directly between your devices. No internet needed, just WiFi.\nMake sure both devices are on the same WiFi network.\nOn the sender's device, open LBC and tap HipHop to show their code, then scan it here."),
                 color = Color.White.copy(0.4f),
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -221,11 +223,11 @@ fun ReceiveScreen(
             if (showNetworkTip) {
                 AlertDialog(
                     onDismissRequest = { showNetworkTip = false },
-                    title = { Text("Network Tips", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
-                    text = { Text("Home WiFi and personal hotspot work best.\nSome public networks block device-to-device connections. If that happens, use your personal hotspot.", color = TextSecondary, lineHeight = 20.sp) },
+                    title = { Text(tr("Network Tips"), color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+                    text = { Text(tr("Home WiFi and personal hotspot work best.\nSome public networks block device-to-device connections. If that happens, use your personal hotspot."), color = TextSecondary, lineHeight = 20.sp) },
                     confirmButton = {
                         TextButton(onClick = { showNetworkTip = false }) {
-                            Text("Got it", color = TextPrimary)
+                            Text(tr("Got it"), color = TextPrimary)
                         }
                     },
                     containerColor = SurfaceDark
@@ -264,14 +266,14 @@ fun ReceiveScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Scan QR Code", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(tr("Scan QR Code"), fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 if (showManualEntry) {
                     OutlinedTextField(
                         value = manualIp,
                         onValueChange = { manualIp = it },
-                        label = { Text("Sender IP (e.g. 192.168.1.5)") },
+                        label = { Text(tr("Sender IP (e.g. 192.168.1.5)")) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = {
@@ -296,11 +298,11 @@ fun ReceiveScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Connect", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(tr("Connect"), fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 } else {
                     TextButton(onClick = { showManualEntry = true }) {
-                        Text("Enter IP manually", color = Color.White.copy(0.4f), fontSize = 13.sp)
+                        Text(tr("Enter IP manually"), color = Color.White.copy(0.4f), fontSize = 13.sp)
                     }
                 }
             }
@@ -314,7 +316,7 @@ fun ReceiveScreen(
             onClick = onDismiss,
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = Color.White)
         }
     }
 }

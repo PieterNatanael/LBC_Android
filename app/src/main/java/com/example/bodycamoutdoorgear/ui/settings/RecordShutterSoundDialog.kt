@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.Manifest
 import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import android.annotation.SuppressLint
@@ -124,7 +126,7 @@ class ShutterSoundRecorder(private val context: Context) {
         } catch (_: Exception) { null }
         if (record == null || record.state != AudioRecord.STATE_INITIALIZED) {
             record?.release()
-            message = "Could not start the microphone."
+            message = tr("Could not start the microphone.")
             return
         }
         stopRequested = false
@@ -169,7 +171,7 @@ class ShutterSoundRecorder(private val context: Context) {
     private fun finishRecording(floats: FloatArray) {
         if (closed || phase != Phase.RECORDING) return
         if (floats.size < MIN_SAMPLES) {
-            message = "That was too short. Try again."
+            message = tr("That was too short. Try again.")
             phase = Phase.READY
             return
         }
@@ -261,12 +263,12 @@ fun RecordShutterSoundDialog(
     }
 
     fun save() {
-        val finalName = name.trim().ifEmpty { "My sound" }.take(20)
+        val finalName = name.trim().ifEmpty { tr("My sound") }.take(20)
         val finalEmoji = firstGrapheme(emoji.trim()) ?: "🎤"
         try {
             onSaved(ShutterSoundStore.get(context).add(finalName, finalEmoji, rec.selection))
         } catch (_: Exception) {
-            Toast.makeText(context, "Could not save the sound", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, tr("Could not save the sound"), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -285,7 +287,7 @@ fun RecordShutterSoundDialog(
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "RECORD A SOUND",
+                        tr("RECORD A SOUND"),
                         modifier = Modifier.weight(1f),
                         color = Color.White,
                         fontSize = 16.sp,
@@ -294,7 +296,7 @@ fun RecordShutterSoundDialog(
                         letterSpacing = 3.sp
                     )
                     Icon(
-                        Icons.Filled.Close, contentDescription = "Close", tint = Color.White.copy(0.6f),
+                        Icons.Filled.Close, contentDescription = tr("Close"), tint = Color.White.copy(0.6f),
                         modifier = Modifier.size(28.dp).clickable { onDismiss() }
                     )
                 }
@@ -302,10 +304,10 @@ fun RecordShutterSoundDialog(
                 when (rec.phase) {
                     ShutterSoundRecorder.Phase.READY -> {
                         Spacer(Modifier.height(12.dp))
-                        Hint("Record up to ${ShutterSoundRecorder.MAX_RECORD_SECONDS} seconds. You will then pick the best 1.5 seconds of it.")
+                        Hint(trf("Record up to %d seconds. You will then pick the best 1.5 seconds of it.", ShutterSoundRecorder.MAX_RECORD_SECONDS))
                         rec.message?.let { Text(it, color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold) }
                         RoundActionButton(accent, isStop = false) { startWithPermission() }
-                        Label("TAP TO RECORD")
+                        Label(tr("TAP TO RECORD"))
                     }
 
                     ShutterSoundRecorder.Phase.RECORDING -> {
@@ -325,14 +327,14 @@ fun RecordShutterSoundDialog(
                             )
                         }
                         RoundActionButton(accent, isStop = true) { rec.stopRecording() }
-                        Label("TAP TO STOP")
+                        Label(tr("TAP TO STOP"))
                     }
 
                     ShutterSoundRecorder.Phase.TRIMMING -> {
                         val canDrag = rec.samples.size > ShutterSoundClip.maxSamples
                         Hint(
-                            if (canDrag) "Drag to choose the 1.5 seconds you want to keep."
-                            else "Your sound is 1.5 seconds or shorter, so all of it is kept."
+                            if (canDrag) tr("Drag to choose the 1.5 seconds you want to keep.")
+                            else tr("Your sound is 1.5 seconds or shorter, so all of it is kept.")
                         )
                         TrimWaveform(
                             peaks = rec.peaks,
@@ -344,11 +346,11 @@ fun RecordShutterSoundDialog(
                         )
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             PillButton(
-                                if (rec.isPlaying) "STOP" else "PLAY",
+                                if (rec.isPlaying) tr("STOP") else tr("PLAY"),
                                 if (rec.isPlaying) Icons.Filled.Stop else Icons.Filled.PlayArrow,
                                 Modifier.weight(1f)
                             ) { rec.togglePreview() }
-                            PillButton("RE-RECORD", Icons.Filled.Refresh, Modifier.weight(1f)) { rec.recordAgain() }
+                            PillButton(tr("RE-RECORD"), Icons.Filled.Refresh, Modifier.weight(1f)) { rec.recordAgain() }
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedTextField(
@@ -364,7 +366,7 @@ fun RecordShutterSoundDialog(
                                 onValueChange = { if (it.length <= 20) name = it },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
-                                placeholder = { Text("Name", color = Color.White.copy(0.3f), fontFamily = FontFamily.Monospace) },
+                                placeholder = { Text(tr("Name"), color = Color.White.copy(0.3f), fontFamily = FontFamily.Monospace) },
                                 textStyle = TextStyle(fontSize = 14.sp, fontFamily = FontFamily.Monospace),
                                 colors = fieldColors()
                             )
@@ -375,7 +377,7 @@ fun RecordShutterSoundDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "SAVE SOUND", color = accent.readableTextColor(), fontSize = 13.sp,
+                                tr("SAVE SOUND"), color = accent.readableTextColor(), fontSize = 13.sp,
                                 fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp
                             )
                         }
@@ -383,14 +385,14 @@ fun RecordShutterSoundDialog(
 
                     ShutterSoundRecorder.Phase.DENIED -> {
                         Spacer(Modifier.height(12.dp))
-                        Hint("LBC needs microphone access to record a sound. You can allow it in Settings.")
-                        PillButton("OPEN SETTINGS", Icons.Filled.Refresh, Modifier.fillMaxWidth()) {
+                        Hint(tr("LBC needs microphone access to record a sound. You can allow it in Settings."))
+                        PillButton(tr("OPEN SETTINGS"), Icons.Filled.Refresh, Modifier.fillMaxWidth()) {
                             context.startActivity(
                                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             )
                         }
-                        PillButton("TRY AGAIN", Icons.Filled.Refresh, Modifier.fillMaxWidth()) {
+                        PillButton(tr("TRY AGAIN"), Icons.Filled.Refresh, Modifier.fillMaxWidth()) {
                             rec.phase = ShutterSoundRecorder.Phase.READY
                         }
                     }

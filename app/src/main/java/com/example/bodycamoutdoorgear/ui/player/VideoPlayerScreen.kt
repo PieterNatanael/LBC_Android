@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.player
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -164,7 +165,7 @@ fun VideoPlayerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = SimpleDateFormat("MMM d, yyyy  h:mm a", Locale.getDefault()).format(video.createdAt),
+                text = SimpleDateFormat("MMM d, yyyy  h:mm a", com.example.bodycamoutdoorgear.i18n.Tr.locale).format(video.createdAt),
                 color = TextSecondary,
                 fontSize = 12.sp,
                 letterSpacing = 0.5.sp
@@ -177,12 +178,12 @@ fun VideoPlayerScreen(
                 }) {
                     Icon(
                         Icons.Default.Repeat,
-                        contentDescription = "Loop",
+                        contentDescription = tr("Loop"),
                         tint = if (loopEnabled) TextPrimary else TextSecondary
                     )
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                    Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = TextSecondary)
                 }
             }
         }
@@ -266,7 +267,7 @@ fun VideoPlayerScreen(
             )
         } else if (saveSuccess) {
             Text(
-                text = "Saved to Gallery",
+                text = tr("Saved to Gallery"),
                 color = SuccessGreen,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -307,7 +308,7 @@ fun VideoPlayerScreen(
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(Intent.createChooser(intent, "Share Recording"))
+                        context.startActivity(Intent.createChooser(intent, tr("Share Recording")))
                     }
                 }
             )
@@ -340,16 +341,16 @@ fun VideoPlayerScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Recording?", color = TextPrimary) },
-            text = { Text("This recording will be permanently deleted.", color = TextSecondary) },
+            title = { Text(tr("Delete Recording?"), color = TextPrimary) },
+            text = { Text(tr("This recording will be permanently deleted."), color = TextSecondary) },
             confirmButton = {
                 TextButton(onClick = { showDeleteConfirm = false; onDeleted() }) {
-                    Text("Delete", color = RecordRed)
+                    Text(tr("Delete"), color = RecordRed)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(tr("Cancel"), color = TextSecondary)
                 }
             },
             containerColor = SurfaceDark
@@ -359,10 +360,10 @@ fun VideoPlayerScreen(
     if (showMoveError) {
         AlertDialog(
             onDismissRequest = { showMoveError = false },
-            title = { Text("Couldn't move this video", color = TextPrimary) },
-            text = { Text("Please try again.", color = TextSecondary) },
+            title = { Text(tr("Couldn't move this video"), color = TextPrimary) },
+            text = { Text(tr("Please try again."), color = TextSecondary) },
             confirmButton = {
-                Button(onClick = { showMoveError = false }) { Text("OK") }
+                Button(onClick = { showMoveError = false }) { Text(tr("OK")) }
             },
             containerColor = SurfaceDark
         )
@@ -371,10 +372,10 @@ fun VideoPlayerScreen(
     if (saveError != null) {
         AlertDialog(
             onDismissRequest = playerViewModel::clearSaveError,
-            title = { Text("Save Failed", color = TextPrimary) },
+            title = { Text(tr("Save Failed"), color = TextPrimary) },
             text = { Text(saveError ?: "", color = TextSecondary) },
             confirmButton = {
-                Button(onClick = playerViewModel::clearSaveError) { Text("OK") }
+                Button(onClick = playerViewModel::clearSaveError) { Text(tr("OK")) }
             },
             containerColor = SurfaceDark
         )

@@ -32,6 +32,8 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        com.example.bodycamoutdoorgear.i18n.Tr.init(applicationContext)
+
         subscriptionManager = SubscriptionManager(applicationContext)
         subscriptionManager.start()
 

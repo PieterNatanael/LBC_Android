@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.gallery
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -111,8 +113,8 @@ fun PrivateGalleryLockScreen(
     }
 
     val title = when (mode) {
-        PrivateGalleryLockMode.UNLOCK -> "Enter PIN"
-        PrivateGalleryLockMode.SETUP  -> if (setupFirstPin == null) "Create a PIN" else "Confirm PIN"
+        PrivateGalleryLockMode.UNLOCK -> tr("Enter PIN")
+        PrivateGalleryLockMode.SETUP  -> if (setupFirstPin == null) tr("Create a PIN") else tr("Confirm PIN")
     }
 
     fun handleSetupEntry() {
@@ -124,7 +126,7 @@ fun PrivateGalleryLockScreen(
             PrivateGalleryStore.setPin(context, enteredPin)
             onUnlocked()
         } else {
-            errorMessage = "PINs didn't match. Start over."
+            errorMessage = tr("PINs didn't match. Start over.")
             setupFirstPin = null
             enteredPin = ""
         }
@@ -134,7 +136,7 @@ fun PrivateGalleryLockScreen(
         when (val result = PrivateGalleryStore.verify(context, enteredPin)) {
             is PrivateGalleryStore.VerifyResult.Success -> onUnlocked()
             is PrivateGalleryStore.VerifyResult.WrongPin -> {
-                errorMessage = "Wrong PIN"
+                errorMessage = tr("Wrong PIN")
                 enteredPin = ""
             }
             is PrivateGalleryStore.VerifyResult.LockedOut -> {
@@ -161,9 +163,9 @@ fun PrivateGalleryLockScreen(
             != BiometricManager.BIOMETRIC_SUCCESS) return
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Private Gallery")
+            .setTitle(tr("Unlock Private Gallery"))
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
-            .setNegativeButtonText("Use PIN")
+            .setNegativeButtonText(tr("Use PIN"))
             .build()
 
         val prompt = BiometricPrompt(
@@ -211,7 +213,7 @@ fun PrivateGalleryLockScreen(
             Row(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 12.dp, end = 20.dp), horizontalArrangement = Arrangement.End) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = tr("Close"),
                     tint = TextSecondary,
                     modifier = Modifier.size(26.dp).clickable(onClick = onDismiss)
                 )
@@ -229,13 +231,13 @@ fun PrivateGalleryLockScreen(
 
                 if (wipedMessageShown) {
                     Text(
-                        "Private Gallery has been reset after too many wrong attempts. Everything inside it has been deleted.",
+                        tr("Private Gallery has been reset after too many wrong attempts. Everything inside it has been deleted."),
                         color = TextSecondary,
                         fontSize = 13.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     Spacer(Modifier.height(18.dp))
-                    TextButton(onClick = onDismiss) { Text("OK", color = TextPrimary) }
+                    TextButton(onClick = onDismiss) { Text(tr("OK"), color = TextPrimary) }
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                         repeat(4) { index ->
@@ -249,7 +251,7 @@ fun PrivateGalleryLockScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        text = errorMessage ?: if (isLockedOut) "Try again in ${lockoutSecondsRemaining}s" else " ",
+                        text = errorMessage ?: if (isLockedOut) trf("Try again in %ds", lockoutSecondsRemaining) else " ",
                         color = if (errorMessage != null) RecordRed.copy(alpha = 0.8f) else TextSecondary,
                         fontSize = 12.sp
                     )
@@ -287,7 +289,7 @@ fun PrivateGalleryLockScreen(
                                             if (key == "⌫") {
                                                 Icon(
                                                     Icons.AutoMirrored.Filled.Backspace,
-                                                    contentDescription = "Delete",
+                                                    contentDescription = tr("Delete"),
                                                     tint = TextPrimary.copy(alpha = if (isLockedOut) 0.3f else 1f)
                                                 )
                                             } else {
@@ -312,7 +314,7 @@ fun PrivateGalleryLockScreen(
                         // way in unless this is here too.
                         Icon(
                             Icons.Default.Fingerprint,
-                            contentDescription = "Use fingerprint or face unlock",
+                            contentDescription = tr("Use fingerprint or face unlock"),
                             tint = TextSecondary,
                             modifier = Modifier.size(32.dp).clickable { attemptBiometricUnlock() }
                         )

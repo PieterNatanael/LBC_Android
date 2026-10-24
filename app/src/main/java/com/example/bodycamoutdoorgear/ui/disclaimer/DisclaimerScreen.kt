@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.disclaimer
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -114,7 +116,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(14.dp))
 
                 Text(
-                    text = "LBC",
+                    text = tr("LBC"),
                     color = TextPrimary,
                     fontSize = 30.sp,
                     fontFamily = FontFamily.Monospace,
@@ -125,7 +127,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(6.dp))
 
                 Text(
-                    text = "WELCOME",
+                    text = tr("WELCOME"),
                     color = TextSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -135,7 +137,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(18.dp))
 
                 Text(
-                    text = "Here is what the app needs, and why.",
+                    text = tr("Here is what the app needs, and why."),
                     color = TextSecondary,
                     fontSize = 15.sp,
                     textAlign = TextAlign.Center
@@ -150,7 +152,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(24.dp))
 
                 Text(
-                    text = "Everything you record stays on your device. The one exception is the optional Fill with AI button in Giveaway mode: only when you tap it, a small copy of that photo (or 3 video frames) is sent to our server and an AI service to write the card text.",
+                    text = tr("Everything you record stays on your device. The one exception is the optional Fill with AI button in Giveaway mode: only when you tap it, a small copy of that photo (or 3 video frames) is sent to our server and an AI service to write the card text."),
                     color = TextSecondary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -161,7 +163,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(32.dp))
 
                 Text(
-                    text = "BEFORE YOU START",
+                    text = tr("BEFORE YOU START"),
                     color = TextSecondary.copy(alpha = 0.7f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -193,7 +195,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = ButtonFace)
             ) {
                 Text(
-                    text = "I Understand",
+                    text = tr("I Understand"),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -218,7 +220,7 @@ private fun PermissionRow(item: PermissionItem) {
         )
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = item.title,
+                text = tr(item.title),
                 color = TextPrimary,
                 fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace,
@@ -226,7 +228,7 @@ private fun PermissionRow(item: PermissionItem) {
                 letterSpacing = 1.5.sp
             )
             Text(
-                text = item.detail,
+                text = tr(item.detail),
                 color = TextSecondary,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
@@ -249,7 +251,7 @@ private fun DisclaimerRow(item: DisclaimerItem) {
             modifier = Modifier.size(18.dp).padding(top = 2.dp)
         )
         Text(
-            text = item.body,
+            text = tr(item.body),
             color = TextSecondary,
             fontSize = 13.sp,
             lineHeight = 20.sp

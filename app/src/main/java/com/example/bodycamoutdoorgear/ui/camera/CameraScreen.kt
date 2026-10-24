@@ -1,5 +1,9 @@
 package com.example.bodycamoutdoorgear.ui.camera
 
+import com.example.bodycamoutdoorgear.i18n.Tr
+import com.example.bodycamoutdoorgear.i18n.AppLanguage
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.Manifest
 import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import com.example.bodycamoutdoorgear.ui.theme.sideButtonStyle
@@ -388,7 +392,7 @@ fun CameraScreen(
             cameraInfo = camera.cameraInfo
             zoomRatio = 1f
         } catch (e: Exception) {
-            viewModel.setError("Camera error: ${e.message}")
+            viewModel.setError(trf("Camera error: %s", e.message ?: ""))
         }
     }
 
@@ -457,7 +461,7 @@ fun CameraScreen(
     fun startRecording() {
         val vc = videoCapture ?: return
         if (!viewModel.hasEnoughStorage()) {
-            viewModel.setError("Not enough storage. Free up space and try again.")
+            viewModel.setError(tr("Not enough storage. Free up space and try again."))
             return
         }
         val giveawayShot = isGiveaway
@@ -482,7 +486,7 @@ fun CameraScreen(
                             }
                         } else {
                             tmp.delete()
-                            viewModel.setError("Recording failed (error ${event.error})")
+                            viewModel.setError(trf("Recording failed (error %d)", event.error))
                         }
                     }
                     else -> {}
@@ -665,7 +669,7 @@ fun CameraScreen(
                                     onValueChange = { settingsViewModel.setYappingScript(it) },
                                     placeholder = {
                                         Text(
-                                            "Type or paste your script here…",
+                                            tr("Type or paste your script here…"),
                                             color = Color.White.copy(0.35f),
                                             fontSize = 18.sp
                                         )
@@ -694,7 +698,7 @@ fun CameraScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        "PASTE",
+                                        tr("PASTE"),
                                         color = Color.White,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
@@ -709,7 +713,7 @@ fun CameraScreen(
                                             .padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
                                     Text(
-                                        "CLEAR",
+                                        tr("CLEAR"),
                                         color = Color.White,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
@@ -831,7 +835,7 @@ fun CameraScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Cameraswitch,
-                                    contentDescription = "Flip camera",
+                                    contentDescription = tr("Flip camera"),
                                     tint = if (isRecording) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
@@ -845,7 +849,7 @@ fun CameraScreen(
                             ) {
                                 Icon(
                                     Icons.Default.DarkMode,
-                                    contentDescription = "Dim screen",
+                                    contentDescription = tr("Dim screen"),
                                     tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
@@ -894,7 +898,7 @@ fun CameraScreen(
                         ) {
                             Icon(
                                 Icons.Default.Settings,
-                                contentDescription = "Settings",
+                                contentDescription = tr("Settings"),
                                 tint = if (isAlt) accentColor else Color.White,
                                 modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                             )
@@ -965,9 +969,9 @@ fun CameraScreen(
     if (recordingError != null) {
         AlertDialog(
             onDismissRequest = viewModel::clearError,
-            title = { Text("Recording Error", color = TextPrimary) },
+            title = { Text(tr("Recording Error"), color = TextPrimary) },
             text  = { Text(recordingError ?: "", color = TextSecondary) },
-            confirmButton = { Button(onClick = viewModel::clearError) { Text("OK") } },
+            confirmButton = { Button(onClick = viewModel::clearError) { Text(tr("OK")) } },
             containerColor = SurfaceDark
         )
     }
@@ -997,7 +1001,7 @@ fun CameraScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "SETTINGS",
+                    tr("SETTINGS"),
                     color = Color.White.copy(0.5f),
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1005,7 +1009,7 @@ fun CameraScreen(
                     letterSpacing = 3.sp
                 )
                 IconButton(onClick = { showSettings = false }) {
-                    Icon(Icons.Default.Close, contentDescription = "Close settings", tint = Color.White.copy(0.7f))
+                    Icon(Icons.Default.Close, contentDescription = tr("Close settings"), tint = Color.White.copy(0.7f))
                 }
             }
             Column(
@@ -1019,7 +1023,7 @@ fun CameraScreen(
 
                 // Appearance
                 Text(
-                    "APPEARANCE",
+                    tr("APPEARANCE"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1042,7 +1046,44 @@ fun CameraScreen(
                                         .padding(vertical = 10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(mode.label, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Text(tr(mode.label), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Language: follows the phone unless one is picked here
+                Text(
+                    tr("LANGUAGE"),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppLanguage.entries.chunked(3).forEach { rowLanguages ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            rowLanguages.forEach { language ->
+                                val languageSelected = language == Tr.selected
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(themedShape(6.dp))
+                                        .background(if (languageSelected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                        .border(1.dp, if (languageSelected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
+                                        .clickable { Tr.select(language) }
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        // Each language is written in its own script, never translated.
+                                        if (language == AppLanguage.SYSTEM) tr("System") else language.nativeName,
+                                        color = if (languageSelected) chromeAccentOr(Color.White) else Color.White.copy(0.4f),
+                                        fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2
+                                    )
                                 }
                             }
                         }
@@ -1051,7 +1092,7 @@ fun CameraScreen(
 
                 // Display Mode
                 Text(
-                    "DISPLAY MODE",
+                    tr("DISPLAY MODE"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1072,15 +1113,15 @@ fun CameraScreen(
                                 .padding(vertical = 10.dp, horizontal = 12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(mode.title, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.5f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                            Text(mode.subtitle, color = Color.White.copy(0.4f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Text(tr(mode.title), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.5f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tr(mode.subtitle), color = Color.White.copy(0.4f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         }
                     }
                 }
 
                 // Video Quality
                 Text(
-                    "VIDEO QUALITY",
+                    tr("VIDEO QUALITY"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1103,14 +1144,14 @@ fun CameraScreen(
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tr(tier.shortLabel), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
 
                 // Photo Quality
                 Text(
-                    "PHOTO QUALITY",
+                    tr("PHOTO QUALITY"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1133,7 +1174,7 @@ fun CameraScreen(
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tr(tier.shortLabel), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -1146,7 +1187,7 @@ fun CameraScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("GRID", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(tr("GRID"), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     androidx.compose.material3.Switch(
                         checked = gridEnabled,
                         onCheckedChange = { settingsViewModel.toggleGrid() }
@@ -1159,7 +1200,7 @@ fun CameraScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(tr("TIMESTAMP"), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     androidx.compose.material3.Switch(
                         checked = stampTimestamp,
                         onCheckedChange = { settingsViewModel.toggleStampTimestamp() }
@@ -1173,7 +1214,7 @@ fun CameraScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("GALLERY DATE", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(tr("GALLERY DATE"), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     androidx.compose.material3.Switch(
                         checked = showGalleryTimestamp,
                         onCheckedChange = { settingsViewModel.toggleGalleryTimestamp() }
@@ -1182,7 +1223,7 @@ fun CameraScreen(
 
                 // Gallery columns
                 Text(
-                    "GALLERY COLUMNS",
+                    tr("GALLERY COLUMNS"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1235,7 +1276,7 @@ fun CameraScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "VIEW INTRO AGAIN",
+                        tr("VIEW INTRO AGAIN"),
                         color = Color.White.copy(0.6f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1266,7 +1307,7 @@ fun CameraScreen(
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Check Out Our Other Apps",
+                            tr("Check Out Our Other Apps"),
                             color = Color.White,
                             fontSize = 13.sp,
                             fontFamily = FontFamily.Monospace,
@@ -1274,7 +1315,7 @@ fun CameraScreen(
                             letterSpacing = 0.5.sp
                         )
                         Text(
-                            "More Tools by LBC",
+                            tr("More Tools by LBC"),
                             color = Color.White.copy(0.55f),
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace
@@ -1295,7 +1336,7 @@ fun CameraScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Privacy Policy",
+                        tr("Privacy Policy"),
                         color = Color.White.copy(0.4f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1305,7 +1346,7 @@ fun CameraScreen(
                     )
                     Text("  ·  ", color = Color.White.copy(0.25f), fontSize = 11.sp)
                     Text(
-                        "Terms of Use",
+                        tr("Terms of Use"),
                         color = Color.White.copy(0.4f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1470,7 +1511,7 @@ private fun PreviewToggleButton(isOn: Boolean, onClick: () -> Unit) {
             modifier = Modifier.size(15.dp)
         )
         Text(
-            text = if (isOn) "PREVIEW ON" else "PREVIEW OFF",
+            text = if (isOn) tr("PREVIEW ON") else tr("PREVIEW OFF"),
             color = if (isOn) Color.White.copy(0.8f) else Color.White.copy(0.4f),
             fontSize = 10.sp,
             fontFamily = FontFamily.Monospace,
@@ -1543,7 +1584,7 @@ private fun DimScreenButton(isDimmed: Boolean, onToggle: () -> Unit, modifier: M
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                if (isDimmed) "SCREEN DIMMED" else "DIM SCREEN",
+                if (isDimmed) tr("SCREEN DIMMED") else tr("DIM SCREEN"),
                 color = if (isDimmed) Color.White.copy(0.3f) else Color.White.copy(0.7f),
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
@@ -1551,7 +1592,7 @@ private fun DimScreenButton(isDimmed: Boolean, onToggle: () -> Unit, modifier: M
                 letterSpacing = 1.sp
             )
             Text(
-                "saves battery for long recordings",
+                tr("saves battery for long recordings"),
                 color = if (isDimmed) Color.White.copy(0.25f) else Color.White.copy(0.38f),
                 fontSize = 9.sp,
                 fontFamily = FontFamily.Monospace
@@ -1605,12 +1646,12 @@ internal fun SubtleProChip(onClick: () -> Unit) {
     ) {
         Icon(
             Icons.Default.Lock,
-            contentDescription = "Upgrade to Pro",
+            contentDescription = tr("Upgrade to Pro"),
             tint = CompassGold.copy(alpha = 0.7f),
             modifier = Modifier.size(10.dp)
         )
         Text(
-            "PRO",
+            tr("PRO"),
             color = CompassGold.copy(alpha = 0.7f),
             fontSize = 10.sp,
             fontFamily = FontFamily.Monospace,
@@ -1722,14 +1763,14 @@ fun SpiderWebCorners() {
 private fun PermissionRequest(onRequest: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Camera & Microphone Access Required", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(tr("Camera & Microphone Access Required"), color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
-            Text("Low Battery Camera needs camera and microphone permissions to record.", color = TextSecondary, fontSize = 13.sp)
+            Text(tr("Low Battery Camera needs camera and microphone permissions to record."), color = TextSecondary, fontSize = 13.sp)
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = onRequest,
                 colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = ButtonFace)
-            ) { Text("Grant Permissions", letterSpacing = 1.sp) }
+            ) { Text(tr("Grant Permissions"), letterSpacing = 1.sp) }
         }
     }
 }

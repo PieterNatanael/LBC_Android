@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.viewmodel
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.app.Application
 import android.content.ContentValues
 import android.media.MediaMetadataRetriever
@@ -79,7 +80,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 delay(2000)
                 _saveSuccess.value = false
             } else {
-                _saveError.value = "Failed to save video to gallery"
+                _saveError.value = tr("Failed to save video to gallery")
             }
         }
     }
@@ -122,7 +123,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 delay(2000)
                 _saveSuccess.value = false
             } else {
-                _saveError.value = "Failed to save photo to gallery"
+                _saveError.value = tr("Failed to save photo to gallery")
             }
         }
     }

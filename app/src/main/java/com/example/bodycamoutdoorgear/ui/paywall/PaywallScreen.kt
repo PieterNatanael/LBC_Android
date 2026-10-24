@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.paywall
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -111,7 +113,7 @@ fun PaywallScreen(
                 // Close button
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                        Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = TextSecondary)
                     }
                 }
 
@@ -129,7 +131,7 @@ fun PaywallScreen(
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "LOW BATTERY CAMERA PRO",
+                    text = tr("LOW BATTERY CAMERA PRO"),
                     color = TextPrimary,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
@@ -138,7 +140,7 @@ fun PaywallScreen(
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "Unlock the full app",
+                    text = tr("Unlock the full app"),
                     color = TextSecondary,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
@@ -156,7 +158,7 @@ fun PaywallScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, tint = CompassGold, modifier = Modifier.size(18.dp))
-                        Text(feature, color = TextPrimary, fontSize = 14.sp)
+                        Text(tr(feature), color = TextPrimary, fontSize = 14.sp)
                     }
                     Spacer(Modifier.height(10.dp))
                 }
@@ -196,7 +198,7 @@ fun PaywallScreen(
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = ButtonFace)
                     } else {
-                        Text("SUBSCRIBE", fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                        Text(tr("SUBSCRIBE"), fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     }
                 }
 
@@ -207,10 +209,10 @@ fun PaywallScreen(
                     ?.firstOrNull()?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
                 Text(
                     text = buildString {
-                        if (selectedPrice != null) append("$selectedPrice/month. ")
-                        append("Payment charged to your Google Play account at purchase confirmation. ")
-                        append("Subscription auto-renews monthly unless cancelled at least 24 hours before the renewal date. ")
-                        append("Manage or cancel anytime in Google Play settings.")
+                        if (selectedPrice != null) append(trf("%s/month. ", selectedPrice))
+                        append(tr("Payment charged to your Google Play account at purchase confirmation. "))
+                        append(tr("Subscription auto-renews monthly unless cancelled at least 24 hours before the renewal date. "))
+                        append(tr("Manage or cancel anytime in Google Play settings."))
                     },
                     color = TextSecondary,
                     fontSize = 11.sp,
@@ -221,7 +223,7 @@ fun PaywallScreen(
                 Spacer(Modifier.height(10.dp))
 
                 TextButton(onClick = subscriptionManager::restorePurchases) {
-                    Text("Restore Purchases", color = TextSecondary, fontSize = 13.sp)
+                    Text(tr("Restore Purchases"), color = TextSecondary, fontSize = 13.sp)
                 }
 
                 if (errorMessage != null) {
@@ -232,7 +234,7 @@ fun PaywallScreen(
                 if (isGrandfathered) {
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "Bought Low Battery Camera before April 2026? Your full access is restored automatically. No action needed.",
+                        text = tr("Bought Low Battery Camera before April 2026? Your full access is restored automatically. No action needed."),
                         color = CompassGold,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
@@ -253,18 +255,18 @@ fun PaywallScreen(
                     TextButton(onClick = {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
                     }) {
-                        Text("Privacy Policy", color = TextSecondary, fontSize = 11.sp)
+                        Text(tr("Privacy Policy"), color = TextSecondary, fontSize = 11.sp)
                     }
                     Text("·", color = BorderColor)
                     TextButton(onClick = {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(TERMS_URL)))
                     }) {
-                        Text("Terms of Use", color = TextSecondary, fontSize = 11.sp)
+                        Text(tr("Terms of Use"), color = TextSecondary, fontSize = 11.sp)
                     }
                 }
 
                 Text(
-                    text = "Low Battery Camera (LBC)",
+                    text = tr("Low Battery Camera (LBC)"),
                     color = TextSecondary.copy(alpha = 0.5f),
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -323,7 +325,7 @@ private fun PlanRow(
                     // "BEST VALUE" badge
                     if (planLabel?.badge != null) {
                         Text(
-                            text = planLabel.badge,
+                            text = tr(planLabel.badge),
                             color = CompassGold,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
@@ -336,7 +338,7 @@ private fun PlanRow(
                 }
                 if (planLabel?.billing != null) {
                     Text(
-                        text = planLabel.billing,
+                        text = tr(planLabel.billing),
                         color = TextSecondary,
                         fontSize = 11.sp
                     )

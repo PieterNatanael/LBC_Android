@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.transfer
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.graphics.ImageFormat
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -125,7 +126,7 @@ fun QrScannerScreen(
 
         // Hint label below viewfinder
         Text(
-            text = "Point your camera at the QR code",
+            text = tr("Point your camera at the QR code"),
             color = Color.White.copy(alpha = 0.8f),
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
@@ -139,7 +140,7 @@ fun QrScannerScreen(
             onClick = onDismiss,
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = Color.White)
         }
     }
 }

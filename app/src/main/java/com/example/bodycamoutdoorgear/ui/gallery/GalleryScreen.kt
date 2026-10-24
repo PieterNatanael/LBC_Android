@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.gallery
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.content.Intent
 import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import android.net.Uri
@@ -228,7 +230,7 @@ fun GalleryScreen(
                         modifier = Modifier.clickable { if (!isSelectMode) infoExpanded = !infoExpanded }
                     ) {
                         Text(
-                            text       = if (isPrivateGallery) "Private" else "Gallery",
+                            text       = if (isPrivateGallery) tr("Private") else tr("Gallery"),
                             color      = Color.White,
                             fontSize   = 22.sp,
                             fontWeight = FontWeight.Bold,
@@ -244,11 +246,11 @@ fun GalleryScreen(
                     Spacer(Modifier.weight(1f))
                     if (isSelectMode) {
                         if (selectedPaths.isNotEmpty()) {
-                            Text("${selectedPaths.size} selected", color = Color.White.copy(0.7f), fontSize = 13.sp)
+                            Text(trf("%d selected", selectedPaths.size), color = Color.White.copy(0.7f), fontSize = 13.sp)
                             Spacer(Modifier.width(12.dp))
                         }
                         Text(
-                            "Cancel",
+                            tr("Cancel"),
                             color = Color.White,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
@@ -266,7 +268,7 @@ fun GalleryScreen(
                                 verticalPadding = 4.dp
                             )
                             Text(
-                                "Select",
+                                tr("Select"),
                                 color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
@@ -289,7 +291,7 @@ fun GalleryScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
-                                Text("${videos.size} files", color = Color.White.copy(0.65f), fontSize = 11.sp)
+                                Text(trf("%d files", videos.size), color = Color.White.copy(0.65f), fontSize = 11.sp)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Icon(Icons.Default.Folder, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
@@ -328,7 +330,7 @@ fun GalleryScreen(
                                 )
                             }
                             Text(
-                                if (isPrivateGallery) "GALLERY" else "PRIVATE",
+                                if (isPrivateGallery) tr("GALLERY") else tr("PRIVATE"),
                                 color = Color.White.copy(0.65f),
                                 // Bigger specifically for "GALLERY" — the
                                 // only way back out of Private, so it earns
@@ -383,7 +385,7 @@ fun GalleryScreen(
 
             // Disclaimer
             if (SHOW_DATA_LOSS_FOOTER) Text(
-                text       = "Photos and videos may be lost due to bugs or device issues.\nBack up important footage.",
+                text       = tr("Photos and videos may be lost due to bugs or device issues.\nBack up important footage."),
                 color      = Color.White.copy(alpha = 0.8f),
                 fontSize   = 7.7.sp,
                 textAlign  = androidx.compose.ui.text.style.TextAlign.Center,
@@ -427,7 +429,7 @@ fun GalleryScreen(
             ) {
                 SelectActionButton(
                     icon = Icons.Default.IosShare,
-                    label = "Share",
+                    label = tr("Share"),
                     enabled = selectedPaths.isNotEmpty(),
                     onClick = {
                         if (!isUnlocked) {
@@ -445,13 +447,13 @@ fun GalleryScreen(
                                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share"))
+                            context.startActivity(Intent.createChooser(intent, tr("Share")))
                         }
                     }
                 )
                 SelectActionButton(
                     icon = Icons.Default.Wifi,
-                    label = "HipHop",
+                    label = tr("HipHop"),
                     enabled = selectedPaths.isNotEmpty(),
                     onClick = { showSendScreen = true }
                 )
@@ -461,7 +463,7 @@ fun GalleryScreen(
                 // proving the PIN, only opening Private to look at it does).
                 SelectActionButton(
                     icon = if (isPrivateGallery) Icons.Default.LockOpen else Icons.Default.Lock,
-                    label = if (isPrivateGallery) "Gallery" else "Private",
+                    label = if (isPrivateGallery) tr("Gallery") else tr("Private"),
                     enabled = selectedPaths.isNotEmpty(),
                     onClick = {
                         var failures = 0
@@ -484,7 +486,7 @@ fun GalleryScreen(
                 )
                 SelectActionButton(
                     icon = Icons.Default.Delete,
-                    label = "Delete",
+                    label = tr("Delete"),
                     enabled = selectedPaths.isNotEmpty(),
                     activeColor = RecordRed,
                     onClick = { showDeleteConfirm = true }
@@ -498,8 +500,8 @@ fun GalleryScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete ${selectedPaths.size} item${if (selectedPaths.size > 1) "s" else ""}?", color = TextPrimary) },
-            text = { Text("This cannot be undone.", color = TextSecondary) },
+            title = { Text(if (selectedPaths.size > 1) trf("Delete %d items?", selectedPaths.size) else trf("Delete %d item?", selectedPaths.size), color = TextPrimary) },
+            text = { Text(tr("This cannot be undone."), color = TextSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -509,10 +511,10 @@ fun GalleryScreen(
                         videos.find { it.file.absolutePath == path }
                             ?.let { galleryViewModel.deleteVideo(it) }
                     }
-                }) { Text("Delete", color = RecordRed) }
+                }) { Text(tr("Delete"), color = RecordRed) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel", color = TextSecondary) }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text(tr("Cancel"), color = TextSecondary) }
             },
             containerColor = SurfaceDark
         )
@@ -521,10 +523,10 @@ fun GalleryScreen(
     if (showBulkMoveError) {
         AlertDialog(
             onDismissRequest = { showBulkMoveError = false },
-            title = { Text("Some files couldn't be moved", color = TextPrimary) },
-            text = { Text("$bulkMoveFailureCount of the selected files could not be moved. The rest moved successfully.", color = TextSecondary) },
+            title = { Text(tr("Some files couldn't be moved"), color = TextPrimary) },
+            text = { Text(trf("%d of the selected files could not be moved. The rest moved successfully.", bulkMoveFailureCount), color = TextSecondary) },
             confirmButton = {
-                TextButton(onClick = { showBulkMoveError = false }) { Text("OK", color = TextPrimary) }
+                TextButton(onClick = { showBulkMoveError = false }) { Text(tr("OK"), color = TextPrimary) }
             },
             containerColor = SurfaceDark
         )
@@ -546,7 +548,7 @@ fun GalleryScreen(
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(32.dp))
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Importing $current of $total",
+                    trf("Importing %d of %d", current, total),
                     color = Color.White,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
@@ -560,20 +562,20 @@ fun GalleryScreen(
         AlertDialog(
             onDismissRequest = { galleryViewModel.dismissImportProblems() },
             title = {
-                Text(if (result.noSpace > 0) "Not Enough Storage" else "Import", color = TextPrimary)
+                Text(if (result.noSpace > 0) tr("Not Enough Storage") else tr("Import"), color = TextPrimary)
             },
             text = {
                 Text(
                     if (result.noSpace > 0)
-                        "${result.imported} imported. The rest need more free space. Free up storage and try again."
+                        trf("%d imported. The rest need more free space. Free up storage and try again.", result.imported)
                     else
-                        "${result.imported} imported, ${result.failed} couldn't be imported.",
+                        trf("%d imported, %d couldn't be imported.", result.imported, result.failed),
                     color = TextSecondary
                 )
             },
             confirmButton = {
                 TextButton(onClick = { galleryViewModel.dismissImportProblems() }) {
-                    Text("OK", color = TextPrimary)
+                    Text(tr("OK"), color = TextPrimary)
                 }
             },
             containerColor = SurfaceDark
@@ -725,13 +727,13 @@ private fun SortRow(selected: GallerySort, onSelect: (GallerySort) -> Unit) {
             modifier = Modifier.clickable { expanded = true }
         ) {
             Icon(Icons.Default.SwapVert, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
-            Text(selected.label, color = Color.White.copy(0.65f), fontSize = 11.sp)
+            Text(tr(selected.label), color = Color.White.copy(0.65f), fontSize = 11.sp)
             Icon(Icons.Default.ExpandMore, contentDescription = null, tint = Color.White.copy(0.5f), modifier = Modifier.size(13.dp))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             GallerySort.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option.label) },
+                    text = { Text(tr(option.label)) },
                     // The checkmark only marks the current choice.
                     trailingIcon = {
                         if (option == selected) Icon(Icons.Default.Check, contentDescription = null)
@@ -764,7 +766,7 @@ private fun ImportMenuChip(
                 .clickable { expanded = true }
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding)
         ) {
-            Text("Import", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(tr("Import"), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Icon(
                 imageVector = Icons.Default.ExpandMore,
                 contentDescription = null,
@@ -774,12 +776,12 @@ private fun ImportMenuChip(
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text("From Photos") },
+                text = { Text(tr("From Photos")) },
                 leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
                 onClick = { expanded = false; onFromPhotos() }
             )
             DropdownMenuItem(
-                text = { Text("HipHop") },
+                text = { Text(tr("HipHop")) },
                 leadingIcon = { Icon(Icons.Default.Wifi, contentDescription = null) },
                 onClick = { expanded = false; onHipHop() }
             )
@@ -808,20 +810,20 @@ private fun EmptyGallery(
                 // No icon here either, matching the same cross-link in the
                 // dropdown above — a plain, unremarkable "back to Gallery"
                 // label.
-                Text("GALLERY", color = Color.White.copy(0.7f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(tr("GALLERY"), color = Color.White.copy(0.7f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = if (isPrivateGallery) "Nothing here yet" else "No recordings yet",
+                text = if (isPrivateGallery) tr("Nothing here yet") else tr("No recordings yet"),
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = if (isPrivateGallery) "Use \"Set as Private\" on a photo or video to move it here"
-                       else "Recordings will appear here",
+                text = if (isPrivateGallery) tr("Use \"Set as Private\" on a photo or video to move it here")
+                       else tr("Recordings will appear here"),
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 13.sp,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center

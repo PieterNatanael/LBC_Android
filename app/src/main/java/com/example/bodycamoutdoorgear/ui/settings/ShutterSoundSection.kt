@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.background
 import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import com.example.bodycamoutdoorgear.ui.theme.chromeAccentOr
@@ -65,7 +66,7 @@ fun ShutterSoundSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            "SHUTTER SOUND",
+            tr("SHUTTER SOUND"),
             color = chromeAccentOr(Color.White.copy(0.4f)),
             fontSize = 10.sp,
             fontFamily = FontFamily.Monospace,
@@ -91,7 +92,7 @@ fun ShutterSoundSection(
                 Text(sound.emoji, fontSize = 18.sp)
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    sound.name,
+                    tr(sound.name),
                     modifier = Modifier.weight(1f),
                     color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.5f),
                     fontSize = 12.sp,
@@ -100,12 +101,12 @@ fun ShutterSoundSection(
                     letterSpacing = 1.sp
                 )
                 if (selected) {
-                    Icon(Icons.Filled.Check, contentDescription = "Selected", tint = chromeAccentOr(Color.White), modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Check, contentDescription = tr("Selected"), tint = chromeAccentOr(Color.White), modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(12.dp))
                 }
                 Icon(
                     Icons.Filled.PlayArrow,
-                    contentDescription = "Preview",
+                    contentDescription = tr("Preview"),
                     tint = Color.White.copy(0.6f),
                     modifier = Modifier
                         .size(22.dp)
@@ -117,7 +118,7 @@ fun ShutterSoundSection(
                     Box {
                         Icon(
                             Icons.Filled.MoreVert,
-                            contentDescription = "More",
+                            contentDescription = tr("More"),
                             tint = Color.White.copy(0.6f),
                             modifier = Modifier
                                 .size(22.dp)
@@ -129,11 +130,11 @@ fun ShutterSoundSection(
                             containerColor = SurfaceDark
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Share via HipHop", color = Color.White) },
+                                text = { Text(tr("Share via HipHop"), color = Color.White) },
                                 onClick = { menuOpen = false; onShare(sound) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete", color = Color.White) },
+                                text = { Text(tr("Delete"), color = Color.White) },
                                 onClick = { menuOpen = false; onDelete(sound) }
                             )
                         }
@@ -155,7 +156,7 @@ fun ShutterSoundSection(
                 Icon(Icons.Filled.Mic, contentDescription = null, tint = accent.readableTextColor(), modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "RECORD YOUR OWN",
+                    tr("RECORD YOUR OWN"),
                     color = accent.readableTextColor(),
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
@@ -165,7 +166,7 @@ fun ShutterSoundSection(
             }
         }
         Text(
-            "Plays at your media volume.",
+            tr("Plays at your media volume."),
             color = Color.White.copy(0.3f),
             fontSize = 9.sp,
             fontFamily = FontFamily.Monospace
@@ -229,17 +230,17 @@ fun ShutterSoundSettings(settingsViewModel: SettingsViewModel, accent: Color) {
             containerColor = SurfaceDark,
             titleContentColor = Color.White,
             textContentColor = Color.White.copy(0.7f),
-            title = { Text("Delete this sound?") },
-            text = { Text("This cannot be undone.") },
+            title = { Text(tr("Delete this sound?")) },
+            text = { Text(tr("This cannot be undone.")) },
             confirmButton = {
                 TextButton(onClick = {
                     if (selectedId == sound.id) settingsViewModel.setShutterSound(ShutterSound.CAT.id)
                     store.remove(sound)
                     toDelete = null
-                }) { Text("Delete", color = Color.White) }
+                }) { Text(tr("Delete"), color = Color.White) }
             },
             dismissButton = {
-                TextButton(onClick = { toDelete = null }) { Text("Cancel", color = Color.White.copy(0.7f)) }
+                TextButton(onClick = { toDelete = null }) { Text(tr("Cancel"), color = Color.White.copy(0.7f)) }
             }
         )
     }

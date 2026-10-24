@@ -1,5 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
+import com.example.bodycamoutdoorgear.i18n.trf
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -67,15 +69,15 @@ fun AppUpdateSection() {
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        SectionLabel("APP UPDATE")
+        SectionLabel(tr("APP UPDATE"))
         Column(
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (versionName != null) HelperText("Installed version $versionName.")
+            if (versionName != null) HelperText(trf("Installed version %s.", versionName))
             when (val s = state) {
                 UpdateState.Idle, UpdateState.UpToDate, UpdateState.Failed, UpdateState.Checking -> {
-                    SettingsRowButton(if (s == UpdateState.Checking) "CHECKING…" else "CHECK FOR UPDATES") {
+                    SettingsRowButton(if (s == UpdateState.Checking) tr("CHECKING…") else tr("CHECK FOR UPDATES")) {
                         if (s == UpdateState.Checking) return@SettingsRowButton
                         state = UpdateState.Checking
                         scope.launch {
@@ -90,17 +92,17 @@ fun AppUpdateSection() {
                         }
                     }
                     when (s) {
-                        UpdateState.UpToDate -> HelperText("You're on the newest version.")
+                        UpdateState.UpToDate -> HelperText(tr("You're on the newest version."))
                         UpdateState.Failed -> {
-                            HelperText("Couldn't check from here. This works for installs from Google Play; you can also open the Play Store page directly.")
-                            SettingsRowButton("OPEN IN PLAY STORE") { openPlayStore() }
+                            HelperText(tr("Couldn't check from here. This works for installs from Google Play; you can also open the Play Store page directly."))
+                            SettingsRowButton(tr("OPEN IN PLAY STORE")) { openPlayStore() }
                         }
                         else -> {}
                     }
                 }
                 is UpdateState.Available -> {
-                    HelperText("A new version is available.")
-                    SettingsRowButton("UPDATE NOW") {
+                    HelperText(tr("A new version is available."))
+                    SettingsRowButton(tr("UPDATE NOW")) {
                         try {
                             manager.startUpdateFlowForResult(
                                 s.info,

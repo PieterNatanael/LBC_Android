@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.camera
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
@@ -142,7 +143,7 @@ fun ButtonRing(
         ) {
             Icon(
                 Icons.Default.ChevronRight,
-                contentDescription = "More buttons",
+                contentDescription = tr("More buttons"),
                 tint = if (isAlt) accentColor else Color.White.copy(0.6f),
                 modifier = Modifier.size(20.dp),
             )
@@ -174,7 +175,7 @@ fun FlashRingButton(
                 2 -> Icons.Default.FlashAuto
                 else -> Icons.Default.FlashOn
             },
-            contentDescription = "Flash",
+            contentDescription = tr("Flash"),
             tint = if (lit) Color(0xFFFFD966) else if (isAlt) accentColor else Color.White,
             modifier = Modifier.size(if (isAlt) 26.dp else 22.dp),
         )
@@ -211,7 +212,7 @@ fun TimerRingButton(
         } else {
             Icon(
                 Icons.Default.Timer,
-                contentDescription = "Timer",
+                contentDescription = tr("Timer"),
                 tint = if (isAlt) accentColor else Color.White,
                 modifier = Modifier.size(if (isAlt) 26.dp else 22.dp),
             )

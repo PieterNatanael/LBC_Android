@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.background
 import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import com.example.bodycamoutdoorgear.ui.theme.chromeAccentOr
@@ -80,18 +81,18 @@ fun PrivateGallerySettingsSection() {
     var showResetConfirm by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        SectionLabel("PRIVATE GALLERY")
+        SectionLabel(tr("PRIVATE GALLERY"))
         Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
             if (isActive) {
-                HelperText("Active. Open it from the dropdown under the Gallery tab's title.")
-                SettingsRowButton("CHANGE PIN") { flow = PrivateGallerySettingsFlow.VerifyForChangePin }
-                SettingsRowButton("TURN OFF PRIVATE GALLERY") { flow = PrivateGallerySettingsFlow.VerifyForDeactivate }
-                HelperText("Moves any private photos and videos back into the normal gallery. Nothing is deleted.")
-                SettingsRowButton("FORGOT PIN? RESET PRIVATE GALLERY", destructive = true) { showResetConfirm = true }
-                HelperText("Permanently deletes every private photo and video. There is no other way to recover a forgotten PIN, by design.")
+                HelperText(tr("Active. Open it from the dropdown under the Gallery tab's title."))
+                SettingsRowButton(tr("CHANGE PIN")) { flow = PrivateGallerySettingsFlow.VerifyForChangePin }
+                SettingsRowButton(tr("TURN OFF PRIVATE GALLERY")) { flow = PrivateGallerySettingsFlow.VerifyForDeactivate }
+                HelperText(tr("Moves any private photos and videos back into the normal gallery. Nothing is deleted."))
+                SettingsRowButton(tr("FORGOT PIN? RESET PRIVATE GALLERY"), destructive = true) { showResetConfirm = true }
+                HelperText(tr("Permanently deletes every private photo and video. There is no other way to recover a forgotten PIN, by design."))
             } else {
-                HelperText("Not set up. \"Set as Private\" still works. Set up a PIN to actually open and view what's moved here.")
-                SettingsRowButton("SET UP PRIVATE GALLERY") { flow = PrivateGallerySettingsFlow.SetUp }
+                HelperText(tr("Not set up. \"Set as Private\" still works. Set up a PIN to actually open and view what's moved here."))
+                SettingsRowButton(tr("SET UP PRIVATE GALLERY")) { flow = PrivateGallerySettingsFlow.SetUp }
             }
         }
     }
@@ -137,10 +138,10 @@ fun PrivateGallerySettingsSection() {
     if (showResetConfirm) {
         AlertDialog(
             onDismissRequest = { showResetConfirm = false },
-            title = { Text("Reset Private Gallery?", color = Color.White) },
+            title = { Text(tr("Reset Private Gallery?"), color = Color.White) },
             text = {
                 Text(
-                    "This permanently deletes every private photo and video and turns Private Gallery off. This cannot be undone.",
+                    tr("This permanently deletes every private photo and video and turns Private Gallery off. This cannot be undone."),
                     color = Color.White.copy(0.7f)
                 )
             },
@@ -149,10 +150,10 @@ fun PrivateGallerySettingsSection() {
                     PrivateGalleryStore.wipe(context)
                     isActive = false
                     showResetConfirm = false
-                }) { Text("Delete Everything", color = RecordRed) }
+                }) { Text(tr("Delete Everything"), color = RecordRed) }
             },
             dismissButton = {
-                TextButton(onClick = { showResetConfirm = false }) { Text("Cancel", color = Color.White.copy(0.6f)) }
+                TextButton(onClick = { showResetConfirm = false }) { Text(tr("Cancel"), color = Color.White.copy(0.6f)) }
             },
             containerColor = SurfaceDark
         )

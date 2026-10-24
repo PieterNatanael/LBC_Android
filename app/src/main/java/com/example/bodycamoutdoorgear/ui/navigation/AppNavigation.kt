@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.navigation
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -366,12 +367,12 @@ private fun PillTab(
         ) {
             Icon(
                 imageVector        = screen.icon,
-                contentDescription = screen.label,
+                contentDescription = tr(screen.label),
                 tint               = contentColor,
                 modifier           = Modifier.size(27.dp)
             )
             Text(
-                text          = screen.label,
+                text          = tr(screen.label),
                 fontSize      = 9.sp,
                 lineHeight    = 9.sp,
                 fontWeight    = FontWeight.Bold,

@@ -1,5 +1,8 @@
 package com.example.bodycamoutdoorgear.ui.camera
 
+import com.example.bodycamoutdoorgear.i18n.Tr
+import com.example.bodycamoutdoorgear.i18n.AppLanguage
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.Manifest
 import com.example.bodycamoutdoorgear.ui.theme.themedShape
 import com.example.bodycamoutdoorgear.ui.theme.sideButtonStyle
@@ -734,7 +737,7 @@ fun PhotoScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Cameraswitch,
-                                    contentDescription = "Flip camera",
+                                    contentDescription = tr("Flip camera"),
                                     tint = if (isCapturing) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
@@ -748,7 +751,7 @@ fun PhotoScreen(
                             ) {
                                 Icon(
                                     Icons.Default.DarkMode,
-                                    contentDescription = "Dim screen",
+                                    contentDescription = tr("Dim screen"),
                                     tint = if (isScreenDimmed) accentColor.copy(0.3f) else if (isAlt) accentColor else Color.White,
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
@@ -804,7 +807,7 @@ fun PhotoScreen(
                         ) {
                             Icon(
                                 Icons.Default.Settings,
-                                contentDescription = "Settings",
+                                contentDescription = tr("Settings"),
                                 tint = if (isAlt) accentColor else Color.White,
                                 modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                             )
@@ -874,7 +877,7 @@ fun PhotoScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "SETTINGS",
+                    tr("SETTINGS"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -882,7 +885,7 @@ fun PhotoScreen(
                     letterSpacing = 3.sp
                 )
                 IconButton(onClick = { showSettings = false }) {
-                    Icon(Icons.Default.Close, contentDescription = "Close settings", tint = Color.White.copy(0.7f))
+                    Icon(Icons.Default.Close, contentDescription = tr("Close settings"), tint = Color.White.copy(0.7f))
                 }
             }
             Column(
@@ -895,7 +898,7 @@ fun PhotoScreen(
             ) {
 
                 // Appearance
-                Text("APPEARANCE", color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                Text(tr("APPEARANCE"), color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
                 val allModes = AppearanceMode.entries
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(allModes.take(3), allModes.drop(3)).forEach { rowModes ->
@@ -912,7 +915,44 @@ fun PhotoScreen(
                                         .padding(vertical = 10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(mode.label, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Text(tr(mode.label), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Language: follows the phone unless one is picked here
+                Text(
+                    tr("LANGUAGE"),
+                    color = chromeAccentOr(Color.White.copy(0.4f)),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppLanguage.entries.chunked(3).forEach { rowLanguages ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            rowLanguages.forEach { language ->
+                                val languageSelected = language == Tr.selected
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(themedShape(6.dp))
+                                        .background(if (languageSelected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
+                                        .border(1.dp, if (languageSelected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
+                                        .clickable { Tr.select(language) }
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        // Each language is written in its own script, never translated.
+                                        if (language == AppLanguage.SYSTEM) tr("System") else language.nativeName,
+                                        color = if (languageSelected) chromeAccentOr(Color.White) else Color.White.copy(0.4f),
+                                        fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2
+                                    )
                                 }
                             }
                         }
@@ -921,7 +961,7 @@ fun PhotoScreen(
 
                 // Display Mode
                 Text(
-                    "DISPLAY MODE",
+                    tr("DISPLAY MODE"),
                     color = chromeAccentOr(Color.White.copy(0.4f)),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
@@ -942,14 +982,14 @@ fun PhotoScreen(
                                 .padding(vertical = 10.dp, horizontal = 12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(mode.title, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.5f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                            Text(mode.subtitle, color = Color.White.copy(0.4f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Text(tr(mode.title), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.5f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tr(mode.subtitle), color = Color.White.copy(0.4f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         }
                     }
                 }
 
                 // Video Quality
-                Text("VIDEO QUALITY", color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text(tr("VIDEO QUALITY"), color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QualityTier.entries.forEach { tier ->
                         val selected = tier == videoQualityTier
@@ -963,13 +1003,13 @@ fun PhotoScreen(
                                 .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tr(tier.shortLabel), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
 
                 // Photo Quality
-                Text("PHOTO QUALITY", color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text(tr("PHOTO QUALITY"), color = chromeAccentOr(Color.White.copy(0.4f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QualityTier.entries.forEach { tier ->
                         val selected = tier == qualityTier
@@ -983,7 +1023,7 @@ fun PhotoScreen(
                                 .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(tier.shortLabel, color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(tr(tier.shortLabel), color = if (selected) chromeAccentOr(Color.White) else Color.White.copy(0.4f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -996,7 +1036,7 @@ fun PhotoScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("GRID", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(tr("GRID"), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Switch(
                         checked = gridEnabled,
                         onCheckedChange = { settingsViewModel.toggleGrid() }
@@ -1009,7 +1049,7 @@ fun PhotoScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("TIMESTAMP", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(tr("TIMESTAMP"), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Switch(
                         checked = stampTimestamp,
                         onCheckedChange = { settingsViewModel.toggleStampTimestamp() }
@@ -1023,7 +1063,7 @@ fun PhotoScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("GALLERY DATE", color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(tr("GALLERY DATE"), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Switch(
                         checked = showGalleryTimestamp,
                         onCheckedChange = { settingsViewModel.toggleGalleryTimestamp() }
@@ -1054,7 +1094,7 @@ fun PhotoScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "VIEW INTRO AGAIN",
+                        tr("VIEW INTRO AGAIN"),
                         color = Color.White.copy(0.6f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1065,7 +1105,7 @@ fun PhotoScreen(
 
                 // Also from us
                 Text(
-                    "Our Apps",
+                    tr("Our Apps"),
                     color = Color.White.copy(0.5f),
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1081,7 +1121,7 @@ fun PhotoScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Privacy Policy",
+                        tr("Privacy Policy"),
                         color = Color.White.copy(0.4f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1091,7 +1131,7 @@ fun PhotoScreen(
                     )
                     Text("  ·  ", color = Color.White.copy(0.25f), fontSize = 11.sp)
                     Text(
-                        "Terms of Use",
+                        tr("Terms of Use"),
                         color = Color.White.copy(0.4f),
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1173,7 +1213,7 @@ fun KnurledShutterButton(isCapturing: Boolean, onClick: () -> Unit, size: Dp = 1
             ) {
                 Icon(
                     Icons.Default.CameraAlt,
-                    contentDescription = "Take photo",
+                    contentDescription = tr("Take photo"),
                     tint = if (isCapturing) Color.White.copy(0.4f) else Color(0xFF1A1A1A),
                     modifier = Modifier.size(28.dp)
                 )
@@ -1202,7 +1242,7 @@ fun GradientShutterButton(isCapturing: Boolean, onClick: () -> Unit, gradientBru
         ) {
             Icon(
                 Icons.Default.CameraAlt,
-                contentDescription = "Take photo",
+                contentDescription = tr("Take photo"),
                 tint = if (isCapturing) Color.Black.copy(0.3f) else Color.Black,
                 modifier = Modifier.size(size * 0.35f)
             )
@@ -1230,7 +1270,7 @@ fun BauhausShutterButton(isCapturing: Boolean, onClick: () -> Unit, accentColor:
         ) {
             Icon(
                 Icons.Default.CameraAlt,
-                contentDescription = "Take photo",
+                contentDescription = tr("Take photo"),
                 tint = if (isCapturing) Color.Black.copy(0.3f) else Color.Black,
                 modifier = Modifier.size(size * 0.32f)
             )
@@ -1281,7 +1321,7 @@ private fun PhotoPreviewToggleButton(isOn: Boolean, onClick: () -> Unit) {
             modifier = Modifier.size(15.dp)
         )
         Text(
-            text = if (isOn) "PREVIEW ON" else "PREVIEW OFF",
+            text = if (isOn) tr("PREVIEW ON") else tr("PREVIEW OFF"),
             color = if (isOn) Color.White.copy(0.8f) else Color.White.copy(0.4f),
             fontSize = 10.sp,
             fontFamily = FontFamily.Monospace,
@@ -1317,7 +1357,7 @@ private fun PhotoDimScreenButton(isDimmed: Boolean, onToggle: () -> Unit) {
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                if (isDimmed) "SCREEN DIMMED" else "DIM SCREEN",
+                if (isDimmed) tr("SCREEN DIMMED") else tr("DIM SCREEN"),
                 color = if (isDimmed) Color.White.copy(0.3f) else Color.White.copy(0.7f),
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
@@ -1325,7 +1365,7 @@ private fun PhotoDimScreenButton(isDimmed: Boolean, onToggle: () -> Unit) {
                 letterSpacing = 1.sp
             )
             Text(
-                "saves battery",
+                tr("saves battery"),
                 color = if (isDimmed) Color.White.copy(0.25f) else Color.White.copy(0.38f),
                 fontSize = 9.sp,
                 fontFamily = FontFamily.Monospace
@@ -1370,14 +1410,14 @@ private fun PhotoDimOverlay(onWake: () -> Unit) {
 private fun PhotoPermissionRequest(onRequest: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Camera Access Required", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(tr("Camera Access Required"), color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
-            Text("Camera permission is needed to take photos.", color = TextSecondary, fontSize = 13.sp)
+            Text(tr("Camera permission is needed to take photos."), color = TextSecondary, fontSize = 13.sp)
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = onRequest,
                 colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = ButtonFace)
-            ) { Text("Grant Permission", letterSpacing = 1.sp) }
+            ) { Text(tr("Grant Permission"), letterSpacing = 1.sp) }
         }
     }
 }

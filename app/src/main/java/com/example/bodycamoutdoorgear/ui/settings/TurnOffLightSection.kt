@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.settings
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +35,7 @@ import com.example.bodycamoutdoorgear.ui.theme.themedShape
 fun TurnOffLightSection() {
     val accent = chromeAccentOr(Color(0xFFFFD966))
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        SectionLabel("TURN OFF THE LIGHT!")
+        SectionLabel(tr("TURN OFF THE LIGHT!"))
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -51,7 +52,7 @@ fun TurnOffLightSection() {
                     Icon(Icons.Default.DarkMode, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
                 }
                 Text(
-                    "The moon button next to the shutter",
+                    tr("The moon button next to the shutter"),
                     color = Color.White.copy(0.8f),
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
@@ -59,7 +60,7 @@ fun TurnOffLightSection() {
                 )
             }
             Text(
-                "Turn Off the Light! lets you keep recording without keeping your whole screen awake. Tap the moon and the screen goes dark while the camera keeps working; tap the screen to wake it.",
+                tr("Turn Off the Light! lets you keep recording without keeping your whole screen awake. Tap the moon and the screen goes dark while the camera keeps working; tap the screen to wake it."),
                 color = Color.White.copy(0.55f),
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace
@@ -67,7 +68,7 @@ fun TurnOffLightSection() {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.PanTool, contentDescription = null, tint = Color.White.copy(0.6f), modifier = Modifier.size(14.dp).padding(top = 2.dp))
                 Text(
-                    "Please be mindful of people's privacy. Ask for permission before recording someone.",
+                    tr("Please be mindful of people's privacy. Ask for permission before recording someone."),
                     color = Color.White.copy(0.75f),
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,

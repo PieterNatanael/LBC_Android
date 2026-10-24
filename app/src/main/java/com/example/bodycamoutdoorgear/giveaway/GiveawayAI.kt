@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.giveaway
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
@@ -21,10 +22,13 @@ import java.util.UUID
 import kotlin.math.max
 
 /** Why "Fill with AI" didn't produce text. None of these blocks the card. */
-enum class GiveawayAIError(val message: String) {
+enum class GiveawayAIError(private val english: String) {
     OFFLINE("No internet. You can still write your own text."),
     MONTHLY_LIMIT("You've used this month's AI cards. Back next month. You can still write your own text."),
-    UNAVAILABLE("AI isn't available right now. You can still write your own text."),
+    UNAVAILABLE("AI isn't available right now. You can still write your own text.");
+
+    /** In the app's language at the moment it is shown. */
+    val message: String get() = tr(english)
 }
 
 /** What "Fill with AI" came back with. */
@@ -151,7 +155,7 @@ object GiveawayAIService {
                     }
                     "no_card" -> Result.success(
                         GiveawayAIOutcome.Refused(
-                            reply.text("message").ifEmpty { "Sorry, this can't be given away here." }, remaining))
+                            reply.text("message").ifEmpty { tr("Sorry, this can't be given away here.") }, remaining))
                     else -> Result.failure(AIException(GiveawayAIError.UNAVAILABLE))
                 }
             } catch (_: UnknownHostException) {

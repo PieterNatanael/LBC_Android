@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.ui.gallery
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -156,14 +157,14 @@ fun VideoThumbnailCard(
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(video.createdAt),
+                    text = SimpleDateFormat("MMM d, yyyy", com.example.bodycamoutdoorgear.i18n.Tr.locale).format(video.createdAt),
                     color = TextPrimary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(video.createdAt),
+                    text = SimpleDateFormat("h:mm a", com.example.bodycamoutdoorgear.i18n.Tr.locale).format(video.createdAt),
                     color = TextSecondary,
                     fontSize = 11.sp
                 )
@@ -178,7 +179,7 @@ fun VideoThumbnailCard(
                 modifier = Modifier.background(SurfaceDark)
             ) {
                 DropdownMenuItem(
-                    text = { Text("Delete", color = RecordRed) },
+                    text = { Text(tr("Delete"), color = RecordRed) },
                     leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = RecordRed) },
                     onClick = {
                         showMenu = false

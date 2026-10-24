@@ -1,5 +1,6 @@
 package com.example.bodycamoutdoorgear.manager
 
+import com.example.bodycamoutdoorgear.i18n.tr
 import android.app.Activity
 import android.content.Context
 import android.os.Build
@@ -143,7 +144,7 @@ class SubscriptionManager(private val context: Context) {
     fun purchase(activity: Activity, productDetails: ProductDetails) {
         val offerToken = productDetails.subscriptionOfferDetails
             ?.firstOrNull()?.offerToken ?: run {
-            _errorMessage.value = "Offer not available. Try again."
+            _errorMessage.value = tr("Offer not available. Try again.")
             return
         }
         val productDetailsParams = listOf(
