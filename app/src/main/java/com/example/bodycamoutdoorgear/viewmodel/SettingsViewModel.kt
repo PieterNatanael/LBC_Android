@@ -15,7 +15,18 @@ enum class AppearanceMode(val label: String) { NORMAL("NORMAL"), SIMPLE("SIMPLE"
 // Stored by position (see SettingsViewModel), so new modes go at the END. GIVEAWAY
 // is shown first in the pickers, but must not come first here: that would shift
 // every existing user's saved mode onto a different one.
-enum class DisplayMode(val label: String) { SAVE_BATTERY("SAVE BAT."), NORMAL("NORMAL"), CIRCLE("CIRCLE"), YAPPING("YAP"), GIVEAWAY("GIVEAWAY") }
+enum class DisplayMode(val label: String, val title: String, val subtitle: String) {
+    SAVE_BATTERY("SAVE BAT.", "SAVE BATTERY", "Compact preview, lower power use"),
+    NORMAL("NORMAL", "NORMAL", "Full screen preview, uses more battery"),
+    CIRCLE("CIRCLE", "CIRCLE", "Compact round preview, lower power use"),
+    YAPPING("YAP", "YAPPING", "Script on screen, preview shrinks to a movable corner"),
+    GIVEAWAY("GIVEAWAY", "GIVEAWAY", "Photo of something you don't need, as a shareable card");
+
+    companion object {
+        /** The order the settings list shows them in: Giveaway first. */
+        val pickerOrder: List<DisplayMode> = listOf(GIVEAWAY) + entries.filter { it != GIVEAWAY }
+    }
+}
 
 /**
  * How the gallery grid is ordered. Recently added is the default: it puts
