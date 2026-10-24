@@ -86,7 +86,7 @@
  "Enter IP manually": "IP 직접 입력",
  "Enter PIN": "PIN 입력",
  "Every future update included": "앞으로의 모든 업데이트 포함",
- "Everything you record stays on your device. The one exception is the optional Fill with AI button in Giveaway mode: only when you tap it, a small copy of that photo (or 3 video frames) is sent to our server and an AI service to write the card text.": "녹화한 모든 내용은 기기에만 저장됩니다. 유일한 예외는 Giveaway 모드의 선택 사항인 'Fill with AI' 버튼입니다. 이 버튼을 누를 때만 해당 사진의 작은 복사본(또는 동영상 프레임 3개)이 카드 문구를 작성하기 위해 당사 서버와 AI 서비스로 전송됩니다.",
+ "Everything you record stays on your device. The one exception is the optional Fill with AI button: only when you tap it, a small copy of that photo (or a few frames from your video) is sent to our server and an AI service to write the card text.": "녹화한 모든 내용은 기기에만 저장됩니다. 유일한 예외는 선택 사항인 'Fill with AI' 버튼입니다. 이 버튼을 누를 때만 해당 사진의 작은 복사본(또는 동영상에서 가져온 몇 개의 프레임)이 카드 문구를 작성하기 위해 당사 서버와 AI 서비스로 전송됩니다.",
  "FOR SALE": "판매",
  "FOR SALE MODE": "판매 모드",
  "FORGOT PIN? RESET PRIVATE GALLERY": "PIN을 잊으셨나요? 비공개 갤러리 초기화",

@@ -86,7 +86,7 @@
  "Enter IP manually": "手动输入 IP",
  "Enter PIN": "输入 PIN 码",
  "Every future update included": "包含今后所有更新",
- "Everything you record stays on your device. The one exception is the optional Fill with AI button in Giveaway mode: only when you tap it, a small copy of that photo (or 3 video frames) is sent to our server and an AI service to write the card text.": "你录制的所有内容都保存在你的设备上。唯一的例外是 Giveaway 模式中可选的“Fill with AI”按钮：只有当你点按它时，该照片的小型副本（或 3 帧视频画面）才会被发送到我们的服务器和 AI 服务，用来撰写卡片文字。",
+ "Everything you record stays on your device. The one exception is the optional Fill with AI button: only when you tap it, a small copy of that photo (or a few frames from your video) is sent to our server and an AI service to write the card text.": "你录制的所有内容都保存在你的设备上。唯一的例外是可选的“Fill with AI”按钮：只有当你点按它时，该照片的小型副本（或视频中的几帧画面）才会被发送到我们的服务器和 AI 服务，用来撰写卡片文字。",
  "FOR SALE": "出售",
  "FOR SALE MODE": "出售模式",
  "FORGOT PIN? RESET PRIVATE GALLERY": "忘记 PIN 码？重置私密相册",

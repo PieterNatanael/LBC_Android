@@ -86,7 +86,7 @@
  "Enter IP manually": "IPを手動で入力",
  "Enter PIN": "PINを入力",
  "Every future update included": "今後のアップデートもすべて含まれます",
- "Everything you record stays on your device. The one exception is the optional Fill with AI button in Giveaway mode: only when you tap it, a small copy of that photo (or 3 video frames) is sent to our server and an AI service to write the card text.": "録画した内容はすべて端末内に保存されます。唯一の例外は、Giveawayモードの任意の「Fill with AI」ボタンです。このボタンをタップしたときだけ、その写真の小さなコピー(または動画の3フレーム)が、カードの文章を作成するために当社のサーバーとAIサービスに送信されます。",
+ "Everything you record stays on your device. The one exception is the optional Fill with AI button: only when you tap it, a small copy of that photo (or a few frames from your video) is sent to our server and an AI service to write the card text.": "録画した内容はすべて端末内に保存されます。唯一の例外は、任意の「Fill with AI」ボタンです。このボタンをタップしたときだけ、その写真の小さなコピー(または動画の数フレーム)が、カードの文章を作成するために当社のサーバーとAIサービスに送信されます。",
  "FOR SALE": "販売",
  "FOR SALE MODE": "販売モード",
  "FORGOT PIN? RESET PRIVATE GALLERY": "PINを忘れた場合：プライベートギャラリーをリセット",

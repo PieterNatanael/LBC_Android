@@ -151,7 +151,7 @@ fun DisclaimerScreen(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(24.dp))
 
                 Text(
-                    text = tr("Everything you record stays on your device. The one exception is the optional Fill with AI button in Giveaway mode: only when you tap it, a small copy of that photo (or 3 video frames) is sent to our server and an AI service to write the card text."),
+                    text = tr("Everything you record stays on your device. The one exception is the optional Fill with AI button: only when you tap it, a small copy of that photo (or a few frames from your video) is sent to our server and an AI service to write the card text."),
                     color = TextSecondary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
