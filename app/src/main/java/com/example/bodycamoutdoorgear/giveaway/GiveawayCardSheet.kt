@@ -255,7 +255,7 @@ fun GiveawayCardSheet(
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         SheetButton(
-                            if (working) "Writing…" else if (before == null) tr("Fill with AI") else tr("Try again"),
+                            if (working) tr("Writing…") else if (before == null) tr("Fill with AI") else tr("Try again"),
                             SheetYellow, Color.Black, Modifier.weight(1f), enabled = !working,
                         ) {
                             if (GiveawayAgreement.aiConsented(context)) runFill() else showAiConsent = true
@@ -292,7 +292,7 @@ fun GiveawayCardSheet(
                             }
                         } else {
                             SheetButton(
-                                if (savedToGallery) tr("Save changes") else "Save",
+                                if (savedToGallery) tr("Save changes") else tr("Save"),
                                 SheetYellow, Color.Black, Modifier.weight(1f), enabled = ready,
                             ) { saveNow() }
                         }

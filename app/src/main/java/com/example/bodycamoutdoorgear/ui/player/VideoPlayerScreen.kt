@@ -260,7 +260,7 @@ fun VideoPlayerScreen(
         // Save status
         if (isSaving) {
             Text(
-                text = "Saving...",
+                text = tr("Saving..."),
                 color = TextSecondary,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 16.dp)

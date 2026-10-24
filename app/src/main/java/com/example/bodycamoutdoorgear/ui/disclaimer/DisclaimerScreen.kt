@@ -65,8 +65,7 @@ private val PERMISSIONS = listOf(
     PermissionItem(Icons.Default.Mic, "MICROPHONE",
         "To record sound along with your videos."),
     PermissionItem(Icons.Default.PhotoLibrary, "PHOTOS",
-        "Only used when you choose to save a photo or video to your gallery. " +
-            "Importing uses the system picker, so LBC sees only what you select."),
+        "Only used when you choose to save a photo or video to your gallery. Importing uses the system picker, so LBC sees only what you select."),
     PermissionItem(Icons.Default.Wifi, "WI-FI",
         "Only used to send files between your devices with HipHop.")
 )

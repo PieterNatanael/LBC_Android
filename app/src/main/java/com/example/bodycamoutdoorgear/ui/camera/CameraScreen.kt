@@ -1064,12 +1064,13 @@ fun CameraScreen(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppLanguage.entries.chunked(3).forEach { rowLanguages ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             rowLanguages.forEach { language ->
                                 val languageSelected = language == Tr.selected
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .fillMaxHeight()
                                         .clip(themedShape(6.dp))
                                         .background(if (languageSelected) chromeAccentOr(Color.White).copy(0.25f) else Color.White.copy(0.1f))
                                         .border(1.dp, if (languageSelected) chromeAccentOr(Color.White).copy(0.5f) else Color.White.copy(0.2f), themedShape(6.dp))
