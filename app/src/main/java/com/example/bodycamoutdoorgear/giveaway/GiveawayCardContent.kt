@@ -82,6 +82,7 @@ data class GiveawayCardStrings(
         fun forLanguage(code: String): GiveawayCardStrings = when (code) {
             "de" -> GERMAN
             "id" -> INDONESIAN
+            "fil" -> TAGLISH
             "ja" -> JAPANESE
             "fr" -> FRENCH
             "ko" -> KOREAN
@@ -107,6 +108,12 @@ data class GiveawayCardStrings(
             madeBy = "Dibuat dengan LBC", footer1 = "Dapatkan LBC (Low Battery Camera)", footer2 = "di App Store dan Google Play",
             learnMore = "Info lengkap dan tips keamanan:", shotLive = "Difoto langsung dengan LBC",
             saleHeader = "DIJUAL", saleContact = "Tertarik? Hubungi aku!", priceDefault = "Hubungi untuk harga",
+        )
+        private val TAGLISH = GiveawayCardStrings(
+            header = "GIVEAWAY", free = "FREE", contact = "Gusto mo? I-message mo ako!", says = "SABI NG LBC",
+            madeBy = "Gawa ng LBC", footer1 = "Kunin ang LBC (Low Battery Camera)", footer2 = "sa App Store at Google Play",
+            learnMore = "Alamin pa at safety tips:", shotLive = "Kuha live gamit ang LBC",
+            saleHeader = "FOR SALE", saleContact = "Interesado? I-message mo ako!", priceDefault = "I-message para sa presyo",
         )
         private val JAPANESE = GiveawayCardStrings(
             header = "お譲りします", free = "無料", contact = "ほしい方はご連絡ください！", says = "LBCのひとこと",
@@ -159,6 +166,7 @@ data class GiveawayCardWords(
         fun forLanguage(code: String): GiveawayCardWords = when (code) {
             "de" -> GERMAN
             "id" -> INDONESIAN
+            "fil" -> TAGLISH
             "ja" -> JAPANESE
             "fr" -> FRENCH
             "ko" -> KOREAN
@@ -228,6 +236,27 @@ data class GiveawayCardWords(
                 "Tinggal menunggu pemilik baru.",
                 "Siap berpindah tangan.",
                 "Hubungi aku untuk melihatnya langsung.",
+            ),
+        )
+        private val TAGLISH = GiveawayCardWords(
+            "Libreng gamit", "Tanungin mo ako para sa detalye",
+            listOf(
+                "Luma sa akin, bago para sa'yo.", "Sayang naman kung itatapon.", "Marami pa itong magagawa.",
+                "Oras na para maghanap ng bagong bahay.", "Ang sobra sa isa, kayamanan ng iba.",
+                "Libre, at puno pa ng kuwento.", "Ang magagandang bagay, deserve ng second life.",
+                "May nangangailangan nito, sigurado.", "Mystery item! Magtanong muna bago kunin.",
+            ),
+            "Binebenta",
+            listOf(
+                "Naghahanap ng bagong owner.",
+                "Handa na sa susunod na adventure.",
+                "Oras na para maghanap ng bagong tahanan.",
+                "May naghahanap nito, sigurado.",
+                "Magtanong ka lang tungkol dito.",
+                "Ang magagandang bagay, napupunta sa tamang owner.",
+                "Bagong owner na lang ang kulang.",
+                "Handa nang lumipat ng kamay.",
+                "I-message mo ako para makita mo ito nang personal.",
             ),
         )
         private val JAPANESE = GiveawayCardWords(

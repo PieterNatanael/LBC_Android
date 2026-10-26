@@ -24,6 +24,7 @@ enum class AppLanguage(val code: String?, val nativeName: String) {
     KOREAN("ko", "한국어"),
     CHINESE_TRADITIONAL("zh-Hant", "繁體中文"),
     INDONESIAN("id", "Bahasa Indonesia"),
+    TAGLISH("fil", "Taglish"),
 }
 
 /**
@@ -59,11 +60,11 @@ object Tr {
     /**
      * The language of the website pages to open: the website has English, Japanese,
      * German, French, Korean and (simplified) Chinese. Traditional Chinese opens the
-     * Chinese pages and Indonesian opens the English ones.
+     * Chinese pages, and Indonesian and Taglish open the English ones.
      */
     private val siteLanguage: String get() = when (code) {
         "zh-Hans", "zh-Hant" -> "zh"
-        "id" -> "en"
+        "id", "fil" -> "en"
         else -> code
     }
 
@@ -103,6 +104,8 @@ object Tr {
             if (id.contains("hant") || id.endsWith("-tw") || id.endsWith("-hk") || id.endsWith("-mo")) return "zh-Hant"
             return "zh-Hans"
         }
+        // Filipino is "fil" (or the older "tl"): three letters, so it is checked before the two-letter cut below.
+        if (id.startsWith("fil") || id.startsWith("tl")) return "fil"
         // Android still reports Indonesian as "in" on some versions.
         val base = if (id.startsWith("in")) "id" else id.take(2)
         return AppLanguage.entries.firstOrNull { it.code == base }?.code ?: "en"
