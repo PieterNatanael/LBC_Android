@@ -54,23 +54,98 @@ sealed class CardStyle {
 data class SaleCurrency(val code: String, val symbol: String, val dotGrouping: Boolean = false) {
     companion object {
         val all = listOf(
-            SaleCurrency("IDR", "Rp", true), SaleCurrency("USD", "$"), SaleCurrency("EUR", "€", true),
-            SaleCurrency("GBP", "£"), SaleCurrency("JPY", "¥"), SaleCurrency("KRW", "₩"), SaleCurrency("CNY", "¥"),
-            SaleCurrency("TWD", "NT$"), SaleCurrency("HKD", "$"), SaleCurrency("SGD", "$"), SaleCurrency("MYR", "RM"),
-            SaleCurrency("THB", "฿"), SaleCurrency("VND", "₫", true), SaleCurrency("PHP", "₱"), SaleCurrency("INR", "₹"),
-            SaleCurrency("AUD", "$"), SaleCurrency("NZD", "$"), SaleCurrency("CAD", "$"), SaleCurrency("MXN", "$"),
-            SaleCurrency("BRL", "R$", true), SaleCurrency("AED", "AED"), SaleCurrency("ZAR", "R"), SaleCurrency("CHF", "CHF"),
+            SaleCurrency("IDR", "Rp", true),
+            SaleCurrency("USD", "$"),
+            SaleCurrency("EUR", "€", true),
+            SaleCurrency("GBP", "£"),
+            SaleCurrency("JPY", "¥"),
+            SaleCurrency("KRW", "₩"),
+            SaleCurrency("CNY", "¥"),
+            SaleCurrency("TWD", "NT$"),
+            SaleCurrency("HKD", "$"),
+            SaleCurrency("SGD", "$"),
+            SaleCurrency("MYR", "RM"),
+            SaleCurrency("THB", "฿"),
+            SaleCurrency("VND", "₫", true),
+            SaleCurrency("PHP", "₱"),
+            SaleCurrency("INR", "₹"),
+            SaleCurrency("AUD", "$"),
+            SaleCurrency("NZD", "$"),
+            SaleCurrency("CAD", "$"),
+            SaleCurrency("MXN", "$"),
+            SaleCurrency("BRL", "R$", true),
+            SaleCurrency("AED", "AED"),
+            SaleCurrency("ZAR", "R"),
+            SaleCurrency("CHF", "CHF"),
+            SaleCurrency("PKR", "Rs"),
+            SaleCurrency("BDT", "Tk"),
+            SaleCurrency("LKR", "Rs"),
+            SaleCurrency("NPR", "Rs"),
+            SaleCurrency("MMK", "K"),
+            SaleCurrency("KZT", "₸"),
+            SaleCurrency("RUB", "₽"),
+            SaleCurrency("UAH", "₴"),
+            SaleCurrency("PLN", "zł"),
+            SaleCurrency("CZK", "Kč"),
+            SaleCurrency("HUF", "Ft"),
+            SaleCurrency("RON", "lei", true),
+            SaleCurrency("SEK", "kr"),
+            SaleCurrency("NOK", "kr"),
+            SaleCurrency("DKK", "kr", true),
+            SaleCurrency("TRY", "₺", true),
+            SaleCurrency("ILS", "₪"),
+            SaleCurrency("SAR", "SAR"),
+            SaleCurrency("QAR", "QAR"),
+            SaleCurrency("KWD", "KD"),
+            SaleCurrency("EGP", "E£"),
+            SaleCurrency("MAD", "MAD"),
+            SaleCurrency("NGN", "₦"),
+            SaleCurrency("GHS", "GH₵"),
+            SaleCurrency("KES", "KSh"),
+            SaleCurrency("TZS", "TSh"),
+            SaleCurrency("UGX", "USh"),
+            SaleCurrency("ETB", "Br"),
+            SaleCurrency("ARS", "$", true),
+            SaleCurrency("CLP", "$", true),
+            SaleCurrency("COP", "$", true),
+            SaleCurrency("PEN", "S/"),
         )
 
-        fun with(code: String): SaleCurrency = all.firstOrNull { it.code == code } ?: all.first { it.code == "USD" }
+        /** "Other": the seller types the symbol (or letters) themselves, for a currency that is not in the list. */
+        const val OTHER = "OTHER"
+        const val MAX_SYMBOL_LENGTH = 4
+
+        /** What may be typed as a symbol: no spaces at the ends or line breaks, at most four characters. */
+        fun sanitizedSymbol(text: String): String = text.replace("\n", "").trim().take(MAX_SYMBOL_LENGTH)
+
+        fun with(code: String, customSymbol: String = ""): SaleCurrency =
+            if (code == OTHER) SaleCurrency(OTHER, sanitizedSymbol(customSymbol))
+            else all.firstOrNull { it.code == code } ?: all.first { it.code == "USD" }
 
         private fun prefs(context: Context) = context.getSharedPreferences("giveaway", Context.MODE_PRIVATE)
 
-        /** The last currency used, or the one for the phone's region, or dollars. */
+        /** The last symbol typed for "Other", or the one the phone's region uses. */
+        fun savedCustomSymbol(context: Context): String {
+            prefs(context).getString("sale_custom_symbol", null)?.let { return sanitizedSymbol(it) }
+            val regional = try { Currency.getInstance(Locale.getDefault()).let { it.getSymbol(Locale.getDefault()) } } catch (_: Exception) { "" }
+            return sanitizedSymbol(regional)
+        }
+
+        fun rememberCustomSymbol(context: Context, text: String) =
+            prefs(context).edit().putString("sale_custom_symbol", sanitizedSymbol(text)).apply()
+
+        /**
+         * The last currency used, or the one for the phone's region, or "Other" when the phone's
+         * currency is not in the list (its symbol is filled in), or dollars.
+         */
         fun savedCode(context: Context): String {
-            prefs(context).getString("sale_currency", null)?.let { saved -> if (all.any { it.code == saved }) return saved }
+            prefs(context).getString("sale_currency", null)?.let { saved -> if (saved == OTHER || all.any { it.code == saved }) return saved }
             val regional = try { Currency.getInstance(Locale.getDefault()).currencyCode } catch (_: Exception) { null }
-            return if (regional != null && all.any { it.code == regional }) regional else "USD"
+            if (regional != null) {
+                if (all.any { it.code == regional }) return regional
+                if (savedCustomSymbol(context).isNotEmpty()) return OTHER
+            }
+            return "USD"
         }
 
         fun remember(context: Context, code: String) = prefs(context).edit().putString("sale_currency", code).apply()
@@ -97,7 +172,7 @@ object SalePrice {
      * The text for the price tag, such as "Rp 150.000" or "$25.50". Null when nothing (or
      * zero) was entered, which makes the tag say "Contact me for price".
      */
-    fun format(amount: String, currencyCode: String): String? {
+    fun format(amount: String, currencyCode: String, customSymbol: String = ""): String? {
         val clean = sanitized(amount)
         if (clean.isEmpty()) return null
         val parts = clean.split('.', limit = 2)
@@ -106,14 +181,14 @@ object SalePrice {
         if (fraction.all { it == '0' }) fraction = ""        // "25.00" shows as "25"
         if (fraction.length == 1) fraction += "0"            // "25.5" is read as 25.50
         if (whole.all { it == '0' } && fraction.isEmpty()) return null
-        val currency = SaleCurrency.with(currencyCode)
+        val currency = SaleCurrency.with(currencyCode, customSymbol)
         val group = if (currency.dotGrouping) "." else ","
         val decimal = if (currency.dotGrouping) "," else "."
         val trimmed = whole.trimStart('0').ifEmpty { "0" }
         val grouped = trimmed.reversed().chunked(3).joinToString(group).reversed()
         val text = if (fraction.isNotEmpty()) grouped + decimal + fraction else grouped
         // Letter symbols ("Rp", "RM") get a space; sign symbols ("$", "€") do not.
-        val spaced = currency.symbol.last().isLetter()
+        val spaced = currency.symbol.lastOrNull()?.isLetter() == true
         return currency.symbol + (if (spaced) " " else "") + text
     }
 }
@@ -132,9 +207,12 @@ private val FieldGrey = Color(0xFF2E2E2E)
 
 /** Currency picker and amount, shown on the sale card's screen. */
 @Composable
-fun SalePriceField(amount: String, onAmount: (String) -> Unit, currencyCode: String, onCurrency: (String) -> Unit) {
+fun SalePriceField(
+    amount: String, onAmount: (String) -> Unit, currencyCode: String, onCurrency: (String) -> Unit,
+    customSymbol: String, onCustomSymbol: (String) -> Unit,
+) {
     var menuOpen by remember { mutableStateOf(false) }
-    val current = SaleCurrency.with(currencyCode)
+    val current = SaleCurrency.with(currencyCode, customSymbol)
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF1A1A1A)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -146,7 +224,7 @@ fun SalePriceField(amount: String, onAmount: (String) -> Unit, currencyCode: Str
             )
             Box {
                 Text(
-                    "${current.symbol} ${current.code}  ▾", color = Color.White, fontSize = 14.sp,
+                    if (currencyCode == SaleCurrency.OTHER) "${tr("Other")}  ▾" else "${current.symbol} ${current.code}  ▾", color = Color.White, fontSize = 14.sp,
                     fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(FieldGrey)
                         .clickable { menuOpen = true }.padding(10.dp),
@@ -158,7 +236,25 @@ fun SalePriceField(amount: String, onAmount: (String) -> Unit, currencyCode: Str
                             onClick = { onCurrency(currency.code); menuOpen = false },
                         )
                     }
+                    DropdownMenuItem(
+                        text = { Text(tr("Other"), fontFamily = FontFamily.Monospace) },
+                        onClick = { onCurrency(SaleCurrency.OTHER); menuOpen = false },
+                    )
                 }
+            }
+            if (currencyCode == SaleCurrency.OTHER) {
+                BasicTextField(
+                    value = customSymbol,
+                    onValueChange = { onCustomSymbol(SaleCurrency.sanitizedSymbol(it)) },
+                    singleLine = true,
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                    cursorBrush = SolidColor(Color(0xFFCFE3FF)),
+                    decorationBox = { inner ->
+                        if (customSymbol.isEmpty()) Text("Rs", color = Color.White.copy(alpha = 0.3f), fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                        inner()
+                    },
+                    modifier = Modifier.width(60.dp).clip(RoundedCornerShape(6.dp)).background(FieldGrey).padding(10.dp),
+                )
             }
             BasicTextField(
                 value = amount,

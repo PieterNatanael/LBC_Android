@@ -98,7 +98,8 @@ fun GiveawayCardSheet(
     var content by remember { mutableStateOf(GiveawayCardContent.fallback(mode)) }
     var priceAmount by rememberSaveable { mutableStateOf("") }
     var currencyCode by remember { mutableStateOf(SaleCurrency.savedCode(context)) }
-    val style: CardStyle = if (sale) CardStyle.Sale(SalePrice.format(priceAmount, currencyCode)) else CardStyle.Giveaway
+    var customSymbol by remember { mutableStateOf(SaleCurrency.savedCustomSymbol(context)) }
+    val style: CardStyle = if (sale) CardStyle.Sale(SalePrice.format(priceAmount, currencyCode, customSymbol)) else CardStyle.Giveaway
     val token = remember { System.currentTimeMillis().toString() }
     var card by remember { mutableStateOf<ImageBitmap?>(null) }
     var cardJpeg by remember { mutableStateOf<ByteArray?>(null) }
@@ -119,7 +120,7 @@ fun GiveawayCardSheet(
     val allSaved = savedToGallery && !dirtySinceSave
 
     // Draw the card now, and again shortly after the last edit.
-    LaunchedEffect(content, priceAmount, currencyCode) {
+    LaunchedEffect(content, priceAmount, currencyCode, customSymbol) {
         if (isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
@@ -136,7 +137,7 @@ fun GiveawayCardSheet(
 
     // Video cards are made by the exporter, again shortly after the last edit or sound change.
     // Each export gets its own file so the preview never plays one that is being rewritten.
-    LaunchedEffect(content, includeSound, priceAmount, currencyCode) {
+    LaunchedEffect(content, includeSound, priceAmount, currencyCode, customSymbol) {
         if (!isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
@@ -259,6 +260,8 @@ fun GiveawayCardSheet(
                             amount = priceAmount, onAmount = { priceAmount = it },
                             currencyCode = currencyCode,
                             onCurrency = { currencyCode = it; SaleCurrency.remember(context, it) },
+                            customSymbol = customSymbol,
+                            onCustomSymbol = { customSymbol = it; SaleCurrency.rememberCustomSymbol(context, it) },
                         )
                     }
                     if (showEditor) GiveawayTextEditor(content) { content = it }
