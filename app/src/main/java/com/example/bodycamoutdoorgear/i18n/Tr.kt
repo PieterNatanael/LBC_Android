@@ -24,7 +24,7 @@ enum class AppLanguage(val code: String?, val nativeName: String) {
     KOREAN("ko", "한국어"),
     CHINESE_TRADITIONAL("zh-Hant", "繁體中文"),
     INDONESIAN("id", "Bahasa Indonesia"),
-    TAGLISH("fil", "Taglish"),
+    TAGLISH("fil", "Filipino (Taglish)"),
 }
 
 /**
