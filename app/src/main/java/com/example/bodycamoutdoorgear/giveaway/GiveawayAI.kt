@@ -109,7 +109,7 @@ object GiveawayAIService {
                 .put("install_id", installId(context))
                 .put("premium", premium)
                 .put("language", com.example.bodycamoutdoorgear.i18n.Tr.code)
-                .put("mode", if (mode == CardMode.SALE) "sale" else "giveaway")
+                .put("mode", when (mode) { CardMode.SALE -> "sale"; CardMode.SWAP -> "swap"; else -> "giveaway" })
                 .put("images", JSONArray().apply {
                     pictures.forEach {
                         put(JSONObject().put("media_type", "image/jpeg").put("data", Base64.encodeToString(it, Base64.NO_WRAP)))

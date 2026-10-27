@@ -36,15 +36,31 @@ import com.example.bodycamoutdoorgear.i18n.tr
 import java.util.Currency
 import java.util.Locale
 
-/** The two kinds of card the camera can make. */
-enum class CardMode { GIVEAWAY, SALE }
+/** The three kinds of card the camera can make. */
+enum class CardMode { GIVEAWAY, SALE, SWAP }
 
-/** What the card is drawn as: a giveaway (yellow, FREE stamp) or a sale (blue, price tag). */
+/** Each kind has its own one-time agreement. */
+fun CardMode.agreementNeeded(context: Context): Boolean = when (this) {
+    CardMode.GIVEAWAY -> GiveawayAgreement.needed(context)
+    CardMode.SALE -> SaleAgreement.needed(context)
+    CardMode.SWAP -> SwapAgreement.needed(context)
+}
+
+fun CardMode.acceptAgreement(context: Context) = when (this) {
+    CardMode.GIVEAWAY -> GiveawayAgreement.accept(context)
+    CardMode.SALE -> SaleAgreement.accept(context)
+    CardMode.SWAP -> SwapAgreement.accept(context)
+}
+
+/** What the card is drawn as: a giveaway (yellow, FREE stamp), a sale (blue, price tag) or a swap (pink, looking-for tag). */
 sealed class CardStyle {
     object Giveaway : CardStyle()
 
     /** [price] is the tag's text; null means the default "Contact me for price". */
     data class Sale(val price: String?) : CardStyle()
+
+    /** [wanted] is what the swapper is looking for; null means "Open to offers". */
+    data class Swap(val wanted: String?) : CardStyle()
 }
 
 /**
@@ -268,6 +284,59 @@ fun SalePriceField(
         }
         Text(
             tr("Leave the price empty to ask buyers to contact you."), color = Color.White.copy(alpha = 0.5f),
+            fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 66.dp),
+        )
+    }
+}
+
+/** The one-time "before you swap something" agreement, kept apart from the other two. */
+object SwapAgreement {
+    const val CURRENT_VERSION = 1
+
+    private fun prefs(context: Context) = context.getSharedPreferences("giveaway", Context.MODE_PRIVATE)
+
+    fun needed(context: Context): Boolean = prefs(context).getInt("swap_agreement_version", 0) < CURRENT_VERSION
+    fun accept(context: Context) = prefs(context).edit().putInt("swap_agreement_version", CURRENT_VERSION).apply()
+}
+
+object SwapWanted {
+    /** The longest text that can be typed for what the swapper is looking for. */
+    const val MAX_LENGTH = 24
+
+    /** One line, no spaces at the ends. */
+    fun sanitized(text: String): String = text.replace("\n", " ").trim().take(MAX_LENGTH)
+
+    /** The text for the tag, or null for the default "Open to offers". */
+    fun tagText(text: String): String? = sanitized(text).ifEmpty { null }
+}
+
+/** The "Wants" line on the swap card's screen. */
+@Composable
+fun SwapWantedField(wanted: String, onWanted: (String) -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF1A1A1A)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                tr("Wants"), color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp),
+            )
+            BasicTextField(
+                value = wanted,
+                onValueChange = { onWanted(it.replace("\n", " ").take(SwapWanted.MAX_LENGTH)) },
+                singleLine = true,
+                textStyle = TextStyle(color = Color.White, fontSize = 14.sp, fontFamily = FontFamily.Monospace),
+                cursorBrush = SolidColor(Color(0xFFFFD9EB)),
+                decorationBox = { inner ->
+                    if (wanted.isEmpty()) Text(tr("e.g. a bicycle"), color = Color.White.copy(alpha = 0.3f), fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                    inner()
+                },
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).background(FieldGrey).padding(10.dp),
+            )
+        }
+        Text(
+            tr("Leave this empty to say you are open to offers."), color = Color.White.copy(alpha = 0.5f),
             fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 66.dp),
         )
     }

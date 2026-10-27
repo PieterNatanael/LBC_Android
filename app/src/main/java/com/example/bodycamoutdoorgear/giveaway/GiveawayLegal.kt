@@ -63,6 +63,21 @@ private val SELLER_TIPS = listOf(
     "Follow the rules where you live, including those on taxes and consumer rights.",
 )
 
+private val SWAPPING_NOT_ALLOWED = listOf(
+    "Tickets, vouchers, gift cards or accounts",
+    "Anything that is illegal to swap where you live",
+    "Services, or anything that is not a physical item you own",
+    "Cards that ask for money. To sell for money, use For Sale mode.",
+)
+
+private val SWAPPER_TIPS = listOf(
+    "Swap in a public place, and tell someone where you are going.",
+    "Check the other item before you hand yours over.",
+    "Never send your item first, or share bank details or one-time codes.",
+    "Be careful of an offer that looks too good for a small item. This is a common scam.",
+    "Follow the rules where you live, including those on taxes and consumer rights.",
+)
+
 private val TIPS = listOf(
     "Check the background of your photo for faces, papers and screens before you share.",
     "Meet in a public place, and tell someone where you are going.",
@@ -80,7 +95,7 @@ fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit, mode: Ca
     ) {
         Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text(if (mode == CardMode.SALE) tr("Before you sell something") else tr("Before you give something away"), color = Color.White, fontSize = 22.sp,
+                Text(when (mode) { CardMode.SALE -> tr("Before you sell something"); CardMode.SWAP -> tr("Before you swap something"); else -> tr("Before you give something away") }, color = Color.White, fontSize = 22.sp,
                     fontFamily = FontFamily.Monospace, fontWeight = FontWeight.ExtraBold)
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     if (mode == CardMode.SALE) {
@@ -88,6 +103,11 @@ fun GiveawayAgreementDialog(onAgree: () -> Unit, onDecline: () -> Unit, mode: Ca
                         Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
                         Point("•", tr("LBC only makes the card. We don't take payments, hold money, check items or buyers, or take part in any sale or handover."))
                         Point("•", tr("Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it. It never sets a price."))
+                    } else if (mode == CardMode.SWAP) {
+                        Point("•", tr("You are responsible for what you swap, for the words on your card, and for following the laws where you live, including taxes and licenses."))
+                        Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
+                        Point("•", tr("LBC only makes the card. We don't take payments, hold money or items, check items or people, or take part in any swap or handover."))
+                        Point("•", tr("Fill with AI sends a small copy of your photo to our server and an AI service (Claude, by Anthropic) to write the text. We don't keep it. It never says what your item is worth."))
                     } else {
                         Point("•", tr("You are responsible for what you give away, and for following the laws where you live."))
                         Point("•", tr("Not allowed: medicine, weapons, alcohol, cigarettes and vapes, live animals."))
@@ -130,6 +150,11 @@ fun GiveawayRulesDialog(mode: CardMode = CardMode.GIVEAWAY, onClose: () -> Unit)
                             fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
                         SELLING_NOT_ALLOWED.forEach { Point("✕", tr(it)) }
                     }
+                    if (mode == CardMode.SWAP) {
+                        Text(tr("Also not allowed when swapping"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
+                        SWAPPING_NOT_ALLOWED.forEach { Point("✕", tr(it)) }
+                    }
                     Text(tr("Good to know"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
                     TIPS.forEach { Point("•", tr(it)) }
@@ -138,7 +163,12 @@ fun GiveawayRulesDialog(mode: CardMode = CardMode.GIVEAWAY, onClose: () -> Unit)
                             fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
                         SELLER_TIPS.forEach { Point("•", tr(it)) }
                     }
-                    Text(if (mode == CardMode.SALE) tr("LBC makes the card only. You are responsible for what you sell.") else tr("LBC makes the card only. You are responsible for what you give away."),
+                    if (mode == CardMode.SWAP) {
+                        Text(tr("Tips for swappers"), color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
+                        SWAPPER_TIPS.forEach { Point("•", tr(it)) }
+                    }
+                    Text(when (mode) { CardMode.SALE -> tr("LBC makes the card only. You are responsible for what you sell."); CardMode.SWAP -> tr("LBC makes the card only. You are responsible for what you swap."); else -> tr("LBC makes the card only. You are responsible for what you give away.") },
                         color = Color(0xFF8C8C8C), fontSize = 13.sp, fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(top = 10.dp))
                 }
@@ -155,7 +185,7 @@ fun GiveawayRulesDialog(mode: CardMode = CardMode.GIVEAWAY, onClose: () -> Unit)
 fun GiveawayResponsibilityLine(mode: CardMode = CardMode.GIVEAWAY) {
     var open by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(if (mode == CardMode.SALE) tr("You're responsible for what you sell.") else tr("You're responsible for what you give away."), color = Color(0xFF808080), fontSize = 11.sp,
+        Text(when (mode) { CardMode.SALE -> tr("You're responsible for what you sell."); CardMode.SWAP -> tr("You're responsible for what you swap."); else -> tr("You're responsible for what you give away.") }, color = Color(0xFF808080), fontSize = 11.sp,
             fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center)
         Text(tr("What's not allowed"), color = Color(0xFFBFBFBF), fontSize = 11.sp, fontFamily = FontFamily.Monospace,
             textDecoration = TextDecoration.Underline,

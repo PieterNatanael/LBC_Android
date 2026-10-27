@@ -41,6 +41,8 @@ object GiveawayCardRenderer {
     private val RED = Color.rgb(232, 72, 59)       // #E8483B
     private val SALE_BLUE = Color.rgb(59, 130, 246)    // #3B82F6, easy to tell from the yellow giveaway card in every kind of colour blindness
     private val SALE_LIGHT = Color.rgb(207, 227, 255)  // #CFE3FF
+    private val SWAP_PINK = Color.rgb(224, 85, 155)    // #E0559B, still distinct from yellow and blue for red-green and blue-yellow colour blindness
+    private val SWAP_LIGHT = Color.rgb(255, 217, 235)  // #FFD9EB
 
     private val HEAVY: Typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
     private val BOLD: Typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -62,9 +64,11 @@ object GiveawayCardRenderer {
     ): Bitmap {
         val strings = GiveawayCardStrings.current
         val sale = cardStyle as? CardStyle.Sale
+        val swap = cardStyle as? CardStyle.Swap
         val isSale = sale != null
-        val background = if (isSale) SALE_BLUE else YELLOW
-        val accent = if (isSale) SALE_LIGHT else YELLOW
+        val isSwap = swap != null
+        val background = if (isSwap) SWAP_PINK else if (isSale) SALE_BLUE else YELLOW
+        val accent = if (isSwap) SWAP_LIGHT else if (isSale) SALE_LIGHT else YELLOW
         val bmp = Bitmap.createBitmap(SIDE, SIDE, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         c.drawColor(background)
@@ -73,7 +77,7 @@ object GiveawayCardRenderer {
         val margin = 48f
 
         // Header
-        drawFitted(c, if (isSale) strings.saleHeader else strings.header, RectF(margin, 36f, margin + 700f, 136f),
+        drawFitted(c, if (isSwap) strings.swapHeader else if (isSale) strings.saleHeader else strings.header, RectF(margin, 36f, margin + 700f, 136f),
             maxSize = 96f, minSize = 60f, typeface = HEAVY, color = INK, kern = 4f, maxLines = 1)
 
         // LBC logo, top right. The date and time sit under it and the item name
@@ -130,7 +134,8 @@ object GiveawayCardRenderer {
         })
 
         // FREE stamp, overlapping the frame's top-right corner
-        if (sale != null) drawPriceTag(c, sale.price ?: strings.priceDefault, frame.right - 150f, frame.top + 78f)
+        if (swap != null) drawWantedTag(c, swap.wanted ?: strings.wantedDefault, strings.wantedLabel, frame.right - 165f, frame.top + 84f)
+        else if (sale != null) drawPriceTag(c, sale.price ?: strings.priceDefault, frame.right - 150f, frame.top + 78f)
         else drawStamp(c, strings.free, frame.right - 105f, frame.top + 78f)
 
         // Right column
@@ -183,7 +188,7 @@ object GiveawayCardRenderer {
         // Bottom bar
         val bar = RectF(margin, 924f, size - margin, 1032f)
         c.drawRoundRect(bar, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = INK })
-        drawFitted(c, if (isSale) strings.saleContact else strings.contact,
+        drawFitted(c, if (isSwap) strings.swapContact else if (isSale) strings.saleContact else strings.contact,
             RectF(bar.left + 34f, bar.top + 10f, bar.left + 34f + 560f, bar.bottom - 10f),
             maxSize = 50f, minSize = 30f, typeface = HEAVY, color = accent, kern = -0.5f, maxLines = 1,
             centerVertically = true)
@@ -302,6 +307,25 @@ object GiveawayCardRenderer {
         val inner = RectF(rect.left + 10f, rect.top + 6f, rect.right - 10f, rect.bottom - 6f)
         drawFitted(c, text, inner, maxSize = 64f, minSize = 28f, typeface = HEAVY, color = Color.WHITE,
             kern = 2f, maxLines = 1, centerVertically = true)
+        c.restore()
+    }
+
+    /** The swap card's tag: a small label ("LOOKING FOR") over what the swapper wants. */
+    private fun drawWantedTag(c: Canvas, text: String, label: String, cx: Float, cy: Float) {
+        val rect = RectF(-165f, -59f, 165f, 59f)
+        c.save()
+        c.translate(cx, cy)
+        c.rotate(-4f)
+        c.drawRoundRect(rect, 18f, 18f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = INK })
+        c.drawRoundRect(rect, 18f, 18f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = 6f; color = Color.WHITE
+        })
+        drawFitted(c, "\u21C4  " + label, RectF(rect.left + 14f, rect.top + 10f, rect.right - 14f, rect.top + 38f),
+            maxSize = 20f, minSize = 12f, typeface = HEAVY, color = Color.argb(191, 255, 255, 255), kern = 2f,
+            maxLines = 1, centerHorizontally = true)
+        drawFitted(c, text, RectF(rect.left + 14f, rect.top + 42f, rect.right - 14f, rect.bottom - 8f),
+            maxSize = 50f, minSize = 24f, typeface = HEAVY, color = Color.WHITE, kern = 0f, maxLines = 1,
+            centerVertically = true, centerHorizontally = true)
         c.restore()
     }
 

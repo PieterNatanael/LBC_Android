@@ -81,10 +81,11 @@ fun GiveawayCardSheet(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sale = mode == CardMode.SALE
-    // Save buttons are yellow for a giveaway and light blue for a sale.
-    val accent = if (sale) Color(0xFFCFE3FF) else SheetYellow
+    val swap = mode == CardMode.SWAP
+    // Save buttons are yellow for a giveaway, light blue for a sale and light pink for a swap.
+    val accent = when (mode) { CardMode.SALE -> Color(0xFFCFE3FF); CardMode.SWAP -> Color(0xFFFFD9EB); else -> SheetYellow }
 
-    var agreed by rememberSaveable { mutableStateOf(!(if (sale) SaleAgreement.needed(context) else GiveawayAgreement.needed(context))) }
+    var agreed by rememberSaveable { mutableStateOf(!mode.agreementNeeded(context)) }
 
     // Fill with AI. [before] holds the words from before the FIRST fill, so Revert
     // always goes back to what the user had, even after retries.
@@ -99,7 +100,12 @@ fun GiveawayCardSheet(
     var priceAmount by rememberSaveable { mutableStateOf("") }
     var currencyCode by remember { mutableStateOf(SaleCurrency.savedCode(context)) }
     var customSymbol by remember { mutableStateOf(SaleCurrency.savedCustomSymbol(context)) }
-    val style: CardStyle = if (sale) CardStyle.Sale(SalePrice.format(priceAmount, currencyCode, customSymbol)) else CardStyle.Giveaway
+    var wantedText by rememberSaveable { mutableStateOf("") }
+    val style: CardStyle = when (mode) {
+        CardMode.SALE -> CardStyle.Sale(SalePrice.format(priceAmount, currencyCode, customSymbol))
+        CardMode.SWAP -> CardStyle.Swap(SwapWanted.tagText(wantedText))
+        else -> CardStyle.Giveaway
+    }
     val token = remember { System.currentTimeMillis().toString() }
     var card by remember { mutableStateOf<ImageBitmap?>(null) }
     var cardJpeg by remember { mutableStateOf<ByteArray?>(null) }
@@ -120,7 +126,7 @@ fun GiveawayCardSheet(
     val allSaved = savedToGallery && !dirtySinceSave
 
     // Draw the card now, and again shortly after the last edit.
-    LaunchedEffect(content, priceAmount, currencyCode, customSymbol) {
+    LaunchedEffect(content, priceAmount, currencyCode, customSymbol, wantedText) {
         if (isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
@@ -137,7 +143,7 @@ fun GiveawayCardSheet(
 
     // Video cards are made by the exporter, again shortly after the last edit or sound change.
     // Each export gets its own file so the preview never plays one that is being rewritten.
-    LaunchedEffect(content, includeSound, priceAmount, currencyCode, customSymbol) {
+    LaunchedEffect(content, includeSound, priceAmount, currencyCode, customSymbol, wantedText) {
         if (!isVideo) return@LaunchedEffect
         if (!firstRender) delay(400)
         firstRender = false
@@ -264,6 +270,7 @@ fun GiveawayCardSheet(
                             onCustomSymbol = { customSymbol = it; SaleCurrency.rememberCustomSymbol(context, it) },
                         )
                     }
+                    if (swap) SwapWantedField(wantedText) { wantedText = it }
                     if (showEditor) GiveawayTextEditor(content) { content = it }
                 }
 
@@ -324,7 +331,7 @@ fun GiveawayCardSheet(
     if (!agreed) {
         GiveawayAgreementDialog(
             mode = mode,
-            onAgree = { if (sale) SaleAgreement.accept(context) else GiveawayAgreement.accept(context); agreed = true },
+            onAgree = { mode.acceptAgreement(context); agreed = true },
             // Declining keeps the photo: it goes to the gallery as a normal photo.
             onDecline = { finish(discard = false) },
         )
