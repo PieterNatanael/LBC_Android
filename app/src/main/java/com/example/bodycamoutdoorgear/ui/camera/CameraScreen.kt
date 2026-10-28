@@ -241,6 +241,7 @@ fun CameraScreen(
 
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showAiMenu by remember { mutableStateOf(false) }
 
     // Glow positioning — updated by onGloballyPositioned on the preview box
     val rootCoordsRef    = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -815,7 +816,7 @@ fun CameraScreen(
                     }
                     // Left: revolver of flip / dim / flash — two visible, swipe to rotate
                     ButtonRing(
-                        count = 3,
+                        count = 4,
                         accentColor = accentColor,
                         isAlt = isAlt,
                         modifier = Modifier
@@ -854,6 +855,13 @@ fun CameraScreen(
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
                             }
+                            3 -> ZoomRingButton(
+                                text = formatZoom(zoomRatio),
+                                accentColor = accentColor,
+                                isAlt = isAlt,
+                                enabled = ringEnabled,
+                                onClick = { zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio) },
+                            )
                             else -> FlashRingButton(
                                 mode = flashMode,
                                 allowsAuto = false,
@@ -872,23 +880,7 @@ fun CameraScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .sideButtonStyle(SurfaceDark, accentColor)
-                                .clickable {
-                                    zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = formatZoom(zoomRatio),
-                                color = if (isAlt) accentColor else Color.White.copy(0.85f),
-                                fontSize = if (isAlt) 14.sp else 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        AICardButton(mode = displayMode, accentColor = accentColor, isAlt = isAlt) { showAiMenu = true }
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -909,6 +901,15 @@ fun CameraScreen(
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     Spacer(Modifier.height((LocalConfiguration.current.screenHeightDp * 0.16f).dp.coerceAtLeast(100.dp)))
                 } // end Column layout
+
+                // The card mode that is on, shown at the top so it is never a surprise.
+                if (displayMode.makesCard && !isRecording) {
+                    AICardChip(
+                        mode = displayMode,
+                        onClick = { showAiMenu = true },
+                        modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 12.dp),
+                    )
+                }
 
                 // ── Recording timer badge — top center, clears camera cutout ──
                 if (isRecording) {
@@ -981,6 +982,18 @@ fun CameraScreen(
         PaywallScreen(
             subscriptionManager = subscriptionManager,
             onDismiss = { showPaywall = false }
+        )
+    }
+
+    if (showAiMenu) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        AICardMenu(
+            current = displayMode,
+            onPick = { picked ->
+                settingsViewModel.setDisplayMode(CardModeSwitch.toggled(context, displayMode, picked))
+                showAiMenu = false
+            },
+            onDismiss = { showAiMenu = false },
         )
     }
 

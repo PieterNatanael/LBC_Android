@@ -225,6 +225,7 @@ fun PhotoScreen(
 
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showAiMenu by remember { mutableStateOf(false) }
     var showFlash    by remember { mutableStateOf(false) }
     // Flash ring button: 0 = off, 1 = on, 2 = auto. Front camera uses a white screen flash.
     var flashMode    by remember { mutableStateOf(0) }
@@ -717,7 +718,7 @@ fun PhotoScreen(
                     }
                     // Left: revolver of flip / dim / flash — two visible, swipe to rotate
                     ButtonRing(
-                        count = 4,
+                        count = 5,
                         accentColor = accentColor,
                         isAlt = isAlt,
                         modifier = Modifier
@@ -756,6 +757,13 @@ fun PhotoScreen(
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
                             }
+                            4 -> ZoomRingButton(
+                                text = formatZoom(zoomRatio),
+                                accentColor = accentColor,
+                                isAlt = isAlt,
+                                enabled = ringEnabled,
+                                onClick = { zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio) },
+                            )
                             3 -> TimerRingButton(
                                 seconds = timerSeconds,
                                 accentColor = accentColor,
@@ -781,23 +789,7 @@ fun PhotoScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .sideButtonStyle(SurfaceDark, accentColor)
-                                .clickable {
-                                    zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = formatZoom(zoomRatio),
-                                color = if (isAlt) accentColor else Color.White.copy(0.85f),
-                                fontSize = if (isAlt) 14.sp else 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        AICardButton(mode = displayMode, accentColor = accentColor, isAlt = isAlt) { showAiMenu = true }
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -818,6 +810,15 @@ fun PhotoScreen(
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     Spacer(Modifier.height((LocalConfiguration.current.screenHeightDp * 0.16f).dp.coerceAtLeast(100.dp)))
                 } // end Column layout
+
+                // The card mode that is on, shown at the top so it is never a surprise.
+                if (displayMode.makesCard) {
+                    AICardChip(
+                        mode = displayMode,
+                        onClick = { showAiMenu = true },
+                        modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 12.dp),
+                    )
+                }
 
                 // ── Full-screen dim overlay ───────────────────────────────────────
                 if (isScreenDimmed) {
@@ -857,6 +858,18 @@ fun PhotoScreen(
             onClose = { giveawayPhotoPath = null },
             onOpenGallery = onOpenGallery,
             isPremium = isUnlocked
+        )
+    }
+
+    if (showAiMenu) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        AICardMenu(
+            current = displayMode,
+            onPick = { picked ->
+                settingsViewModel.setDisplayMode(CardModeSwitch.toggled(context, displayMode, picked))
+                showAiMenu = false
+            },
+            onDismiss = { showAiMenu = false },
         )
     }
 
