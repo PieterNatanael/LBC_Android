@@ -729,7 +729,7 @@ fun PhotoScreen(
                             .padding(start = (LocalConfiguration.current.screenWidthDp / 2 - 41 - 124).coerceIn(8, 32).dp),
                     ) { index, ringEnabled ->
                         when (index) {
-                            0 -> Box(
+                            1 -> Box(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .sideButtonStyle(SurfaceDark, accentColor)
@@ -743,7 +743,7 @@ fun PhotoScreen(
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
                             }
-                            1 -> Box(
+                            2 -> Box(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .sideButtonStyle(if (isScreenDimmed) SurfaceDark.copy(alpha = 0.5f) else SurfaceDark, accentColor)
@@ -757,14 +757,14 @@ fun PhotoScreen(
                                     modifier = Modifier.size(if (isAlt) 26.dp else 22.dp)
                                 )
                             }
-                            4 -> ZoomRingButton(
+                            0 -> ZoomRingButton(
                                 text = formatZoom(zoomRatio),
                                 accentColor = accentColor,
                                 isAlt = isAlt,
                                 enabled = ringEnabled,
                                 onClick = { zoomGlider.onChipTap(zoomRatio, minZoomRatio, maxZoomRatio) },
                             )
-                            3 -> TimerRingButton(
+                            4 -> TimerRingButton(
                                 seconds = timerSeconds,
                                 accentColor = accentColor,
                                 isAlt = isAlt,
