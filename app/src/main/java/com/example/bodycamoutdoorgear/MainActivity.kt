@@ -5,6 +5,7 @@ import android.view.KeyEvent
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +30,8 @@ class MainActivity : FragmentActivity() {
     private val photoViewModel: PhotoViewModel   by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Before super: swaps the launch theme for the normal one once the app is ready.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 

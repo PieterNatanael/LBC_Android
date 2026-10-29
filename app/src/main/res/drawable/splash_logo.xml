@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android shows only the middle 2/3 of the launch icon, inside a circle, so the logo is inset to stay whole. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/lbc_welcome"
+    android:insetLeft="66dp"
+    android:insetTop="66dp"
+    android:insetRight="66dp"
+    android:insetBottom="66dp" />
