@@ -36,8 +36,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bodycamoutdoorgear.giveaway.GiveawayCardStrings
-import com.example.bodycamoutdoorgear.giveaway.SaleCurrency
-import com.example.bodycamoutdoorgear.giveaway.SalePrice
 import com.example.bodycamoutdoorgear.i18n.tr
 import com.example.bodycamoutdoorgear.ui.theme.LocalMarsTheme
 import com.example.bodycamoutdoorgear.ui.theme.MarsChamferShape
@@ -159,7 +157,7 @@ fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: (
                 }
                 val stamp = when (mode) {
                     DisplayMode.GIVEAWAY -> strings.free
-                    DisplayMode.SALE -> SalePrice.format("25", SaleCurrency.savedCode(context), SaleCurrency.savedCustomSymbol(context)) ?: "$25"
+                    DisplayMode.SALE -> "$3"
                     else -> "⇄"
                 }
                 Row(
