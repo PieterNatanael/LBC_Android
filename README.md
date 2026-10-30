@@ -6,6 +6,14 @@ an item and get a ready-to-share card with a short, friendly description.
 
 Also available on iOS. Website: [gogoodmood.com](https://gogoodmood.com)
 
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/save-every-drop.jpg" width="240" alt="Small round preview that saves battery">
+  <img src="docs/screenshots/shutter-sound.jpg" width="240" alt="Camera with a choice of shutter sounds">
+  <img src="docs/screenshots/private-gallery.jpg" width="240" alt="PIN-protected private gallery">
+</p>
+
 ## Features
 
 - **Photo and video camera** built on CameraX, with zoom, front/back switch, flash,
@@ -14,7 +22,10 @@ Also available on iOS. Website: [gogoodmood.com](https://gogoodmood.com)
   - **Giveaway** – "free to a good home", with a description in your language.
   - **For Sale** – a price tag in one of 55 currencies, plus a short description.
   - **Swap** – say what you are looking for, or leave it as "open to offers".
-- **Private gallery** protected by fingerprint, face or a passcode.
+- **Battery saving:** a small round screen preview, battery-conscious recording
+  options and a "Turn Off the Light" mode keep recording without keeping the whole screen awake.
+- **Shutter sounds:** pick a built-in sound (the default meows) or add your own.
+- **Private gallery** protected by a PIN, with optional fingerprint or face unlock.
 - **Languages:** English, German, French, Indonesian, Japanese, Korean,
   Chinese (Simplified and Traditional) and Filipino (Taglish).
 - **Privacy first:** the AI is only used when you tap *Fill with AI*, and you are
