@@ -168,7 +168,7 @@ fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: (
                     else -> tr("Say what you are looking for")
                 }
                 val stamp = when (mode) {
-                    DisplayMode.GIVEAWAY -> strings.free
+                    DisplayMode.GIVEAWAY -> "FREE"
                     DisplayMode.SALE -> "$3"
                     else -> "⇄"
                 }
@@ -180,9 +180,8 @@ fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: (
                     Box(Modifier.size(52.dp)) {
                         Box(Modifier.size(46.dp).align(Alignment.BottomStart).clip(RoundedCornerShape(10.dp)).background(mode.cardColor ?: Color.Gray))
                         Text(
-                            // A longer word (БЕСПЛАТНО, БЕЗКОШТОВНО) is set smaller so it fits the tile.
                             stamp, color = Color.White, fontWeight = FontWeight.ExtraBold, maxLines = 1,
-                            fontSize = when { stamp.length <= 6 -> 9.sp; stamp.length <= 9 -> 7.sp; else -> 5.5.sp },
+                            fontSize = 9.sp,
                             modifier = Modifier.align(Alignment.TopEnd).offset(x = 2.dp)
                                 .clip(RoundedCornerShape(5.dp)).background(INK)
                                 .border(1.dp, Color.White, RoundedCornerShape(5.dp))
