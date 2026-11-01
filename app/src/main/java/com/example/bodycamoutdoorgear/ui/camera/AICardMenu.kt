@@ -9,14 +9,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,6 +30,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bodycamoutdoorgear.giveaway.GiveawayCardStrings
+import com.example.bodycamoutdoorgear.giveaway.GiveawayLanguage
 import com.example.bodycamoutdoorgear.i18n.tr
 import com.example.bodycamoutdoorgear.ui.theme.LocalMarsTheme
 import com.example.bodycamoutdoorgear.ui.theme.MarsChamferShape
@@ -128,6 +138,8 @@ fun AICardChip(mode: DisplayMode, onClick: () -> Unit, modifier: Modifier = Modi
 fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val strings = GiveawayCardStrings.current
+    var pickingLanguage by remember { mutableStateOf(false) }
+    if (pickingLanguage) CardLanguagePicker(onDismiss = { pickingLanguage = false })
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -168,7 +180,9 @@ fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: (
                     Box(Modifier.size(52.dp)) {
                         Box(Modifier.size(46.dp).align(Alignment.BottomStart).clip(RoundedCornerShape(10.dp)).background(mode.cardColor ?: Color.Gray))
                         Text(
-                            stamp, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
+                            // A longer word (БЕСПЛАТНО, БЕЗКОШТОВНО) is set smaller so it fits the tile.
+                            stamp, color = Color.White, fontWeight = FontWeight.ExtraBold, maxLines = 1,
+                            fontSize = when { stamp.length <= 6 -> 9.sp; stamp.length <= 9 -> 7.sp; else -> 5.5.sp },
                             modifier = Modifier.align(Alignment.TopEnd).offset(x = 2.dp)
                                 .clip(RoundedCornerShape(5.dp)).background(INK)
                                 .border(1.dp, Color.White, RoundedCornerShape(5.dp))
@@ -184,7 +198,77 @@ fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: (
                     }
                 }
             }
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).height(1.dp).background(Color(0xFF3A3A3A)))
+            Row(
+                Modifier.fillMaxWidth().clickable { pickingLanguage = true }.padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Language, contentDescription = null, tint = Color(0xFFCCCCCC))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(tr("Card language"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(GiveawayLanguage.name(GiveawayLanguage.code), color = Color(0xFF999999), fontSize = 13.sp)
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF808080))
+            }
         }
+    }
+}
+
+/** The languages the card can be written in. The pick is saved; "Same as app language" clears it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardLanguagePicker(onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color(0xFF1C1C1C),
+    ) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(tr("Card language"), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f))
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = Color(0xFFCCCCCC))
+                }
+            }
+            Text(tr("The card text is written in this language."), color = Color(0xFF999999), fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 8.dp))
+            val usingAppLanguage = GiveawayLanguage.saved !in GiveawayLanguage.SUPPORTED
+            LazyColumn {
+                item {
+                    LanguageRow(tr("Same as app language"), GiveawayLanguage.name(GiveawayLanguage.appCode), usingAppLanguage) {
+                        GiveawayLanguage.select("")
+                        onDismiss()
+                    }
+                }
+                items(GiveawayLanguage.NAMES) { (code, name) ->
+                    LanguageRow(name, null, !usingAppLanguage && GiveawayLanguage.saved == code) {
+                        GiveawayLanguage.select(code)
+                        onDismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageRow(title: String, detail: String?, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            if (detail != null) Text(detail, color = Color(0xFF999999), fontSize = 13.sp)
+        }
+        if (selected) Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
     }
 }
 

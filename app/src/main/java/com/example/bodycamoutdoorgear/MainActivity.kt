@@ -36,6 +36,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
 
         com.example.bodycamoutdoorgear.i18n.Tr.init(applicationContext)
+        com.example.bodycamoutdoorgear.giveaway.GiveawayLanguage.init(applicationContext)
 
         subscriptionManager = SubscriptionManager(applicationContext)
         subscriptionManager.start()

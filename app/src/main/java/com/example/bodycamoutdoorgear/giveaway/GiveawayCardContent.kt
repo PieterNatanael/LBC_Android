@@ -49,11 +49,8 @@ data class GiveawayCardContent(
     }
 }
 
-/**
- * The language the card is written in: the app's language (chosen in Settings,
- * or the phone's), the same codes the server uses.
- */
-private val cardLanguage: String get() = Tr.code
+/** The language the card is written in: the one picked in the AI menu, or else the app's language. */
+private val cardLanguage: String get() = GiveawayLanguage.code
 
 /**
  * The fixed words printed on the card, one table per language. Another
@@ -94,6 +91,14 @@ data class GiveawayCardStrings(
             "ko" -> KOREAN
             "zh-Hans" -> CHINESE_SIMPLIFIED
             "zh-Hant" -> CHINESE_TRADITIONAL
+            "ru" -> RUSSIAN
+            "uk" -> UKRAINIAN
+            "es" -> SPANISH
+            "pt" -> PORTUGUESE
+            "tr" -> TURKISH
+            "vi" -> VIETNAMESE
+            "hi" -> HINDI
+            "it" -> ITALIAN
             else -> ENGLISH
         }
 
@@ -169,6 +174,71 @@ data class GiveawayCardStrings(
             swapHeader = "交換", swapContact = "想交換？請聯絡我！",
             wantedLabel = "想換", wantedDefault = "歡迎提議",
         )
+
+        private val RUSSIAN = GiveawayCardStrings(
+            header = "ОТДАМ ДАРОМ", free = "БЕСПЛАТНО", contact = "Хотите? Напишите мне!",
+            says = "LBC ГОВОРИТ", madeBy = "Сделано в LBC", footer1 = "Скачайте LBC (Low Battery Camera)",
+            footer2 = "в App Store и Google Play", learnMore = "Подробнее и советы по безопасности:", shotLive = "Снято вживую в LBC",
+            saleHeader = "ПРОДАЁТСЯ", saleContact = "Интересно? Напишите мне!", priceDefault = "Цена по запросу",
+            swapHeader = "ОБМЕН", swapContact = "Хотите обменять? Напишите мне!", wantedLabel = "ИЩУ",
+            wantedDefault = "Открыт к предложениям",
+        )
+        private val UKRAINIAN = GiveawayCardStrings(
+            header = "ВІДДАМ БЕЗКОШТОВНО", free = "БЕЗКОШТОВНО", contact = "Хочете? Напишіть мені!",
+            says = "LBC КАЖЕ", madeBy = "Створено в LBC", footer1 = "Завантажте LBC (Low Battery Camera)",
+            footer2 = "в App Store та Google Play", learnMore = "Докладніше та поради щодо безпеки:", shotLive = "Знято наживо в LBC",
+            saleHeader = "ПРОДАЄТЬСЯ", saleContact = "Цікаво? Напишіть мені!", priceDefault = "Ціна за запитом",
+            swapHeader = "ОБМІН", swapContact = "Хочете обміняти? Напишіть мені!", wantedLabel = "ШУКАЮ",
+            wantedDefault = "Відкритий до пропозицій",
+        )
+        private val SPANISH = GiveawayCardStrings(
+            header = "SE REGALA", free = "GRATIS", contact = "¿Lo quieres? ¡Escríbeme!",
+            says = "LBC DICE", madeBy = "Hecho con LBC", footer1 = "Consigue LBC (Low Battery Camera)",
+            footer2 = "en App Store y Google Play", learnMore = "Más información y consejos de seguridad:", shotLive = "Foto en vivo con LBC",
+            saleHeader = "SE VENDE", saleContact = "¿Te interesa? ¡Escríbeme!", priceDefault = "Precio a consultar",
+            swapHeader = "INTERCAMBIO", swapContact = "¿Quieres intercambiar? ¡Escríbeme!", wantedLabel = "BUSCO",
+            wantedDefault = "Abierto a ofertas",
+        )
+        private val PORTUGUESE = GiveawayCardStrings(
+            header = "DOA-SE", free = "GRÁTIS", contact = "Quer? Fale comigo!",
+            says = "LBC DIZ", madeBy = "Feito com o LBC", footer1 = "Baixe o LBC (Low Battery Camera)",
+            footer2 = "na App Store e no Google Play", learnMore = "Saiba mais e veja dicas de segurança:", shotLive = "Foto ao vivo com o LBC",
+            saleHeader = "VENDE-SE", saleContact = "Interessou? Fale comigo!", priceDefault = "Preço a combinar",
+            swapHeader = "TROCA", swapContact = "Quer trocar? Fale comigo!", wantedLabel = "PROCURO",
+            wantedDefault = "Aberto a propostas",
+        )
+        private val TURKISH = GiveawayCardStrings(
+            header = "BEDAVA", free = "ÜCRETSİZ", contact = "İster misiniz? Bana yazın!",
+            says = "LBC DİYOR", madeBy = "LBC ile yapıldı", footer1 = "LBC'yi edinin (Low Battery Camera)",
+            footer2 = "App Store ve Google Play'de", learnMore = "Daha fazla bilgi ve güvenlik ipuçları:", shotLive = "LBC ile canlı çekildi",
+            saleHeader = "SATILIK", saleContact = "İlgilendiniz mi? Bana yazın!", priceDefault = "Fiyat için yazın",
+            swapHeader = "TAKAS", swapContact = "Takas etmek ister misiniz? Bana yazın!", wantedLabel = "ARIYORUM",
+            wantedDefault = "Tekliflere açığım",
+        )
+        private val VIETNAMESE = GiveawayCardStrings(
+            header = "TẶNG MIỄN PHÍ", free = "MIỄN PHÍ", contact = "Bạn muốn không? Nhắn tôi nhé!",
+            says = "LBC NÓI", madeBy = "Làm bằng LBC", footer1 = "Tải LBC (Low Battery Camera)",
+            footer2 = "trên App Store và Google Play", learnMore = "Tìm hiểu thêm và mẹo an toàn:", shotLive = "Chụp trực tiếp bằng LBC",
+            saleHeader = "CẦN BÁN", saleContact = "Quan tâm? Nhắn tôi nhé!", priceDefault = "Liên hệ để biết giá",
+            swapHeader = "TRAO ĐỔI", swapContact = "Muốn đổi không? Nhắn tôi nhé!", wantedLabel = "TÌM ĐỔI LẤY",
+            wantedDefault = "Sẵn sàng nghe đề xuất",
+        )
+        private val HINDI = GiveawayCardStrings(
+            header = "मुफ़्त सामान", free = "मुफ़्त", contact = "चाहिए? मुझे संदेश करें!",
+            says = "LBC कहता है", madeBy = "LBC से बना", footer1 = "LBC (Low Battery Camera) पाएँ",
+            footer2 = "App Store और Google Play पर", learnMore = "और जानें और सुरक्षा सुझाव:", shotLive = "LBC से लाइव खींचा गया",
+            saleHeader = "बिक्री के लिए", saleContact = "रुचि है? मुझे संदेश करें!", priceDefault = "कीमत के लिए पूछें",
+            swapHeader = "अदला-बदली", swapContact = "बदलना चाहते हैं? मुझे संदेश करें!", wantedLabel = "तलाश है",
+            wantedDefault = "प्रस्तावों के लिए खुला",
+        )
+        private val ITALIAN = GiveawayCardStrings(
+            header = "REGALO", free = "GRATIS", contact = "Lo vuoi? Scrivimi!",
+            says = "LBC DICE", madeBy = "Fatto con LBC", footer1 = "Scarica LBC (Low Battery Camera)",
+            footer2 = "su App Store e Google Play", learnMore = "Scopri di più e consigli di sicurezza:", shotLive = "Scattata dal vivo con LBC",
+            saleHeader = "IN VENDITA", saleContact = "Interessato? Scrivimi!", priceDefault = "Prezzo su richiesta",
+            swapHeader = "SCAMBIO", swapContact = "Vuoi scambiare? Scrivimi!", wantedLabel = "CERCO",
+            wantedDefault = "Aperto a proposte",
+        )
     }
 }
 
@@ -199,6 +269,14 @@ data class GiveawayCardWords(
             "ko" -> KOREAN
             "zh-Hans" -> CHINESE_SIMPLIFIED
             "zh-Hant" -> CHINESE_TRADITIONAL
+            "ru" -> RUSSIAN
+            "uk" -> UKRAINIAN
+            "es" -> SPANISH
+            "pt" -> PORTUGUESE
+            "tr" -> TURKISH
+            "vi" -> VIETNAMESE
+            "hi" -> HINDI
+            "it" -> ITALIAN
             else -> ENGLISH
         }
 
@@ -497,6 +575,311 @@ data class GiveawayCardWords(
                 "想交換，歡迎來問我。",
                 "把你的想法傳訊息給我吧。",
                 "好東西值得擁有第二次生命。",
+            ),
+        )
+
+        private val RUSSIAN = GiveawayCardWords(
+            "Отдам даром", "Подробности по запросу",
+            listOf(
+                "Старое для меня, новое для вас.",
+                "Жалко выбрасывать.",
+                "Ему ещё есть что отдать.",
+                "Пора найти новый дом.",
+                "Лишнее у одного — сокровище у другого.",
+                "Бесплатно, и полно историй.",
+                "Хорошие вещи заслуживают второй жизни.",
+                "Кому-то это точно нужно.",
+                "Загадочная вещь! Спросите, прежде чем брать.",
+            ),
+            "Продаётся",
+            listOf(
+                "Ищет нового владельца.",
+                "Готово к новым приключениям.",
+                "Пора найти новый дом.",
+                "Кто-то наверняка это ищет.",
+                "Спрашивайте о нём что угодно.",
+                "Хорошие вещи находят хороших хозяев.",
+                "Нужен только новый владелец.",
+                "Готово к переезду.",
+                "Напишите мне, чтобы посмотреть вживую.",
+            ),
+            "Обменяю",
+            listOf(
+                "Ищу хороший обмен.",
+                "Готово к новому владельцу.",
+                "Обменяйте и подарите ему вторую жизнь.",
+                "Напишите, что у вас есть для обмена.",
+                "Найдём обмен, который устроит обоих.",
+                "Что для одного лишнее, для другого находка.",
+                "Спросите меня об обмене.",
+                "Напишите мне свою идею.",
+                "Хорошие вещи заслуживают второй жизни.",
+            ),
+        )
+        private val UKRAINIAN = GiveawayCardWords(
+            "Віддам безкоштовно", "Подробиці на запит",
+            listOf(
+                "Старе для мене, нове для вас.",
+                "Шкода викидати.",
+                "Воно ще має що дати.",
+                "Час знайти новий дім.",
+                "Зайве в одного — скарб в іншого.",
+                "Безкоштовно, і повно історій.",
+                "Гарні речі заслуговують на друге життя.",
+                "Комусь це точно потрібно.",
+                "Загадковий предмет! Спитайте, перш ніж брати.",
+            ),
+            "Продається",
+            listOf(
+                "Шукає нового власника.",
+                "Готове до нових пригод.",
+                "Час знайти новий дім.",
+                "Хтось напевно це шукає.",
+                "Питайте про нього що завгодно.",
+                "Гарні речі знаходять гарних господарів.",
+                "Потрібен лише новий власник.",
+                "Готове до переїзду.",
+                "Напишіть мені, щоб побачити наживо.",
+            ),
+            "Обміняю",
+            listOf(
+                "Шукаю гарний обмін.",
+                "Готове до нового власника.",
+                "Обміняйте й подаруйте йому друге життя.",
+                "Напишіть, що маєте для обміну.",
+                "Знайдімо обмін, що влаштує обох.",
+                "Що для одного зайве, для іншого знахідка.",
+                "Питайте мене про обмін.",
+                "Напишіть мені свою ідею.",
+                "Гарні речі заслуговують на друге життя.",
+            ),
+        )
+        private val SPANISH = GiveawayCardWords(
+            "Se regala", "Pregúntame los detalles",
+            listOf(
+                "Viejo para mí, nuevo para ti.",
+                "Demasiado bueno para tirarlo.",
+                "Aún tiene mucho que dar.",
+                "Es hora de un nuevo hogar.",
+                "Lo que a uno le sobra, a otro le sirve.",
+                "Gratis y lleno de historias.",
+                "Las cosas buenas merecen una segunda vida.",
+                "Alguien lo necesita.",
+                "¡Objeto misterioso! Pregunta antes de llevártelo.",
+            ),
+            "Se vende",
+            listOf(
+                "Busca nuevo dueño.",
+                "Listo para su próxima aventura.",
+                "Es hora de encontrarle un nuevo hogar.",
+                "Seguro que alguien lo está buscando.",
+                "Pregúntame lo que quieras.",
+                "Las cosas buenas encuentran buen hogar.",
+                "Solo le falta un nuevo dueño.",
+                "Listo para cambiar de manos.",
+                "Escríbeme para verlo en persona.",
+            ),
+            "Se intercambia",
+            listOf(
+                "Busco un buen intercambio.",
+                "Listo para un nuevo dueño.",
+                "Intercámbialo y dale una segunda vida.",
+                "Dime qué tienes para intercambiar.",
+                "Busquemos un intercambio que nos convenga a los dos.",
+                "Lo que a uno le sobra, a otro le sirve.",
+                "Pregúntame por el intercambio.",
+                "Escríbeme con tu idea.",
+                "Las cosas buenas merecen una segunda vida.",
+            ),
+        )
+        private val PORTUGUESE = GiveawayCardWords(
+            "Doa-se", "Pergunte os detalhes",
+            listOf(
+                "Velho para mim, novo para você.",
+                "Bom demais para jogar fora.",
+                "Ainda tem muito a oferecer.",
+                "Hora de um novo lar.",
+                "O que sobra para um é tesouro para outro.",
+                "De graça e cheio de histórias.",
+                "Coisas boas merecem uma segunda vida.",
+                "Alguém precisa disso.",
+                "Item misterioso! Pergunte antes de levar.",
+            ),
+            "Vende-se",
+            listOf(
+                "Procura um novo dono.",
+                "Pronto para a próxima aventura.",
+                "Hora de encontrar um novo lar.",
+                "Alguém por aí está procurando isto.",
+                "Pergunte o que quiser.",
+                "Coisas boas encontram bons lares.",
+                "Só falta um novo dono.",
+                "Pronto para mudar de mãos.",
+                "Me mande uma mensagem para ver pessoalmente.",
+            ),
+            "Troca-se",
+            listOf(
+                "Procuro uma boa troca.",
+                "Pronto para um novo dono.",
+                "Troque e dê a ele uma segunda vida.",
+                "Diga o que você tem para trocar.",
+                "Vamos achar uma troca boa para os dois.",
+                "O que sobra para um é achado para outro.",
+                "Pergunte sobre a troca.",
+                "Me mande sua ideia.",
+                "Coisas boas merecem uma segunda vida.",
+            ),
+        )
+        private val TURKISH = GiveawayCardWords(
+            "Ücretsiz eşya", "Ayrıntılar için sorun",
+            listOf(
+                "Benim için eski, sizin için yeni.",
+                "Atmak için fazla iyi.",
+                "Hâlâ verecek çok şeyi var.",
+                "Yeni bir yuva zamanı.",
+                "Birinin fazlası, başkasının hazinesi.",
+                "Ücretsiz ve hikâyelerle dolu.",
+                "İyi şeyler ikinci bir hayatı hak eder.",
+                "Birinin buna ihtiyacı var.",
+                "Gizemli eşya! Almadan önce sorun.",
+            ),
+            "Satılık",
+            listOf(
+                "Yeni sahibini arıyor.",
+                "Bir sonraki maceraya hazır.",
+                "Yeni bir yuva bulma zamanı.",
+                "Birileri bunu arıyor olmalı.",
+                "Bana her şeyi sorabilirsiniz.",
+                "İyi şeyler iyi yuvalar bulur.",
+                "Tek eksiği yeni bir sahip.",
+                "Yeni sahibine hazır.",
+                "Yüz yüze görmek için yazın.",
+            ),
+            "Takaslık",
+            listOf(
+                "İyi bir takas arıyor.",
+                "Yeni sahibine hazır.",
+                "Takas edin, ona ikinci bir hayat verin.",
+                "Takas için neyiniz var, yazın.",
+                "İkimize de uyan bir takas bulalım.",
+                "Birinin fazlası, başkasının bulgusu.",
+                "Takas için bana sorun.",
+                "Fikrinizi bana yazın.",
+                "İyi şeyler ikinci bir hayatı hak eder.",
+            ),
+        )
+        private val VIETNAMESE = GiveawayCardWords(
+            "Đồ tặng", "Hỏi tôi để biết thêm",
+            listOf(
+                "Cũ với tôi, mới với bạn.",
+                "Còn tốt, bỏ đi thì tiếc.",
+                "Nó vẫn còn dùng được nhiều.",
+                "Đến lúc tìm một mái nhà mới.",
+                "Thứ thừa của người này là báu vật của người kia.",
+                "Miễn phí, và đầy câu chuyện.",
+                "Đồ tốt xứng đáng có cuộc đời thứ hai.",
+                "Chắc hẳn có người cần nó.",
+                "Món đồ bí ẩn! Hãy hỏi trước khi lấy.",
+            ),
+            "Đồ cần bán",
+            listOf(
+                "Đang tìm chủ mới.",
+                "Sẵn sàng cho chuyến phiêu lưu mới.",
+                "Đến lúc tìm một mái nhà mới.",
+                "Chắc hẳn có người đang tìm món này.",
+                "Cứ hỏi tôi bất cứ điều gì.",
+                "Đồ tốt sẽ tìm được nơi tốt.",
+                "Chỉ còn thiếu một chủ mới.",
+                "Sẵn sàng đổi chủ.",
+                "Nhắn tôi để xem trực tiếp.",
+            ),
+            "Đồ muốn đổi",
+            listOf(
+                "Đang tìm một cuộc trao đổi hay.",
+                "Sẵn sàng cho chủ mới.",
+                "Đổi đi và cho nó một cuộc đời thứ hai.",
+                "Hãy cho tôi biết bạn có gì để đổi.",
+                "Cùng tìm cách đổi hợp với cả hai.",
+                "Thứ thừa của người này là thứ quý của người kia.",
+                "Hỏi tôi về việc trao đổi.",
+                "Nhắn tôi ý tưởng của bạn.",
+                "Đồ tốt xứng đáng có cuộc đời thứ hai.",
+            ),
+        )
+        private val HINDI = GiveawayCardWords(
+            "मुफ़्त सामान", "विवरण के लिए पूछें",
+            listOf(
+                "मेरे लिए पुराना, आपके लिए नया।",
+                "फेंकने के लिए बहुत अच्छा है।",
+                "इसमें अभी बहुत कुछ बाकी है।",
+                "अब नया घर ढूँढने का समय है।",
+                "एक का फ़ालतू, दूसरे के लिए ख़ज़ाना।",
+                "मुफ़्त, और कहानियों से भरा।",
+                "अच्छी चीज़ें दूसरी ज़िंदगी की हक़दार हैं।",
+                "किसी को इसकी ज़रूरत ज़रूर होगी।",
+                "रहस्यमय सामान! लेने से पहले पूछ लें।",
+            ),
+            "बिक्री के लिए",
+            listOf(
+                "नए मालिक की तलाश है।",
+                "अगले सफ़र के लिए तैयार।",
+                "अब नया घर ढूँढने का समय है।",
+                "कोई न कोई इसे ढूँढ रहा होगा।",
+                "इसके बारे में कुछ भी पूछें।",
+                "अच्छी चीज़ों को अच्छा घर मिलता है।",
+                "बस एक नए मालिक की कमी है।",
+                "नए हाथों में जाने को तैयार।",
+                "सामने देखने के लिए मुझे संदेश करें।",
+            ),
+            "अदला-बदली के लिए",
+            listOf(
+                "अच्छी अदला-बदली की तलाश है।",
+                "नए मालिक के लिए तैयार।",
+                "बदलें और इसे दूसरी ज़िंदगी दें।",
+                "बताइए आपके पास बदलने को क्या है।",
+                "ऐसी अदला-बदली करें जो दोनों को जँचे।",
+                "एक का फ़ालतू, दूसरे के लिए ख़ज़ाना।",
+                "अदला-बदली के बारे में पूछें।",
+                "अपना विचार मुझे भेजें।",
+                "अच्छी चीज़ें दूसरी ज़िंदगी की हक़दार हैं।",
+            ),
+        )
+        private val ITALIAN = GiveawayCardWords(
+            "Regalo", "Chiedimi i dettagli",
+            listOf(
+                "Vecchio per me, nuovo per te.",
+                "Troppo bello per buttarlo.",
+                "Ha ancora molto da dare.",
+                "È ora di una nuova casa.",
+                "Il superfluo di uno è il tesoro di un altro.",
+                "Gratis e pieno di storie.",
+                "Le cose belle meritano una seconda vita.",
+                "Qualcuno ne ha bisogno.",
+                "Oggetto misterioso! Chiedi prima di prenderlo.",
+            ),
+            "In vendita",
+            listOf(
+                "Cerca un nuovo proprietario.",
+                "Pronto per la prossima avventura.",
+                "È ora di trovare una nuova casa.",
+                "Qualcuno là fuori lo sta cercando.",
+                "Chiedimi pure tutto.",
+                "Le cose belle trovano una bella casa.",
+                "Gli serve solo un nuovo proprietario.",
+                "Pronto a cambiare proprietario.",
+                "Scrivimi per vederlo di persona.",
+            ),
+            "Da scambiare",
+            listOf(
+                "Cerco un buono scambio.",
+                "Pronto per un nuovo proprietario.",
+                "Scambialo e dagli una seconda vita.",
+                "Dimmi cosa hai da scambiare.",
+                "Troviamo uno scambio che vada bene a entrambi.",
+                "Il superfluo di uno è la scoperta di un altro.",
+                "Chiedimi dello scambio.",
+                "Scrivimi la tua idea.",
+                "Le cose belle meritano una seconda vita.",
             ),
         )
     }

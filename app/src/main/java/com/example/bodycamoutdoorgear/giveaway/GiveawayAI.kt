@@ -108,7 +108,7 @@ object GiveawayAIService {
             val body = JSONObject()
                 .put("install_id", installId(context))
                 .put("premium", premium)
-                .put("language", com.example.bodycamoutdoorgear.i18n.Tr.code)
+                .put("language", GiveawayLanguage.code)
                 .put("mode", when (mode) { CardMode.SALE -> "sale"; CardMode.SWAP -> "swap"; else -> "giveaway" })
                 .put("images", JSONArray().apply {
                     pictures.forEach {
