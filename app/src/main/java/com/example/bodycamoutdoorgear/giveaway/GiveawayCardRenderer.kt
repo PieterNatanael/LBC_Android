@@ -5,12 +5,15 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.RadialGradient
 import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.media.ExifInterface
 import android.text.Layout
@@ -44,6 +47,35 @@ object GiveawayCardRenderer {
     private val SWAP_PINK = Color.rgb(224, 85, 155)    // #E0559B, still distinct from yellow and blue for red-green and blue-yellow colour blindness
     private val SWAP_LIGHT = Color.rgb(255, 217, 235)  // #FFD9EB
 
+    /**
+     * One gradient family for all three cards: a solid top, a soft glowing band across the middle,
+     * a deeper bottom. Text stays dark on every palette, so the top and band are kept light.
+     */
+    private class CardGradient(val top: Int, val band: Int, val bottom: Int)
+    private val GIVEAWAY_GRADIENT = CardGradient(Color.rgb(255, 244, 168), Color.rgb(247, 201, 58), Color.rgb(238, 70, 48))   // #FFF4A8 #F7C93A #EE4630
+    private val SALE_GRADIENT = CardGradient(Color.rgb(107, 184, 238), Color.rgb(216, 236, 245), Color.rgb(47, 158, 110))     // #6BB8EE #D8ECF5 #2F9E6E
+    private val SWAP_GRADIENT = CardGradient(Color.rgb(217, 138, 216), Color.rgb(240, 87, 127), Color.rgb(246, 182, 182))     // #D98AD8 #F0577F #F6B6B6
+
+    private fun drawGradientBackground(c: Canvas, p: CardGradient, size: Float) {
+        c.drawRect(0f, 0f, size, size, Paint().apply {
+            shader = LinearGradient(0f, 0f, 0f, size, intArrayOf(p.top, p.top, p.bottom),
+                floatArrayOf(0f, 0.42f, 1f), Shader.TileMode.CLAMP)
+        })
+        // The band: a wide radial glow squashed into a tilted ellipse.
+        val radius = size * 0.8f
+        c.save()
+        c.translate(size / 2f, size * 0.62f)
+        c.rotate(-6f)
+        c.scale(1f, 0.4f)
+        c.drawCircle(0f, 0f, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = RadialGradient(0f, 0f, radius,
+                intArrayOf(Color.argb(242, Color.red(p.band), Color.green(p.band), Color.blue(p.band)),
+                    Color.argb(0, Color.red(p.band), Color.green(p.band), Color.blue(p.band))),
+                null, Shader.TileMode.CLAMP)
+        })
+        c.restore()
+    }
+
     private val HEAVY: Typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
     private val BOLD: Typeface = Typeface.create("sans-serif", Typeface.BOLD)
     private val MEDIUM: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -67,13 +99,12 @@ object GiveawayCardRenderer {
         val swap = cardStyle as? CardStyle.Swap
         val isSale = sale != null
         val isSwap = swap != null
-        val background = if (isSwap) SWAP_PINK else if (isSale) SALE_BLUE else YELLOW
+        val palette = if (isSwap) SWAP_GRADIENT else if (isSale) SALE_GRADIENT else GIVEAWAY_GRADIENT
         val accent = if (isSwap) SWAP_LIGHT else if (isSale) SALE_LIGHT else YELLOW
         val bmp = Bitmap.createBitmap(SIDE, SIDE, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
-        c.drawColor(background)
-
         val size = SIDE.toFloat()
+        drawGradientBackground(c, palette, size)
         val margin = 48f
 
         // Header
@@ -174,8 +205,9 @@ object GiveawayCardRenderer {
         // LBC SAYS box
         val box = RectF(colX, 700f, colX + colW, 892f)
         val boxPath = Path().apply { addRoundRect(box, 30f, 30f, Path.Direction.CW) }
-        c.drawPath(boxPath, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
-        c.drawPath(boxPath, Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 5f; color = INK })
+        // Glass: a translucent white panel with a thin light edge, so the gradient shows through.
+        c.drawPath(boxPath, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(87, 255, 255, 255) })
+        c.drawPath(boxPath, Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f; color = Color.argb(166, 255, 255, 255) })
         val inner = RectF(box.left + 24f, box.top + 20f, box.right - 24f, box.bottom - 20f)
         val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = HEAVY; textSize = 19f; color = INK; letterSpacing = 3f / 19f
@@ -187,7 +219,12 @@ object GiveawayCardRenderer {
 
         // Bottom bar
         val bar = RectF(margin, 924f, size - margin, 1032f)
-        c.drawRoundRect(bar, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = INK })
+        c.drawRoundRect(bar, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(214, Color.red(INK), Color.green(INK), Color.blue(INK))
+        })
+        c.drawRoundRect(bar, 30f, 30f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE; strokeWidth = 2f; color = Color.argb(71, 255, 255, 255)
+        })
         drawFitted(c, if (isSwap) strings.swapContact else if (isSale) strings.saleContact else strings.contact,
             RectF(bar.left + 34f, bar.top + 10f, bar.left + 34f + 560f, bar.bottom - 10f),
             maxSize = 50f, minSize = 30f, typeface = HEAVY, color = accent, kern = -0.5f, maxLines = 1,
