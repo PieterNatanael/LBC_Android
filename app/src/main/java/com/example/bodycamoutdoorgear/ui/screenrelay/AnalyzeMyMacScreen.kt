@@ -73,6 +73,7 @@ private sealed class Phase {
     object Waiting : Phase()
     data class Done(val text: String) : Phase()
     data class Failed(val message: String) : Phase()
+    object QuotaExceeded : Phase()
 }
 
 /**
@@ -82,7 +83,11 @@ private sealed class Phase {
  * the gallery as a .txt note automatically.
  */
 @Composable
-fun AnalyzeMyMacScreen(onDismiss: () -> Unit, tier: String) {
+fun AnalyzeMyMacScreen(
+    onDismiss: () -> Unit,
+    tier: String,
+    subscriptionManager: com.example.bodycamoutdoorgear.manager.SubscriptionManager,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -104,6 +109,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit, tier: String) {
 
     var prompt by remember { mutableStateOf("") }
     var phase by remember { mutableStateOf<Phase>(Phase.Idle) }
+    var showUpgrade by remember { mutableStateOf(false) }
 
     fun handleScanResult(raw: String) {
         showScanner = false
@@ -140,7 +146,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit, tier: String) {
         val jobId = try {
             ScreenRelayService.requestAnalysis(pairId, phoneId, prompt, tier)
         } catch (_: ScreenRelayService.QuotaExceededException) {
-            phase = Phase.Failed(tr("You've used all your Analyze my Mac requests for this period. Upgrade for more, or wait for your quota to reset."))
+            phase = Phase.QuotaExceeded
             return
         } catch (_: Exception) {
             phase = Phase.Failed(tr("Couldn't reach your Mac. Make sure LBC Gallery is open there and it's awake and unlocked."))
@@ -206,6 +212,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit, tier: String) {
                     onAnalyze = { scope.launch { runAnalysis() } },
                     onAskAgain = { phase = Phase.Idle; prompt = "" },
                     onTryAgain = { phase = Phase.Idle },
+                    onUpgrade = { showUpgrade = true },
                     onUnlink = {
                         ScreenRelayPairing.reset(context)
                         isPaired = false
@@ -243,6 +250,13 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit, tier: String) {
         ) {
             Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = Color.White)
         }
+    }
+
+    if (showUpgrade) {
+        AnalyzeMyMacUpgradeScreen(
+            subscriptionManager = subscriptionManager,
+            onDismiss = { showUpgrade = false },
+        )
     }
 }
 
@@ -317,6 +331,7 @@ private fun PairedContent(
     onAnalyze: () -> Unit,
     onAskAgain: () -> Unit,
     onTryAgain: () -> Unit,
+    onUpgrade: () -> Unit,
     onUnlink: () -> Unit,
 ) {
     when (phase) {
@@ -343,6 +358,9 @@ private fun PairedContent(
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.Black)
                 Text(tr("  Analyze my Mac's screen"), fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            TextButton(onClick = onUpgrade) {
+                Text(tr("See plans"), color = Color.White.copy(0.4f), fontSize = 13.sp)
             }
             TextButton(onClick = onUnlink) {
                 Text(tr("Unlink this Mac"), color = Color.White.copy(0.4f), fontSize = 13.sp)
@@ -382,6 +400,22 @@ private fun PairedContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(tr("Try again"), fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
+        is Phase.QuotaExceeded -> {
+            Text(
+                tr("You've used all your Analyze my Mac requests for this period."),
+                color = TextPrimary, fontSize = 14.sp, textAlign = TextAlign.Center
+            )
+            Button(
+                onClick = onUpgrade,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(tr("See upgrade options"), fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            TextButton(onClick = onTryAgain) {
+                Text(tr("Not now"), color = Color.White.copy(0.6f))
             }
         }
     }

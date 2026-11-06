@@ -204,4 +204,9 @@ class SubscriptionManager(private val context: Context) {
     fun clearError() {
         _errorMessage.value = null
     }
+
+    /** Shown when a tier's product hasn't loaded (e.g. not yet created in Play Console). */
+    fun reportUnavailable() {
+        _errorMessage.value = tr("This plan isn't available yet. Please try again later.")
+    }
 }
