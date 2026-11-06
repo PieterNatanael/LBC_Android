@@ -25,6 +25,7 @@ object ScreenRelayService {
     }
 
     class NotPairedException : Exception("not_paired")
+    class QuotaExceededException : Exception("quota_exceeded")
 
     private fun post(path: String, body: JSONObject): JSONObject = openAndRead(
         "$BASE/$path",
@@ -59,6 +60,7 @@ object ScreenRelayService {
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
             val json = try { JSONObject(text) } catch (_: Exception) { JSONObject() }
             if (code == 403) throw NotPairedException()
+            if (code == 429) throw QuotaExceededException()
             if (code !in 200..299) throw IOException("HTTP $code")
             return json
         } finally {
@@ -75,12 +77,15 @@ object ScreenRelayService {
     /**
      * Tapping "Analyze my Mac". [prompt] is any custom instruction the user
      * typed; empty means "just explain what's on screen" (the server's own default).
+     * [tier] is "free"/"pro"/"plus"/"max" — it picks the Claude model and the
+     * quota on the server (see TIERS in worker/screen-relay-endpoint.js).
      */
-    suspend fun requestAnalysis(pairId: String, phoneInstallId: String, prompt: String): String =
+    suspend fun requestAnalysis(pairId: String, phoneInstallId: String, prompt: String, tier: String): String =
         withContext(Dispatchers.IO) {
             val reply = post(
                 "request",
-                JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId).put("prompt", prompt),
+                JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId)
+                    .put("prompt", prompt).put("tier", tier),
             )
             reply.optString("job_id").ifEmpty { throw IOException("bad_response") }
         }

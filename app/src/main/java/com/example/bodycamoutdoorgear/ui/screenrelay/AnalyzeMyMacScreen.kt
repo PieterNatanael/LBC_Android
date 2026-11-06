@@ -82,7 +82,7 @@ private sealed class Phase {
  * the gallery as a .txt note automatically.
  */
 @Composable
-fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
+fun AnalyzeMyMacScreen(onDismiss: () -> Unit, tier: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -138,7 +138,10 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
         phase = Phase.Requesting
 
         val jobId = try {
-            ScreenRelayService.requestAnalysis(pairId, phoneId, prompt)
+            ScreenRelayService.requestAnalysis(pairId, phoneId, prompt, tier)
+        } catch (_: ScreenRelayService.QuotaExceededException) {
+            phase = Phase.Failed(tr("You've used all your Analyze my Mac requests for this period. Upgrade for more, or wait for your quota to reset."))
+            return
         } catch (_: Exception) {
             phase = Phase.Failed(tr("Couldn't reach your Mac. Make sure LBC Gallery is open there and it's awake and unlocked."))
             return
