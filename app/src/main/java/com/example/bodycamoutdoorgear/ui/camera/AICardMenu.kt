@@ -214,7 +214,10 @@ fun AICardMenu(
                     Icon(Icons.Default.Devices, contentDescription = null, tint = Color(0xFFCCCCCC))
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(tr("Analyze my Mac"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(tr("Analyze my Mac"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        com.example.bodycamoutdoorgear.ui.common.BetaBadge()
+                    }
                     Text(
                         if (ScreenRelayPairing.isPaired(context)) tr("Linked") else tr("Tap to link your Mac"),
                         color = Color(0xFF999999), fontSize = 13.sp,

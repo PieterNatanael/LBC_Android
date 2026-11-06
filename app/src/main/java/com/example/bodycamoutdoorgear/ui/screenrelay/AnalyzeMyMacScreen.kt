@@ -197,12 +197,15 @@ fun AnalyzeMyMacScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text(
-                tr("Analyze my Mac"),
-                color = TextPrimary,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    tr("Analyze my Mac"),
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                com.example.bodycamoutdoorgear.ui.common.BetaBadge()
+            }
 
             if (isPaired) {
                 PairedContent(
