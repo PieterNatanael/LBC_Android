@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.filled.VideoCameraBack
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -96,7 +97,7 @@ fun VideoThumbnailCard(
                 )
             } else {
                 Icon(
-                    Icons.Default.VideoCameraBack,
+                    if (video.isText) Icons.Default.Description else Icons.Default.VideoCameraBack,
                     contentDescription = null,
                     tint = BorderColor,
                     modifier = Modifier.padding(16.dp)
@@ -104,7 +105,7 @@ fun VideoThumbnailCard(
             }
 
             // Duration badge
-            if (durationMs > 0) {
+            if (durationMs > 0 && !video.isText) {
                 Text(
                     text = formatDuration(durationMs),
                     color = Color.White,

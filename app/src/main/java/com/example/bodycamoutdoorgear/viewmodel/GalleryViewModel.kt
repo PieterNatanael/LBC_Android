@@ -102,7 +102,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 // to its own date, which for them IS the added date.
                 val added = if (sort == GallerySort.RECENTLY_ADDED)
                     AddedDateStore.all(getApplication()) else emptyMap()
-                folder.listFiles { f -> f.extension in setOf("mp4", "mov", "jpg", "jpeg", "png") }
+                folder.listFiles { f -> f.extension in setOf("mp4", "mov", "jpg", "jpeg", "png", "txt") }
                     ?.sortedWith(
                         // The name breaks ties so equal timestamps can't
                         // shuffle the grid between reloads.
@@ -118,6 +118,9 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     fun loadThumbnail(videoPath: String) {
         if (thumbnails.containsKey(videoPath)) return
+        // No decodable image/video data to read — VideoThumbnailCard's own
+        // doc-icon placeholder is the whole thumbnail for a text entry.
+        if (File(videoPath).extension == "txt") return
         viewModelScope.launch {
             val bmp = withContext(Dispatchers.IO) {
                 try {
