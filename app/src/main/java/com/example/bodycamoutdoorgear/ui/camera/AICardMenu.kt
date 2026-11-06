@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +52,7 @@ import com.example.bodycamoutdoorgear.ui.theme.LocalMarsTheme
 import com.example.bodycamoutdoorgear.ui.theme.MarsChamferShape
 import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.sideButtonStyle
+import com.example.bodycamoutdoorgear.screenrelay.ScreenRelayPairing
 import com.example.bodycamoutdoorgear.viewmodel.DisplayMode
 
 private val INK = Color(0xFF1B1A17)
@@ -135,7 +137,12 @@ fun AICardChip(mode: DisplayMode, onClick: () -> Unit, modifier: Modifier = Modi
 /** "Make a card with AI": the three card modes. The one that is on has a tick; tapping it turns card mode off. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: () -> Unit) {
+fun AICardMenu(
+    current: DisplayMode,
+    onPick: (DisplayMode) -> Unit,
+    onDismiss: () -> Unit,
+    onAnalyzeMyMac: () -> Unit = {},
+) {
     val context = LocalContext.current
     val strings = GiveawayCardStrings.current
     var pickingLanguage by remember { mutableStateOf(false) }
@@ -196,6 +203,24 @@ fun AICardMenu(current: DisplayMode, onPick: (DisplayMode) -> Unit, onDismiss: (
                         Icon(Icons.Default.Check, contentDescription = null, tint = mode.cardColor ?: Color.White)
                     }
                 }
+            }
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).height(1.dp).background(Color(0xFF3A3A3A)))
+            Row(
+                Modifier.fillMaxWidth().clickable { onDismiss(); onAnalyzeMyMac() }.padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Devices, contentDescription = null, tint = Color(0xFFCCCCCC))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(tr("Analyze my Mac"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (ScreenRelayPairing.isPaired(context)) tr("Linked") else tr("Tap to link your Mac"),
+                        color = Color(0xFF999999), fontSize = 13.sp,
+                    )
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF808080))
             }
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).height(1.dp).background(Color(0xFF3A3A3A)))
             Row(

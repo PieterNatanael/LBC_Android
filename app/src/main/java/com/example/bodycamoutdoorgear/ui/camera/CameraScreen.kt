@@ -242,6 +242,7 @@ fun CameraScreen(
     var showPaywall  by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showAiMenu by remember { mutableStateOf(false) }
+    var showAnalyzeMyMac by remember { mutableStateOf(false) }
 
     // Glow positioning — updated by onGloballyPositioned on the preview box
     val rootCoordsRef    = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -994,6 +995,13 @@ fun CameraScreen(
                 showAiMenu = false
             },
             onDismiss = { showAiMenu = false },
+            onAnalyzeMyMac = { showAnalyzeMyMac = true },
+        )
+    }
+
+    if (showAnalyzeMyMac) {
+        com.example.bodycamoutdoorgear.ui.screenrelay.AnalyzeMyMacScreen(
+            onDismiss = { showAnalyzeMyMac = false }
         )
     }
 

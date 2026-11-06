@@ -362,7 +362,7 @@ fun GalleryScreen(
                     val path = video.file.absolutePath
                     LaunchedEffect(path) {
                         galleryViewModel.loadThumbnail(path)
-                        if (!video.isPhoto) galleryViewModel.loadDuration(path)
+                        if (!video.isPhoto && !video.isText) galleryViewModel.loadDuration(path)
                     }
 
                     VideoThumbnailCard(
@@ -638,7 +638,18 @@ fun GalleryScreen(
                     galleryViewModel.loadThumbnail(item.file.absolutePath)
                 }
 
-                if (item.isPhoto) {
+                if (item.isText) {
+                    TextViewerScreen(
+                        item = item,
+                        onDismiss = {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion { selectedIndex = null }
+                        },
+                        onDeleted = {
+                            galleryViewModel.loadVideos()
+                            selectedIndex = null
+                        }
+                    )
+                } else if (item.isPhoto) {
                     PhotoViewerScreen(
                         photo = item,
                         bitmap = thumbnails[item.file.absolutePath],

@@ -39,7 +39,7 @@ object PrivateGalleryStore {
     }
 
     fun currentFiles(context: Context): List<File> {
-        val exts = setOf("mp4", "mov", "jpg", "jpeg", "png")
+        val exts = setOf("mp4", "mov", "jpg", "jpeg", "png", "txt")
         return folder(context).listFiles { f -> f.extension.lowercase() in exts }?.toList() ?: emptyList()
     }
 
