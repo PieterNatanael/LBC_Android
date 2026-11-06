@@ -31,4 +31,8 @@ object ScreenRelayPairing {
     fun reset(context: Context) {
         prefs(context).edit().remove("pair_id").putBoolean("paired", false).apply()
     }
+
+    /** Whether the first-time "here's the path you need to take" walkthrough has been shown. */
+    fun introSeen(context: Context): Boolean = prefs(context).getBoolean("intro_seen", false)
+    fun setIntroSeen(context: Context) = prefs(context).edit().putBoolean("intro_seen", true).apply()
 }

@@ -2,6 +2,8 @@ package com.example.bodycamoutdoorgear.ui.screenrelay
 
 import com.example.bodycamoutdoorgear.i18n.tr
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -86,6 +89,12 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
     var isPaired by remember { mutableStateOf(ScreenRelayPairing.isPaired(context)) }
     var showScanner by remember { mutableStateOf(false) }
     var pairingError by remember { mutableStateOf<String?>(null) }
+    // Shown once, the first time anyone opens this screen before pairing —
+    // the Mac side needs a real app download, a permission click, and a QR
+    // scan, in that order, so a first-time user needs the path spelled out
+    // rather than landing straight on "Scan QR Code".
+    var introSeen by remember { mutableStateOf(ScreenRelayPairing.introSeen(context)) }
+    var showIntroAgain by remember { mutableStateOf(false) }
     val hasCameraPermission = remember {
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
     }
@@ -200,6 +209,18 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
                         phase = Phase.Idle
                     },
                 )
+            } else if (!introSeen || showIntroAgain) {
+                IntroSteps(
+                    onOpenMacAppStore = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://apps.apple.com/app/lbc-gallery/id6812152513"))
+                        context.startActivity(intent)
+                    },
+                    onContinue = {
+                        ScreenRelayPairing.setIntroSeen(context)
+                        introSeen = true
+                        showIntroAgain = false
+                    },
+                )
             } else {
                 PairingContent(
                     error = pairingError,
@@ -208,6 +229,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
                         if (hasCameraPermission) showScanner = true
                         else permLauncher.launch(Manifest.permission.CAMERA)
                     },
+                    onShowIntroAgain = { showIntroAgain = true },
                 )
             }
         }
@@ -222,7 +244,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun PairingContent(error: String?, onScan: () -> Unit) {
+private fun PairingContent(error: String?, onScan: () -> Unit, onShowIntroAgain: () -> Unit) {
     Text(
         tr("On your Mac, open LBC Gallery, go to Settings and choose \"Pair with Phone\", then scan the QR code it shows."),
         color = TextSecondary,
@@ -239,6 +261,48 @@ private fun PairingContent(error: String?, onScan: () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(tr("Scan QR Code"), fontWeight = FontWeight.Bold, color = Color.White)
+    }
+    TextButton(onClick = onShowIntroAgain) {
+        Text(tr("How does this work?"), color = Color.White.copy(0.4f), fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun IntroSteps(onOpenMacAppStore: () -> Unit, onContinue: () -> Unit) {
+    IntroStep(1, tr("Download LBC Gallery on your Mac"), tr("It's free on the Mac App Store."))
+    IntroStep(2, tr("Open it and start pairing"), tr("Tap the gear icon, then \"Pair with Phone\" — it shows a QR code."))
+    IntroStep(3, tr("Allow Screen Recording when asked"), tr("Your Mac will ask permission the first time. Click Allow. If it doesn't work right away, quit and reopen LBC Gallery once — that's a one-time step."))
+    IntroStep(4, tr("Come back here and scan"), tr("Tap \"Scan QR Code\" below and point your camera at the code on your Mac."))
+
+    TextButton(onClick = onOpenMacAppStore) {
+        Text(tr("Open Mac App Store page"), color = Color.White.copy(0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+    }
+
+    Button(
+        onClick = onContinue,
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(tr("Got it, let's scan"), fontWeight = FontWeight.Bold, color = Color.Black)
+    }
+}
+
+@Composable
+private fun IntroStep(number: Int, title: String, detail: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(
+            modifier = Modifier.size(26.dp).background(Color.White, androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("$number", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+        Column {
+            Text(title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(detail, color = TextSecondary, fontSize = 13.sp, lineHeight = 18.sp)
+        }
     }
 }
 
