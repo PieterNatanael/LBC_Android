@@ -70,7 +70,7 @@ class SubscriptionManager(private val context: Context) {
     val isUnlocked: Boolean
         get() = _isSubscribed.value || _isGrandfathered.value
 
-    /// The tier "Analyze my Mac" gates its model/quota on. Grandfathered
+    /// The tier "PeekaBoo" gates its model/quota on. Grandfathered
     /// users (installed before the freemium switch) are treated as Pro.
     val analyzeMyMacTier: String
         get() {

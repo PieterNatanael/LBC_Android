@@ -4,7 +4,7 @@ import android.content.Context
 import java.util.UUID
 
 /**
- * This phone's identity for the "Analyze my Mac" relay, and the pairing (if
+ * This phone's identity for the "PeekaBoo" relay, and the pairing (if
  * any) linking it to a Mac. Mirrors GiveawayAIService's install_id
  * convention, and the Mac app's own ScreenRelayPairing — same shape on
  * both ends, deliberately.

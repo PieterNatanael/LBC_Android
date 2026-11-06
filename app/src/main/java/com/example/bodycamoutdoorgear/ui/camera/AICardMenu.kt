@@ -215,7 +215,7 @@ fun AICardMenu(
                 }
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(tr("Analyze my Mac"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text(tr("PeekaBoo"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         com.example.bodycamoutdoorgear.ui.common.BetaBadge()
                     }
                     Text(

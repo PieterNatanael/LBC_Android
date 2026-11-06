@@ -57,7 +57,7 @@ import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 import com.example.bodycamoutdoorgear.ui.theme.TextSecondary
 
 /**
- * Plan picker for Analyze my Mac's AI-quota tiers. Pro keeps its existing
+ * Plan picker for PeekaBoo's AI-quota tiers. Pro keeps its existing
  * paywall (PaywallScreen, unchanged); Plus and Max are single weekly
  * products with no period choice, so they get a plain inline subscribe
  * button here instead.

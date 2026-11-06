@@ -38,7 +38,7 @@ import com.example.bodycamoutdoorgear.ui.theme.SurfaceDark
 import com.example.bodycamoutdoorgear.ui.theme.TextPrimary
 
 /**
- * Full-screen viewer for a saved "Analyze my Mac" result (or any other
+ * Full-screen viewer for a saved "PeekaBoo" result (or any other
  * plain-text gallery entry). Much simpler than PhotoViewerScreen/
  * VideoPlayerScreen — no Private Gallery move, no scheduling — but keeps
  * the same (onDismiss, onDeleted) shape so the gallery pager can host all

@@ -9,7 +9,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 /**
- * Talks to the "Analyze my Mac" relay on gogoodmood.com from the phone
+ * Talks to the "PeekaBoo" relay on gogoodmood.com from the phone
  * side. Same shape as GiveawayAIService: plain HttpURLConnection, no
  * third-party networking library. See worker/screen-relay-endpoint.js on
  * the server, and the Mac app's own ScreenRelayService, for the full flow
@@ -75,7 +75,7 @@ object ScreenRelayService {
     }
 
     /**
-     * Tapping "Analyze my Mac". [prompt] is any custom instruction the user
+     * Tapping "PeekaBoo". [prompt] is any custom instruction the user
      * typed; empty means "just explain what's on screen" (the server's own default).
      * [tier] is "free"/"pro"/"plus"/"max" — it picks the Claude model and the
      * quota on the server (see TIERS in worker/screen-relay-endpoint.js).

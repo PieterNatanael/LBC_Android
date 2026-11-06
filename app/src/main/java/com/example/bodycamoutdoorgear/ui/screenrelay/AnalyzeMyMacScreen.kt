@@ -77,7 +77,7 @@ private sealed class Phase {
 }
 
 /**
- * "Analyze my Mac": either the one-time pairing (scan the Mac's QR code),
+ * "PeekaBoo": either the one-time pairing (scan the Mac's QR code),
  * or — once paired — a single button that asks the paired Mac to capture
  * and explain its current screen. The result is shown here and saved into
  * the gallery as a .txt note automatically.
@@ -199,7 +199,7 @@ fun AnalyzeMyMacScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    tr("Analyze my Mac"),
+                    tr("PeekaBoo"),
                     color = TextPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -360,7 +360,7 @@ private fun PairedContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.Black)
-                Text(tr("  Analyze my Mac's screen"), fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(tr("  Use PeekaBoo"), fontWeight = FontWeight.Bold, color = Color.Black)
             }
             TextButton(onClick = onUpgrade) {
                 Text(tr("See plans"), color = Color.White.copy(0.4f), fontSize = 13.sp)
@@ -407,7 +407,7 @@ private fun PairedContent(
         }
         is Phase.QuotaExceeded -> {
             Text(
-                tr("You've used all your Analyze my Mac requests for this period."),
+                tr("You've used all your PeekaBoo requests for this period."),
                 color = TextPrimary, fontSize = 14.sp, textAlign = TextAlign.Center
             )
             Button(

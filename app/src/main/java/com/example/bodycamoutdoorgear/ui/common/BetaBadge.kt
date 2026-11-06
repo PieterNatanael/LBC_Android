@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Small inline tag for a feature that's new and still being refined —
- * currently just "Analyze my Mac". Shared so every entry point reads
+ * currently just "PeekaBoo". Shared so every entry point reads
  * the same way.
  */
 @Composable
