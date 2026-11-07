@@ -200,6 +200,12 @@ fun AnalyzeMyMacScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            Image(
+                painter = painterResource(com.example.bodycamoutdoorgear.R.drawable.lbc_logo),
+                contentDescription = null,
+                modifier = Modifier.size(44.dp)
+            )
+
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     tr("PeekaBoo"),
@@ -324,8 +330,8 @@ private fun PairingContent(error: String?, onScan: () -> Unit, onShowIntroAgain:
 @Composable
 private fun IntroSteps(onOpenMacAppStore: () -> Unit, onContinue: () -> Unit) {
     IntroStep(1, tr("Download LBC Gallery on your Mac"), tr("It's free on the Mac App Store."))
-    IntroStep(2, tr("Open it and start pairing"), tr("Tap the gear icon, then \"Pair with Phone\" — it shows a QR code."))
-    IntroStep(3, tr("Allow Screen Recording when asked"), tr("Your Mac will ask permission the first time. Click Allow. If it doesn't work right away, quit and reopen LBC Gallery once — that's a one-time step."))
+    IntroStep(2, tr("Open it and start pairing"), tr("Tap the gear icon, then \"Pair with Phone\". It shows a QR code."))
+    IntroStep(3, tr("Allow Screen Recording when asked"), tr("Your Mac will ask permission the first time. Click Allow. If it doesn't work right away, quit and reopen LBC Gallery once; that's a one-time step."))
     IntroStep(4, tr("Come back here and scan"), tr("Tap \"Scan QR Code\" below and point your camera at the code on your Mac."))
 
     TextButton(onClick = onOpenMacAppStore) {

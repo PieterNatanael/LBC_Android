@@ -75,9 +75,9 @@ private data class PlanLabel(val name: String, val quota: String, val period: St
 // What PeekaBoo gives you on each plan — the actual differentiator between
 // these three now, shown inline so nobody has to guess what they're buying.
 private val PLAN_LABELS = mapOf(
-    "lbc_premium" to PlanLabel("LBC Pro", "PeekaBoo: 100/month · Haiku", "/ month", null),
-    "lbc_plus" to PlanLabel("LBC Plus", "PeekaBoo: 50/week, +50 Haiku · Sonnet", "/ week", null),
-    "lbc_max" to PlanLabel("LBC Max", "PeekaBoo: 150/week, +150 Haiku · Sonnet", "/ week", "BEST"),
+    "lbc_premium" to PlanLabel("LBC Pro", "PeekaBoo: 100 Haiku a month", "/ month", null),
+    "lbc_plus" to PlanLabel("LBC Plus", "PeekaBoo: 50 Sonnet a week + 50 Haiku", "/ week", null),
+    "lbc_max" to PlanLabel("LBC Max", "PeekaBoo: 150 Sonnet a week + 150 Haiku", "/ week", "BEST"),
 )
 
 @Composable
