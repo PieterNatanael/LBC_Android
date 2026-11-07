@@ -272,7 +272,7 @@ fun AnalyzeMyMacScreen(
     }
 
     if (showUpgrade) {
-        AnalyzeMyMacUpgradeScreen(
+        com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen(
             subscriptionManager = subscriptionManager,
             onDismiss = { showUpgrade = false },
         )
