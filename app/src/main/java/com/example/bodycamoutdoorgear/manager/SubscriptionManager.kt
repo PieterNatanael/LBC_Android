@@ -28,8 +28,14 @@ class SubscriptionManager(private val context: Context) {
 
     companion object {
         const val PRODUCT_MONTHLY = "lbc_premium"
+        // LBC Plus / LBC Max: separate, AI-quota-focused tiers above Pro
+        // ($3/week and $9/week). These products must be created in Play
+        // Console before purchase works — see analyzeMyMacTier below for
+        // the quotas they unlock.
+        const val PRODUCT_PLUS = "lbc_plus"
+        const val PRODUCT_MAX = "lbc_max"
 
-        val ALL_PRODUCTS = listOf(PRODUCT_MONTHLY)
+        val ALL_PRODUCTS = listOf(PRODUCT_MONTHLY, PRODUCT_PLUS, PRODUCT_MAX)
 
         // April 18, 2026 UTC — grandfather cutoff (matches iOS)
         private val GRANDFATHER_CUTOFF_MS: Long = run {
@@ -44,6 +50,9 @@ class SubscriptionManager(private val context: Context) {
 
     private val _isSubscribed = MutableStateFlow(false)
     val isSubscribed: StateFlow<Boolean> = _isSubscribed.asStateFlow()
+
+    // Which product the active subscription belongs to, null when unsubscribed.
+    private val _activeProductId = MutableStateFlow<String?>(null)
 
     private val _isGrandfathered = MutableStateFlow(false)
     val isGrandfathered: StateFlow<Boolean> = _isGrandfathered.asStateFlow()
@@ -60,6 +69,19 @@ class SubscriptionManager(private val context: Context) {
 
     val isUnlocked: Boolean
         get() = _isSubscribed.value || _isGrandfathered.value
+
+    /// The tier "PeekaBoo" gates its model/quota on. Grandfathered
+    /// users (installed before the freemium switch) are treated as Pro.
+    val analyzeMyMacTier: String
+        get() {
+            if (!isUnlocked) return "free"
+            val productId = _activeProductId.value ?: return "pro" // grandfathered, no active product
+            return when (productId) {
+                PRODUCT_MAX -> "max"
+                PRODUCT_PLUS -> "plus"
+                else -> "pro"
+            }
+        }
 
     private val purchasesUpdatedListener = PurchasesUpdatedListener { result: BillingResult, purchases: List<Purchase>? ->
         if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
@@ -116,6 +138,7 @@ class SubscriptionManager(private val context: Context) {
                     p.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
                 _isSubscribed.value = active != null
+                _activeProductId.value = active?.products?.firstOrNull()
                 if (active != null && !active.isAcknowledged) acknowledgePurchase(active)
             }
         }
@@ -166,6 +189,7 @@ class SubscriptionManager(private val context: Context) {
     private fun handlePurchase(purchase: Purchase) {
         if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
             _isSubscribed.value = true
+            _activeProductId.value = purchase.products.firstOrNull()
             if (!purchase.isAcknowledged) acknowledgePurchase(purchase)
         }
     }
@@ -179,5 +203,10 @@ class SubscriptionManager(private val context: Context) {
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    /** Shown when a tier's product hasn't loaded (e.g. not yet created in Play Console). */
+    fun reportUnavailable() {
+        _errorMessage.value = tr("This plan isn't available yet. Please try again later.")
     }
 }

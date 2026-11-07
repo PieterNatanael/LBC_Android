@@ -1,6 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.screenrelay
 
 import com.example.bodycamoutdoorgear.i18n.tr
+import com.example.bodycamoutdoorgear.giveaway.GiveawayLanguage
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,16 +75,21 @@ private sealed class Phase {
     object Waiting : Phase()
     data class Done(val text: String) : Phase()
     data class Failed(val message: String) : Phase()
+    object QuotaExceeded : Phase()
 }
 
 /**
- * "Analyze my Mac": either the one-time pairing (scan the Mac's QR code),
+ * "PeekaBoo": either the one-time pairing (scan the Mac's QR code),
  * or — once paired — a single button that asks the paired Mac to capture
  * and explain its current screen. The result is shown here and saved into
  * the gallery as a .txt note automatically.
  */
 @Composable
-fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
+fun AnalyzeMyMacScreen(
+    onDismiss: () -> Unit,
+    tier: String,
+    subscriptionManager: com.example.bodycamoutdoorgear.manager.SubscriptionManager,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -104,6 +111,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
 
     var prompt by remember { mutableStateOf("") }
     var phase by remember { mutableStateOf<Phase>(Phase.Idle) }
+    var showUpgrade by remember { mutableStateOf(false) }
 
     fun handleScanResult(raw: String) {
         showScanner = false
@@ -119,9 +127,11 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
         }
         scope.launch {
             try {
-                ScreenRelayService.confirmPairing(pairId, ScreenRelayPairing.phoneInstallId(context))
+                ScreenRelayService.confirmPairing(pairId, ScreenRelayPairing.phoneInstallId(context), tier)
                 ScreenRelayPairing.savePairing(context, pairId)
                 isPaired = true
+            } catch (_: ScreenRelayService.SubscriptionRequiredException) {
+                showUpgrade = true
             } catch (_: Exception) {
                 pairingError = tr("Couldn't complete pairing. Make sure the code on your Mac is still showing, then try again.")
             }
@@ -138,7 +148,10 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
         phase = Phase.Requesting
 
         val jobId = try {
-            ScreenRelayService.requestAnalysis(pairId, phoneId, prompt)
+            ScreenRelayService.requestAnalysis(pairId, phoneId, prompt, tier, GiveawayLanguage.appCode)
+        } catch (_: ScreenRelayService.QuotaExceededException) {
+            phase = Phase.QuotaExceeded
+            return
         } catch (_: Exception) {
             phase = Phase.Failed(tr("Couldn't reach your Mac. Make sure LBC Gallery is open there and it's awake and unlocked."))
             return
@@ -188,11 +201,31 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            Image(
+                painter = painterResource(com.example.bodycamoutdoorgear.R.drawable.lbc_logo),
+                contentDescription = null,
+                modifier = Modifier.size(44.dp)
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    tr("PeekaBoo"),
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                com.example.bodycamoutdoorgear.ui.common.BetaBadge()
+            }
+
             Text(
-                tr("Analyze my Mac"),
-                color = TextPrimary,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                tr("Why we built this"),
+                color = TextSecondary,
+                fontSize = 12.sp,
+                modifier = Modifier.clickable {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://gogoodmood.com/blog/en/peekaboo-analyze-my-mac/"))
+                    )
+                }
             )
 
             if (isPaired) {
@@ -203,6 +236,7 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
                     onAnalyze = { scope.launch { runAnalysis() } },
                     onAskAgain = { phase = Phase.Idle; prompt = "" },
                     onTryAgain = { phase = Phase.Idle },
+                    onUpgrade = { showUpgrade = true },
                     onUnlink = {
                         ScreenRelayPairing.reset(context)
                         isPaired = false
@@ -221,6 +255,8 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
                         showIntroAgain = false
                     },
                 )
+            } else if (tier == "free") {
+                SubscriptionRequiredContent(onSeePlans = { showUpgrade = true })
             } else {
                 PairingContent(
                     error = pairingError,
@@ -240,6 +276,31 @@ fun AnalyzeMyMacScreen(onDismiss: () -> Unit) {
         ) {
             Icon(Icons.Default.Close, contentDescription = tr("Close"), tint = Color.White)
         }
+    }
+
+    if (showUpgrade) {
+        com.example.bodycamoutdoorgear.ui.paywall.PaywallScreen(
+            subscriptionManager = subscriptionManager,
+            onDismiss = { showUpgrade = false },
+        )
+    }
+}
+
+@Composable
+private fun SubscriptionRequiredContent(onSeePlans: () -> Unit) {
+    Text(
+        tr("PeekaBoo is for subscribers. A paired Mac polls this server constantly, which only makes sense to offer with a subscription behind it."),
+        color = TextSecondary,
+        fontSize = 14.sp,
+        textAlign = TextAlign.Center,
+        lineHeight = 20.sp,
+    )
+    Button(
+        onClick = onSeePlans,
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(tr("See plans"), fontWeight = FontWeight.Bold, color = Color.Black)
     }
 }
 
@@ -270,8 +331,8 @@ private fun PairingContent(error: String?, onScan: () -> Unit, onShowIntroAgain:
 @Composable
 private fun IntroSteps(onOpenMacAppStore: () -> Unit, onContinue: () -> Unit) {
     IntroStep(1, tr("Download LBC Gallery on your Mac"), tr("It's free on the Mac App Store."))
-    IntroStep(2, tr("Open it and start pairing"), tr("Tap the gear icon, then \"Pair with Phone\" — it shows a QR code."))
-    IntroStep(3, tr("Allow Screen Recording when asked"), tr("Your Mac will ask permission the first time. Click Allow. If it doesn't work right away, quit and reopen LBC Gallery once — that's a one-time step."))
+    IntroStep(2, tr("Open it and start pairing"), tr("Tap the gear icon, then \"Pair with Phone\". It shows a QR code."))
+    IntroStep(3, tr("Allow Screen Recording when asked"), tr("Your Mac will ask permission the first time. Click Allow. If it doesn't work right away, quit and reopen LBC Gallery once; that's a one-time step."))
     IntroStep(4, tr("Come back here and scan"), tr("Tap \"Scan QR Code\" below and point your camera at the code on your Mac."))
 
     TextButton(onClick = onOpenMacAppStore) {
@@ -314,6 +375,7 @@ private fun PairedContent(
     onAnalyze: () -> Unit,
     onAskAgain: () -> Unit,
     onTryAgain: () -> Unit,
+    onUpgrade: () -> Unit,
     onUnlink: () -> Unit,
 ) {
     when (phase) {
@@ -339,7 +401,10 @@ private fun PairedContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.Black)
-                Text(tr("  Analyze my Mac's screen"), fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(tr("  Use PeekaBoo"), fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            TextButton(onClick = onUpgrade) {
+                Text(tr("See plans"), color = Color.White.copy(0.4f), fontSize = 13.sp)
             }
             TextButton(onClick = onUnlink) {
                 Text(tr("Unlink this Mac"), color = Color.White.copy(0.4f), fontSize = 13.sp)
@@ -379,6 +444,22 @@ private fun PairedContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(tr("Try again"), fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
+        is Phase.QuotaExceeded -> {
+            Text(
+                tr("You've used all your PeekaBoo requests for this period."),
+                color = TextPrimary, fontSize = 14.sp, textAlign = TextAlign.Center
+            )
+            Button(
+                onClick = onUpgrade,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(tr("See upgrade options"), fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            TextButton(onClick = onTryAgain) {
+                Text(tr("Not now"), color = Color.White.copy(0.6f))
             }
         }
     }

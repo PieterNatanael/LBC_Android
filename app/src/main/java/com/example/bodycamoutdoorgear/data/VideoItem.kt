@@ -10,6 +10,6 @@ data class VideoItem(val file: File) {
     val name: String get() = file.name
     val isPhoto: Boolean get() = file.extension in setOf("jpg", "jpeg", "png")
 
-    /** A saved "Analyze my Mac" result (or any other plain-text gallery entry). */
+    /** A saved "PeekaBoo" result (or any other plain-text gallery entry). */
     val isText: Boolean get() = file.extension == "txt"
 }

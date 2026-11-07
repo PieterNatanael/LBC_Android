@@ -205,6 +205,14 @@ fun AICardMenu(
                 }
             }
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).height(1.dp).background(Color(0xFF3A3A3A)))
+            Text(
+                tr("BEYOND CARDS"),
+                color = Color(0xFF808080),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp,
+                modifier = Modifier.padding(horizontal = 20.dp).padding(top = 14.dp, bottom = 2.dp)
+            )
             Row(
                 Modifier.fillMaxWidth().clickable { onDismiss(); onAnalyzeMyMac() }.padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -214,7 +222,10 @@ fun AICardMenu(
                     Icon(Icons.Default.Devices, contentDescription = null, tint = Color(0xFFCCCCCC))
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(tr("Analyze my Mac"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(tr("PeekaBoo"), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        com.example.bodycamoutdoorgear.ui.common.BetaBadge()
+                    }
                     Text(
                         if (ScreenRelayPairing.isPaired(context)) tr("Linked") else tr("Tap to link your Mac"),
                         color = Color(0xFF999999), fontSize = 13.sp,

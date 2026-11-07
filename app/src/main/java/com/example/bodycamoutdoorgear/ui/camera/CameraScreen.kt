@@ -1001,7 +1001,9 @@ fun CameraScreen(
 
     if (showAnalyzeMyMac) {
         com.example.bodycamoutdoorgear.ui.screenrelay.AnalyzeMyMacScreen(
-            onDismiss = { showAnalyzeMyMac = false }
+            onDismiss = { showAnalyzeMyMac = false },
+            tier = subscriptionManager.analyzeMyMacTier,
+            subscriptionManager = subscriptionManager,
         )
     }
 

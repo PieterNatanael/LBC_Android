@@ -9,7 +9,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 /**
- * Talks to the "Analyze my Mac" relay on gogoodmood.com from the phone
+ * Talks to the "PeekaBoo" relay on gogoodmood.com from the phone
  * side. Same shape as GiveawayAIService: plain HttpURLConnection, no
  * third-party networking library. See worker/screen-relay-endpoint.js on
  * the server, and the Mac app's own ScreenRelayService, for the full flow
@@ -25,6 +25,8 @@ object ScreenRelayService {
     }
 
     class NotPairedException : Exception("not_paired")
+    class QuotaExceededException : Exception("quota_exceeded")
+    class SubscriptionRequiredException : Exception("subscription_required")
 
     private fun post(path: String, body: JSONObject): JSONObject = openAndRead(
         "$BASE/$path",
@@ -59,6 +61,8 @@ object ScreenRelayService {
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
             val json = try { JSONObject(text) } catch (_: Exception) { JSONObject() }
             if (code == 403) throw NotPairedException()
+            if (code == 402) throw SubscriptionRequiredException()
+            if (code == 429) throw QuotaExceededException()
             if (code !in 200..299) throw IOException("HTTP $code")
             return json
         } finally {
@@ -66,21 +70,34 @@ object ScreenRelayService {
         }
     }
 
-    /** Completes a pairing after scanning the Mac's QR code. */
-    suspend fun confirmPairing(pairId: String, phoneInstallId: String) = withContext(Dispatchers.IO) {
-        post("pair/confirm", JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId))
+    /**
+     * Completes a pairing after scanning the Mac's QR code. PeekaBoo is
+     * paid-only, so [tier] must resolve to a real paid tier or the server
+     * refuses the pairing itself, not just later requests.
+     */
+    suspend fun confirmPairing(pairId: String, phoneInstallId: String, tier: String) = withContext(Dispatchers.IO) {
+        post(
+            "pair/confirm",
+            JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId).put("tier", tier),
+        )
         Unit
     }
 
     /**
-     * Tapping "Analyze my Mac". [prompt] is any custom instruction the user
+     * Tapping "PeekaBoo". [prompt] is any custom instruction the user
      * typed; empty means "just explain what's on screen" (the server's own default).
+     * [tier] is "free"/"pro"/"plus"/"max" — it picks the Claude model and the
+     * quota on the server (see TIERS in worker/screen-relay-endpoint.js).
+     * [language] is the app's own UI language (GiveawayLanguage.appCode),
+     * deliberately not the separate Card Language setting — see the note on
+     * languageInstruction in worker/screen-analyze.js for why.
      */
-    suspend fun requestAnalysis(pairId: String, phoneInstallId: String, prompt: String): String =
+    suspend fun requestAnalysis(pairId: String, phoneInstallId: String, prompt: String, tier: String, language: String): String =
         withContext(Dispatchers.IO) {
             val reply = post(
                 "request",
-                JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId).put("prompt", prompt),
+                JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId)
+                    .put("prompt", prompt).put("tier", tier).put("language", language),
             )
             reply.optString("job_id").ifEmpty { throw IOException("bad_response") }
         }

@@ -1,6 +1,5 @@
 package com.example.bodycamoutdoorgear.ui.paywall
 
-import com.example.bodycamoutdoorgear.i18n.trf
 import com.example.bodycamoutdoorgear.i18n.tr
 import android.app.Activity
 import android.content.Intent
@@ -71,10 +70,14 @@ private val FEATURES = listOf(
 )
 
 
-private data class PlanLabel(val billing: String, val badge: String?)
+private data class PlanLabel(val name: String, val quota: String, val period: String, val badge: String?)
 
+// What PeekaBoo gives you on each plan — the actual differentiator between
+// these three now, shown inline so nobody has to guess what they're buying.
 private val PLAN_LABELS = mapOf(
-    "lbc_premium" to PlanLabel("billed monthly · auto-renews", null)
+    "lbc_premium" to PlanLabel("LBC Pro", "PeekaBoo: 100 Haiku a month", "/ month", null),
+    "lbc_plus" to PlanLabel("LBC Plus", "PeekaBoo: 50 Sonnet a week + 50 Haiku", "/ week", null),
+    "lbc_max" to PlanLabel("LBC Max", "PeekaBoo: 150 Sonnet a week + 150 Haiku", "/ week", "BEST"),
 )
 
 @Composable
@@ -129,7 +132,7 @@ fun PaywallScreen(
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = tr("LOW BATTERY CAMERA PRO"),
+                    text = tr("GO PREMIUM"),
                     color = TextPrimary,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
@@ -138,7 +141,7 @@ fun PaywallScreen(
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = tr("Unlock the full app"),
+                    text = tr("Unlock the full app, and more from PeekaBoo"),
                     color = TextSecondary,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
@@ -169,15 +172,18 @@ fun PaywallScreen(
                 if (products.isEmpty()) {
                     CircularProgressIndicator(color = CompassGold, modifier = Modifier.size(28.dp))
                 } else {
-                    products.forEach { product ->
-                        PlanRow(
-                            product = product,
-                            isSelected = product.productId == selectedProduct?.productId,
-                            planLabel = PLAN_LABELS[product.productId],
-                            onSelect = { selectedProduct = product }
-                        )
-                        Spacer(Modifier.height(10.dp))
-                    }
+                    val order = listOf("lbc_premium", "lbc_plus", "lbc_max")
+                    products.sortedBy { order.indexOf(it.productId).let { i -> if (i < 0) 99 else i } }
+                        .forEach { product ->
+                            PlanRow(
+                                product = product,
+                                isSelected = product.productId == selectedProduct?.productId,
+                                planLabel = PLAN_LABELS[product.productId],
+                                isCurrent = subscriptionManager.analyzeMyMacTier == tierFor(product.productId),
+                                onSelect = { selectedProduct = product }
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -205,11 +211,16 @@ fun PaywallScreen(
                 // Billing disclosure
                 val selectedPrice = selectedProduct?.subscriptionOfferDetails
                     ?.firstOrNull()?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
+                val selectedPeriodWord = if (selectedProduct?.productId == "lbc_plus" || selectedProduct?.productId == "lbc_max") {
+                    tr("week")
+                } else {
+                    tr("month")
+                }
                 Text(
                     text = buildString {
-                        if (selectedPrice != null) append(trf("%s/month. ", selectedPrice))
+                        if (selectedPrice != null) append("$selectedPrice/$selectedPeriodWord. ")
                         append(tr("Payment charged to your Google Play account at purchase confirmation. "))
-                        append(tr("Subscription auto-renews monthly unless cancelled at least 24 hours before the renewal date. "))
+                        append(tr("Subscription auto-renews for the same price and period unless cancelled at least 24 hours before the renewal date. "))
                         append(tr("Manage or cancel anytime in Google Play settings."))
                     },
                     color = TextSecondary,
@@ -277,11 +288,18 @@ fun PaywallScreen(
     }
 }
 
+private fun tierFor(productId: String): String = when (productId) {
+    "lbc_max" -> "max"
+    "lbc_plus" -> "plus"
+    else -> "pro"
+}
+
 @Composable
 private fun PlanRow(
     product: ProductDetails,
     isSelected: Boolean,
     planLabel: PlanLabel?,
+    isCurrent: Boolean,
     onSelect: () -> Unit
 ) {
     val price = product.subscriptionOfferDetails
@@ -309,39 +327,6 @@ private fun PlanRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = price,
-                        color = if (isSelected) TextPrimary else TextSecondary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    // "BEST VALUE" badge
-                    if (planLabel?.badge != null) {
-                        Text(
-                            text = tr(planLabel.badge),
-                            color = CompassGold,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier
-                                .border(1.dp, CompassGold, RoundedCornerShape(3.dp))
-                                .padding(horizontal = 5.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-                if (planLabel?.billing != null) {
-                    Text(
-                        text = tr(planLabel.billing),
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
-                }
-            }
             // Radio indicator
             Box(
                 modifier = Modifier
@@ -354,6 +339,51 @@ private fun PlanRow(
                     )
                     .background(if (isSelected) CompassGold else Color.Transparent)
             )
+
+            Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = planLabel?.name ?: product.title,
+                        color = if (isSelected) TextPrimary else TextSecondary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (isCurrent) {
+                        Text(
+                            text = tr("CURRENT"),
+                            color = TextSecondary,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier
+                                .border(1.dp, BorderColor, RoundedCornerShape(3.dp))
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                if (planLabel?.quota != null) {
+                    Text(text = planLabel.quota, color = TextSecondary, fontSize = 10.sp)
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(price, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                    Text(planLabel?.period ?: "", color = TextSecondary, fontSize = 10.sp)
+                }
+                if (planLabel?.badge != null) {
+                    Text(
+                        text = tr(planLabel.badge),
+                        color = CompassGold,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        modifier = Modifier
+                            .border(1.dp, CompassGold, RoundedCornerShape(3.dp))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+            }
         }
     }
 }
