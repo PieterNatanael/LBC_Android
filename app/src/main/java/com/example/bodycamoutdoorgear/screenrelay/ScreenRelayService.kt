@@ -26,6 +26,7 @@ object ScreenRelayService {
 
     class NotPairedException : Exception("not_paired")
     class QuotaExceededException : Exception("quota_exceeded")
+    class SubscriptionRequiredException : Exception("subscription_required")
 
     private fun post(path: String, body: JSONObject): JSONObject = openAndRead(
         "$BASE/$path",
@@ -60,6 +61,7 @@ object ScreenRelayService {
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
             val json = try { JSONObject(text) } catch (_: Exception) { JSONObject() }
             if (code == 403) throw NotPairedException()
+            if (code == 402) throw SubscriptionRequiredException()
             if (code == 429) throw QuotaExceededException()
             if (code !in 200..299) throw IOException("HTTP $code")
             return json
@@ -68,9 +70,16 @@ object ScreenRelayService {
         }
     }
 
-    /** Completes a pairing after scanning the Mac's QR code. */
-    suspend fun confirmPairing(pairId: String, phoneInstallId: String) = withContext(Dispatchers.IO) {
-        post("pair/confirm", JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId))
+    /**
+     * Completes a pairing after scanning the Mac's QR code. PeekaBoo is
+     * paid-only, so [tier] must resolve to a real paid tier or the server
+     * refuses the pairing itself, not just later requests.
+     */
+    suspend fun confirmPairing(pairId: String, phoneInstallId: String, tier: String) = withContext(Dispatchers.IO) {
+        post(
+            "pair/confirm",
+            JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId).put("tier", tier),
+        )
         Unit
     }
 

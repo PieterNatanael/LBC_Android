@@ -126,9 +126,11 @@ fun AnalyzeMyMacScreen(
         }
         scope.launch {
             try {
-                ScreenRelayService.confirmPairing(pairId, ScreenRelayPairing.phoneInstallId(context))
+                ScreenRelayService.confirmPairing(pairId, ScreenRelayPairing.phoneInstallId(context), tier)
                 ScreenRelayPairing.savePairing(context, pairId)
                 isPaired = true
+            } catch (_: ScreenRelayService.SubscriptionRequiredException) {
+                showUpgrade = true
             } catch (_: Exception) {
                 pairingError = tr("Couldn't complete pairing. Make sure the code on your Mac is still showing, then try again.")
             }
@@ -246,6 +248,8 @@ fun AnalyzeMyMacScreen(
                         showIntroAgain = false
                     },
                 )
+            } else if (tier == "free") {
+                SubscriptionRequiredContent(onSeePlans = { showUpgrade = true })
             } else {
                 PairingContent(
                     error = pairingError,
@@ -272,6 +276,24 @@ fun AnalyzeMyMacScreen(
             subscriptionManager = subscriptionManager,
             onDismiss = { showUpgrade = false },
         )
+    }
+}
+
+@Composable
+private fun SubscriptionRequiredContent(onSeePlans: () -> Unit) {
+    Text(
+        tr("PeekaBoo is for subscribers. A paired Mac polls this server constantly, which only makes sense to offer with a subscription behind it."),
+        color = TextSecondary,
+        fontSize = 14.sp,
+        textAlign = TextAlign.Center,
+        lineHeight = 20.sp,
+    )
+    Button(
+        onClick = onSeePlans,
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(tr("See plans"), fontWeight = FontWeight.Bold, color = Color.Black)
     }
 }
 
