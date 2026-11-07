@@ -205,6 +205,14 @@ fun AICardMenu(
                 }
             }
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).height(1.dp).background(Color(0xFF3A3A3A)))
+            Text(
+                tr("BEYOND CARDS"),
+                color = Color(0xFF808080),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp,
+                modifier = Modifier.padding(horizontal = 20.dp).padding(top = 14.dp, bottom = 2.dp)
+            )
             Row(
                 Modifier.fillMaxWidth().clickable { onDismiss(); onAnalyzeMyMac() }.padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
