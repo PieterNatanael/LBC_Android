@@ -124,7 +124,7 @@ fun AnalyzeMyMacUpgradeScreen(
                 TierCard(
                     name = tr("LBC Plus"),
                     price = plusProduct?.let { price(it) } ?: "$3 / week",
-                    quota = tr("50 analyses / week"), model = "Sonnet",
+                    quota = tr("50 analyses / week, +50 more on Haiku"), model = "Sonnet",
                     isCurrent = currentTier == "plus", isBest = false,
                     onChoose = {
                         val activity = context as? Activity ?: return@TierCard
@@ -137,7 +137,7 @@ fun AnalyzeMyMacUpgradeScreen(
                 TierCard(
                     name = tr("LBC Max"),
                     price = maxProduct?.let { price(it) } ?: "$9 / week",
-                    quota = tr("150 analyses / week"), model = "Sonnet",
+                    quota = tr("150 analyses / week, +150 more on Haiku"), model = "Sonnet",
                     isCurrent = currentTier == "max", isBest = true,
                     onChoose = {
                         val activity = context as? Activity ?: return@TierCard
