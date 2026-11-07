@@ -88,13 +88,16 @@ object ScreenRelayService {
      * typed; empty means "just explain what's on screen" (the server's own default).
      * [tier] is "free"/"pro"/"plus"/"max" — it picks the Claude model and the
      * quota on the server (see TIERS in worker/screen-relay-endpoint.js).
+     * [language] is the app's own UI language (GiveawayLanguage.appCode),
+     * deliberately not the separate Card Language setting — see the note on
+     * languageInstruction in worker/screen-analyze.js for why.
      */
-    suspend fun requestAnalysis(pairId: String, phoneInstallId: String, prompt: String, tier: String): String =
+    suspend fun requestAnalysis(pairId: String, phoneInstallId: String, prompt: String, tier: String, language: String): String =
         withContext(Dispatchers.IO) {
             val reply = post(
                 "request",
                 JSONObject().put("pair_id", pairId).put("phone_install_id", phoneInstallId)
-                    .put("prompt", prompt).put("tier", tier),
+                    .put("prompt", prompt).put("tier", tier).put("language", language),
             )
             reply.optString("job_id").ifEmpty { throw IOException("bad_response") }
         }

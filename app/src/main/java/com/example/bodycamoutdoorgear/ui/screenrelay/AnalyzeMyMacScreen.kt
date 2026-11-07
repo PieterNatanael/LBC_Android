@@ -1,6 +1,7 @@
 package com.example.bodycamoutdoorgear.ui.screenrelay
 
 import com.example.bodycamoutdoorgear.i18n.tr
+import com.example.bodycamoutdoorgear.giveaway.GiveawayLanguage
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -147,7 +148,7 @@ fun AnalyzeMyMacScreen(
         phase = Phase.Requesting
 
         val jobId = try {
-            ScreenRelayService.requestAnalysis(pairId, phoneId, prompt, tier)
+            ScreenRelayService.requestAnalysis(pairId, phoneId, prompt, tier, GiveawayLanguage.appCode)
         } catch (_: ScreenRelayService.QuotaExceededException) {
             phase = Phase.QuotaExceeded
             return
